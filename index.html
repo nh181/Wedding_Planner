@@ -227,7 +227,7 @@
     <div class="nav-tabs" id="nav-tabs">
       <div class="nav-tab on" data-tab="home">🏠 Home</div>
       <div class="nav-tab" data-tab="aufgaben" id="tab-aufgaben" style="display:none">✅ Aufgaben</div>
-      <div class="nav-tab" data-tab="zeitplan">📅 Zeitplan</div>
+      <div class="nav-tab" id="tab-zeitplan" data-tab="zeitplan">📅 Zeitplan</div>
       <div class="nav-tab" data-tab="nutzer" id="tab-nutzer" style="display:none">👥 Nutzer</div>
       <div class="nav-tab" data-tab="info" id="tab-info" style="display:none">⚙️ Info</div>
     </div>
@@ -323,6 +323,7 @@ function updateUI(){
   document.getElementById('tab-aufgaben').style.display=(isAdmin||isHelper)?'':'none';
   document.getElementById('tab-nutzer').style.display=isAdmin?'':'none';
   document.getElementById('tab-info').style.display=isAdmin?'':'none';
+  document.getElementById('tab-zeitplan').style.display=(isAdmin||isHelper)?'':'none';
   document.getElementById('stats-bar').style.display=(isAdmin||isHelper)?'':'none';
   document.getElementById('fbar').style.display=(tab==='aufgaben'&&(isAdmin||isHelper))?'flex':'none';
   document.getElementById('h-sub').textContent=isLoggedIn?(user?.displayName||user?.email):'Hochzeit 2026';
@@ -348,10 +349,7 @@ function renderHome(){
     <div class="irow"><div class="iico">🕐</div><div><strong>Datum & Uhrzeit</strong><br><span style="color:var(--t2);font-size:13px" id="g-time">Wird bekannt gegeben</span></div></div>
     <div class="irow"><div class="iico">👗</div><div><strong>Dresscode</strong><br><span style="color:var(--t2);font-size:13px" id="g-dress">Wird bekannt gegeben</span></div></div>
   </div>`;
-  h+=`<div class="info-card"><h3>🎉 Zu-/Absage</h3><div id="rsvp-area">
-    <button class="rsvp-btn rsvp-y" onclick="doRsvp('ja')">✓ Ich komme gerne!</button>
-    <button class="rsvp-btn rsvp-n" onclick="doRsvp('nein')">✗ Ich kann leider nicht</button>
-  </div></div>`;
+
   if(role==='gast'){h+=`<div class="alert info"><div class="aico">👤</div><div class="atxt"><strong>Mithelfer oder Trauzeuge?</strong><a onclick="openAuth()" style="color:var(--rose);cursor:pointer"> Hier anmelden →</a></div></div>`;}
   a.innerHTML=h;
   loadInfo();
