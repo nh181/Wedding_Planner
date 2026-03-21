@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#c2185b" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Hochzeit" />
-  <title>Hochzeitsplaner</title>
+  <meta name="apple-mobile-web-app-title" content="Luisa & Nico" />
+  <title>Hochzeit Luisa & Nico</title>
   <link rel="manifest" href="manifest.json" />
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap');
@@ -167,10 +167,46 @@
 </head>
 <body>
 
+<!-- PASSWORD SCREEN -->
+<div id="pw-screen" style="position:fixed;inset:0;background:#fdfaf8;z-index:9999;display:flex;align-items:center;justify-content:center;padding:2rem;">
+  <div style="width:100%;max-width:340px;text-align:center;">
+    <div style="font-size:48px;margin-bottom:16px;">💍</div>
+    <h1 style="font-family:'Lora',serif;font-size:24px;font-weight:600;color:#1a1a1a;margin-bottom:6px;">Luisa & Nico</h1>
+    <p style="font-size:14px;color:#888;margin-bottom:28px;">Bitte Passwort eingeben</p>
+    <input type="password" id="pw-input" placeholder="Passwort" onkeydown="if(event.key==='Enter')checkPw()"
+      style="width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid rgba(0,0,0,0.15);background:#fff;font-size:16px;font-family:sans-serif;color:#1a1a1a;outline:none;margin-bottom:10px;-webkit-appearance:none;" />
+    <div id="pw-error" style="font-size:13px;color:#ef4444;margin-bottom:10px;min-height:18px;"></div>
+    <button onclick="checkPw()"
+      style="width:100%;padding:13px;border-radius:12px;border:none;background:#c2185b;color:white;font-size:16px;font-weight:500;font-family:sans-serif;cursor:pointer;">
+      Anmelden
+    </button>
+  </div>
+</div>
+
+<script>
+(function() {
+  const auth = localStorage.getItem('hp_auth');
+  if (auth && Date.now() < parseInt(auth)) {
+    document.getElementById('pw-screen').style.display = 'none';
+  }
+})();
+function checkPw() {
+  const val = document.getElementById('pw-input').value;
+  if (val === '2003LK/NH') {
+    localStorage.setItem('hp_auth', Date.now() + 24 * 60 * 60 * 1000);
+    document.getElementById('pw-screen').style.display = 'none';
+  } else {
+    document.getElementById('pw-error').textContent = 'Falsches Passwort. Bitte erneut versuchen.';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+</script>
+
 <header class="header">
   <div class="header-top">
     <div>
-      <h1>💍 Hochzeitsplaner</h1>
+      <h1>💍 Luisa & Nico</h1>
       <div class="header-sub" id="header-sub">Euer großer Tag</div>
     </div>
     <div class="header-actions">
@@ -391,6 +427,7 @@ function renderAufgaben() {
             ${t.person?`<span class="chip person">${t.person}</span>`:''}
             <span class="chip cat">${t.cat}</span>
             ${t.due?`<span class="chip due ${late?'late':soon?'soon':''}">${dueLabel}</span>`:''}
+            ${t.due&&!t.done?`<span class="chip" onclick="exportCal(${t.id})" style="cursor:pointer;background:#EAF3DE;color:#27500A;">📅 Kalender</span>`:''}
           </div>
         </div>
         <div class="prio-dot ${t.prio}"></div>
@@ -399,6 +436,32 @@ function renderAufgaben() {
   }
 
   area.innerHTML = html;
+}
+
+function exportCal(id) {
+  const t = tasks.find(x=>x.id===id);
+  if (!t || !t.due) return;
+  const [y,m,d] = t.due.split('-');
+  const dateStr = `${y}${m}${d}`;
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Hochzeitsplaner//DE',
+    'BEGIN:VEVENT',
+    `UID:${t.id}-${Date.now()}@hochzeitsplaner`,
+    `DTSTAMP:${new Date().toISOString().replace(/[-:]/g,'').split('.')[0]}Z`,
+    `DTSTART;VALUE=DATE:${dateStr}`,
+    `DTEND;VALUE=DATE:${dateStr}`,
+    `SUMMARY:💍 ${t.title}`,
+    `DESCRIPTION:Kategorie: ${t.cat}${t.person?' | Zuständig: '+t.person:''}`,
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n');
+  const blob = new Blob([ics], {type:'text/calendar;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${t.title.replace(/[^a-zA-Z0-9]/g,'_')}.ics`;
+  a.click(); URL.revokeObjectURL(url);
 }
 
 function renderZeitplan() {
