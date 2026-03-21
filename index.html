@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#c2185b" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Hochzeit" />
+  <title>Hochzeitsplaner</title>
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --rose: #c2185b;
+      --rose-light: #fce4ec;
+      --rose-mid: #f48fb1;
+      --rose-dark: #880e4f;
+      --sage: #4caf50;
+      --sage-light: #e8f5e9;
+      --amber: #f59e0b;
+      --amber-light: #fffbeb;
+      --red: #ef4444;
+      --red-light: #fef2f2;
+      --bg: #fdfaf8;
+      --surface: #ffffff;
+      --border: rgba(0,0,0,0.08);
+      --border-mid: rgba(0,0,0,0.14);
+      --text: #1a1a1a;
+      --text-2: #555;
+      --text-3: #888;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    html, body { height: 100%; overflow: hidden; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+    }
+
+    /* HEADER */
+    .header {
+      background: var(--rose);
+      padding: calc(var(--safe-top) + 14px) 16px 14px;
+      flex-shrink: 0;
+    }
+    .header-inner { display: flex; align-items: center; justify-content: space-between; }
+    .header h1 {
+      font-family: 'Lora', serif;
+      font-size: 22px;
+      color: white;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+    }
+    .header-sub { font-size: 12px; color: rgba(255,255,255,0.75); margin-top: 1px; }
+    .add-fab {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.25); border: none;
+      color: white; font-size: 22px; display: flex;
+      align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .add-fab:active { background: rgba(255,255,255,0.4); }
+
+    /* STATS BAR */
+    .stats {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .stat {
+      padding: 10px 4px; text-align: center;
+      border-right: 1px solid var(--border);
+    }
+    .stat:last-child { border-right: none; }
+    .stat-val { font-size: 20px; font-weight: 500; color: var(--text); }
+    .stat-val.rose { color: var(--rose); }
+    .stat-val.green { color: var(--sage); }
+    .stat-val.amber { color: var(--amber); }
+    .stat-label { font-size: 10px; color: var(--text-3); margin-top: 1px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* FILTERS */
+    .filters {
+      display: flex; gap: 6px; padding: 10px 14px;
+      background: var(--bg); border-bottom: 1px solid var(--border);
+      overflow-x: auto; flex-shrink: 0;
+      -webkit-overflow-scrolling: touch;
+    }
+    .filters::-webkit-scrollbar { display: none; }
+    .f-btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; padding: 5px 13px; border-radius: 999px; white-space: nowrap;
+      border: 1px solid var(--border-mid); background: var(--surface);
+      color: var(--text-2); cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+    }
+    .f-btn.active { background: var(--rose); color: white; border-color: var(--rose); }
+
+    /* TASK LIST */
+    .list-wrap {
+      flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      padding: 10px 14px calc(var(--safe-bottom) + 10px);
+    }
+
+    .task-card {
+      background: var(--surface); border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 13px 14px; margin-bottom: 8px;
+      display: grid; grid-template-columns: 28px 1fr 8px;
+      gap: 10px; align-items: start;
+      transition: transform 0.1s;
+    }
+    .task-card:active { transform: scale(0.985); }
+    .task-card.done { opacity: 0.5; }
+
+    .check-btn {
+      width: 26px; height: 26px; border-radius: 50%;
+      border: 2px solid var(--border-mid); background: none;
+      cursor: pointer; display: flex; align-items: center;
+      justify-content: center; transition: all 0.2s; flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .check-btn.done { background: var(--sage); border-color: var(--sage); }
+    .check-icon { display: none; }
+    .check-btn.done .check-icon { display: block; }
+    .check-icon svg { width: 14px; height: 14px; }
+
+    .task-title {
+      font-size: 15px; font-weight: 500; color: var(--text);
+      line-height: 1.35;
+    }
+    .task-card.done .task-title { text-decoration: line-through; }
+
+    .task-meta { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
+    .chip {
+      font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 400;
+    }
+    .chip.person { background: var(--rose-light); color: var(--rose-dark); font-weight: 500; }
+    .chip.cat { background: #f1f5f9; color: #475569; }
+    .chip.due { background: transparent; color: var(--text-3); padding-left: 0; }
+    .chip.due.late { color: var(--red); }
+
+    .prio-dot {
+      width: 7px; height: 7px; border-radius: 50%; margin-top: 9px; flex-shrink: 0;
+    }
+    .prio-dot.hoch { background: var(--red); }
+    .prio-dot.mittel { background: var(--amber); }
+    .prio-dot.niedrig { background: var(--sage); }
+
+    .empty {
+      text-align: center; padding: 3rem 1rem;
+      color: var(--text-3); font-size: 15px;
+    }
+    .empty-icon { font-size: 36px; margin-bottom: 8px; }
+
+    /* MODAL */
+    .modal-bg {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      z-index: 200; display: flex; align-items: flex-end;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .modal-bg.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      width: 100%; background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      padding: 0 16px calc(var(--safe-bottom) + 20px);
+      transform: translateY(100%); transition: transform 0.3s cubic-bezier(.32,1,.23,1);
+      max-height: 88dvh; overflow-y: auto;
+    }
+    .modal-bg.open .modal { transform: translateY(0); }
+
+    .modal-handle {
+      width: 36px; height: 4px; border-radius: 2px;
+      background: var(--border-mid); margin: 12px auto 16px;
+    }
+    .modal h2 {
+      font-family: 'Lora', serif; font-size: 18px; font-weight: 600;
+      margin-bottom: 16px; color: var(--text);
+    }
+
+    .fg { margin-bottom: 14px; }
+    .fg label { font-size: 12px; color: var(--text-3); display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .fg input, .fg select {
+      width: 100%; padding: 11px 13px; border-radius: 10px;
+      border: 1px solid var(--border-mid); background: var(--bg);
+      font-family: 'DM Sans', sans-serif; font-size: 15px; color: var(--text);
+      -webkit-appearance: none; appearance: none;
+    }
+    .fg input:focus, .fg select:focus { outline: 2px solid var(--rose); border-color: transparent; }
+
+    .modal-footer { display: flex; gap: 10px; margin-top: 6px; }
+    .btn-cancel {
+      flex: 1; padding: 13px; border-radius: 12px;
+      border: 1px solid var(--border-mid); background: var(--bg);
+      font-family: 'DM Sans', sans-serif; font-size: 15px;
+      color: var(--text-2); cursor: pointer;
+    }
+    .btn-save {
+      flex: 2; padding: 13px; border-radius: 12px;
+      border: none; background: var(--rose);
+      font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500;
+      color: white; cursor: pointer;
+    }
+    .btn-save:active { opacity: 0.85; }
+
+    /* WEDDING DATE BANNER */
+    .date-banner {
+      background: linear-gradient(135deg, var(--rose-light) 0%, #fff 100%);
+      border: 1px solid var(--rose-mid); border-radius: 12px;
+      padding: 10px 14px; margin-bottom: 10px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .date-banner p { font-size: 13px; color: var(--rose-dark); }
+    .date-banner strong { font-size: 15px; }
+    .days-left {
+      font-family: 'Lora', serif; font-size: 22px; font-weight: 600; color: var(--rose);
+      text-align: right;
+    }
+    .days-left span { display: block; font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 400; color: var(--rose); }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div>
+      <h1>💍 Hochzeitsplaner</h1>
+      <div class="header-sub" id="header-sub">Euer großer Tag</div>
+    </div>
+    <button class="add-fab" id="open-modal" aria-label="Aufgabe hinzufügen">+</button>
+  </div>
+</header>
+
+<div class="stats">
+  <div class="stat"><div class="stat-val" id="s-total">0</div><div class="stat-label">Gesamt</div></div>
+  <div class="stat"><div class="stat-val green" id="s-done">0</div><div class="stat-label">Erledigt</div></div>
+  <div class="stat"><div class="stat-val rose" id="s-open">0</div><div class="stat-label">Offen</div></div>
+  <div class="stat"><div class="stat-val amber" id="s-late">0</div><div class="stat-label">Überfällig</div></div>
+</div>
+
+<div class="filters">
+  <button class="f-btn active" data-f="alle">Alle</button>
+  <button class="f-btn" data-f="offen">Offen</button>
+  <button class="f-btn" data-f="erledigt">Erledigt</button>
+  <button class="f-btn" data-f="hoch">🔴 Hoch</button>
+  <button class="f-btn" data-f="location">Location</button>
+  <button class="f-btn" data-f="catering">Catering</button>
+  <button class="f-btn" data-f="dekoration">Deko</button>
+</div>
+
+<div class="list-wrap" id="list-wrap">
+  <div id="date-banner-wrap"></div>
+  <div id="task-list"></div>
+  <div class="empty" id="empty" style="display:none">
+    <div class="empty-icon">🌸</div>
+    Keine Aufgaben gefunden.
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal" id="modal">
+    <div class="modal-handle"></div>
+    <h2 id="modal-title">Neue Aufgabe</h2>
+
+    <div class="fg">
+      <label>Aufgabe</label>
+      <input type="text" id="f-title" placeholder="z.B. Blumendekoration buchen" />
+    </div>
+    <div class="fg">
+      <label>Zugewiesen an</label>
+      <input type="text" id="f-person" placeholder="Name der Person" />
+    </div>
+    <div class="fg">
+      <label>Kategorie</label>
+      <select id="f-cat">
+        <option>Location</option><option>Catering</option><option>Dekoration</option>
+        <option>Musik</option><option>Fotografie</option><option>Kleidung</option>
+        <option>Einladungen</option><option>Flitterwochen</option><option>Sonstiges</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Priorität</label>
+      <select id="f-prio">
+        <option value="hoch">🔴 Hoch</option>
+        <option value="mittel" selected>🟡 Mittel</option>
+        <option value="niedrig">🟢 Niedrig</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Fällig am</label>
+      <input type="date" id="f-due" />
+    </div>
+    <div class="fg" id="wedding-date-group">
+      <label>📅 Hochzeitstag (einmalig festlegen)</label>
+      <input type="date" id="f-wedding" />
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" id="close-modal">Abbrechen</button>
+      <button class="btn-save" id="save-task">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const DEFAULTS = [
+    { id:1, title:'Standesamt Termin buchen', person:'Anna', cat:'Sonstiges', prio:'hoch', due:'2026-04-15', done:false },
+    { id:2, title:'Hochzeitslocation besichtigen', person:'Beide', cat:'Location', prio:'hoch', due:'2026-04-30', done:true },
+    { id:3, title:'Fotografen anfragen', person:'Max', cat:'Fotografie', prio:'mittel', due:'2026-05-10', done:false },
+    { id:4, title:'Einladungen gestalten & drucken', person:'Anna', cat:'Einladungen', prio:'mittel', due:'2026-05-20', done:false },
+    { id:5, title:'Catering Angebote vergleichen', person:'Max', cat:'Catering', prio:'hoch', due:'2026-03-18', done:false },
+    { id:6, title:'Brautkleid Anprobe', person:'Anna', cat:'Kleidung', prio:'mittel', due:'2026-06-01', done:false },
+    { id:7, title:'DJ oder Band buchen', person:'Beide', cat:'Musik', prio:'niedrig', due:'2026-07-01', done:false },
+  ];
+
+  let tasks = JSON.parse(localStorage.getItem('hp_tasks') || 'null') || DEFAULTS;
+  let weddingDate = localStorage.getItem('hp_wedding') || '';
+  let nextId = tasks.reduce((m,t)=>Math.max(m,t.id),0)+1;
+  let filter = 'alle';
+  const today = new Date().toISOString().split('T')[0];
+
+  function save() {
+    localStorage.setItem('hp_tasks', JSON.stringify(tasks));
+    localStorage.setItem('hp_wedding', weddingDate);
+  }
+
+  function fmt(d) {
+    if (!d) return '';
+    const [y,m,day] = d.split('-');
+    return `${day}.${m}.${y}`;
+  }
+
+  function daysLeft(d) {
+    if (!d) return null;
+    const diff = Math.ceil((new Date(d) - new Date()) / 86400000);
+    return diff;
+  }
+
+  function updateStats() {
+    const t = tasks.length;
+    const done = tasks.filter(x=>x.done).length;
+    const open = t - done;
+    const late = tasks.filter(x=>!x.done && x.due && x.due < today).length;
+    document.getElementById('s-total').textContent = t;
+    document.getElementById('s-done').textContent = done;
+    document.getElementById('s-open').textContent = open;
+    document.getElementById('s-late').textContent = late;
+  }
+
+  function updateBanner() {
+    const wrap = document.getElementById('date-banner-wrap');
+    if (!weddingDate) { wrap.innerHTML = ''; return; }
+    const dl = daysLeft(weddingDate);
+    wrap.innerHTML = `<div class="date-banner">
+      <div>
+        <p style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px">Hochzeitstag</p>
+        <p><strong>${fmt(weddingDate)}</strong></p>
+      </div>
+      <div class="days-left">${dl > 0 ? dl : '🎉'}<span>${dl > 0 ? 'Tage noch' : 'Heute!'}</span></div>
+    </div>`;
+  }
+
+  function render() {
+    updateStats(); updateBanner();
+    let vis = tasks;
+    if (filter === 'offen') vis = tasks.filter(t=>!t.done);
+    else if (filter === 'erledigt') vis = tasks.filter(t=>t.done);
+    else if (filter === 'hoch') vis = tasks.filter(t=>t.prio==='hoch'&&!t.done);
+    else if (['location','catering','dekoration'].includes(filter))
+      vis = tasks.filter(t=>t.cat.toLowerCase()===filter||t.cat.toLowerCase()==='dekoration'&&filter==='dekoration');
+
+    const list = document.getElementById('task-list');
+    const empty = document.getElementById('empty');
+
+    if (!vis.length) { list.innerHTML=''; empty.style.display='block'; return; }
+    empty.style.display = 'none';
+
+    list.innerHTML = vis.map(t => {
+      const late = !t.done && t.due && t.due < today;
+      const dl = t.due ? daysLeft(t.due) : null;
+      const dueLabel = t.due ? (late ? `⚠ ${fmt(t.due)}` : (dl<=7&&dl>=0 ? `in ${dl}d` : fmt(t.due))) : '';
+      return `<div class="task-card ${t.done?'done':''}" data-id="${t.id}">
+        <button class="check-btn ${t.done?'done':''}" onclick="toggle(${t.id})" aria-label="Abhaken">
+          <span class="check-icon"><svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 7l4 4 6-7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </button>
+        <div>
+          <div class="task-title">${t.title}</div>
+          <div class="task-meta">
+            ${t.person?`<span class="chip person">${t.person}</span>`:''}
+            <span class="chip cat">${t.cat}</span>
+            ${t.due?`<span class="chip due ${late?'late':''}">${dueLabel}</span>`:''}
+          </div>
+        </div>
+        <div class="prio-dot ${t.prio}"></div>
+      </div>`;
+    }).join('');
+  }
+
+  function toggle(id) {
+    const t = tasks.find(x=>x.id===id);
+    if (t) { t.done=!t.done; save(); render(); }
+  }
+
+  // Filters
+  document.querySelectorAll('.f-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.f-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      filter = btn.dataset.f;
+      render();
+    });
+  });
+
+  // Modal
+  const modalBg = document.getElementById('modal-bg');
+  document.getElementById('open-modal').addEventListener('click', () => {
+    document.getElementById('f-wedding').value = weddingDate;
+    document.getElementById('wedding-date-group').style.display = weddingDate ? 'none' : '';
+    modalBg.classList.add('open');
+    setTimeout(()=>document.getElementById('f-title').focus(),300);
+  });
+  const closeModal = () => { modalBg.classList.remove('open'); };
+  document.getElementById('close-modal').addEventListener('click', closeModal);
+  modalBg.addEventListener('click', e => { if(e.target===modalBg) closeModal(); });
+
+  document.getElementById('save-task').addEventListener('click', () => {
+    const title = document.getElementById('f-title').value.trim();
+    const wd = document.getElementById('f-wedding').value;
+    if (wd) { weddingDate = wd; }
+    if (!title) { document.getElementById('f-title').focus(); return; }
+    tasks.push({
+      id: nextId++,
+      title,
+      person: document.getElementById('f-person').value.trim(),
+      cat: document.getElementById('f-cat').value,
+      prio: document.getElementById('f-prio').value,
+      due: document.getElementById('f-due').value,
+      done: false
+    });
+    save(); render(); closeModal();
+    document.getElementById('f-title').value='';
+    document.getElementById('f-person').value='';
+    document.getElementById('f-due').value='';
+  });
+
+  render();
+
+  // Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+</script>
+</body>
+</html>
