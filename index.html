@@ -209,7 +209,7 @@ function checkPw() {
       <h1>💍 Luisa & Nico</h1>
       <div class="header-sub" id="header-sub">Euer großer Tag</div>
     </div>
-    <div class="header-actions">
+    <div class="header-actions"><div id="sync-dot" title="Synchronisierung..." style="width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-top:4px;flex-shrink:0;"></div>
       <button class="icon-btn" id="open-modal" title="Aufgabe hinzufügen">＋</button>
     </div>
   </div>
@@ -331,6 +331,8 @@ function save() {
   localStorage.setItem('hp_tasks2', JSON.stringify(tasks));
   localStorage.setItem('hp_wedding', weddingDate);
   localStorage.setItem('hp_templates', JSON.stringify(addedTemplates));
+  localStorage.setItem('hp_updated', Date.now());
+  if (window.saveToFirebase) window.saveToFirebase();
 }
 
 function fmt(d) { if(!d) return ''; const [y,m,day]=d.split('-'); return `${day}.${m}.${y}`; }
@@ -607,9 +609,74 @@ document.getElementById('save-task').addEventListener('click', () => {
   document.getElementById('f-due').value='';
 });
 
+window.reloadFromStorage = function() {
+  tasks = JSON.parse(localStorage.getItem('hp_tasks2') || 'null') || DEFAULTS;
+  weddingDate = localStorage.getItem('hp_wedding') || '';
+  addedTemplates = JSON.parse(localStorage.getItem('hp_templates') || '[]');
+  nextId = tasks.reduce((m,t)=>Math.max(m,t.id),0)+1;
+  render();
+};
+
 render();
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBst0bCb-7ysUfcZiVx7yWjLWwWIKw5qiw",
+    authDomain: "hochzeitsplaner-luisa-nico.firebaseapp.com",
+    projectId: "hochzeitsplaner-luisa-nico",
+    storageBucket: "hochzeitsplaner-luisa-nico.firebasestorage.app",
+    messagingSenderId: "84614290231",
+    appId: "1:84614290231:web:1670c485de6364989598b2"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const DATA_DOC = doc(db, 'wedding', 'data');
+
+  let isSyncing = false;
+
+  // Save to Firebase
+  window.saveToFirebase = async function() {
+    if (isSyncing) return;
+    try {
+      await setDoc(DATA_DOC, {
+        tasks: JSON.parse(localStorage.getItem('hp_tasks2') || '[]'),
+        weddingDate: localStorage.getItem('hp_wedding') || '',
+        templates: JSON.parse(localStorage.getItem('hp_templates') || '[]'),
+        updatedAt: Date.now()
+      });
+    } catch(e) { console.log('Firebase save error:', e); }
+  };
+
+  // Listen for changes from other devices
+  onSnapshot(DATA_DOC, (snap) => {
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const localUpdated = parseInt(localStorage.getItem('hp_updated') || '0');
+    if (data.updatedAt && data.updatedAt > localUpdated) {
+      isSyncing = true;
+      localStorage.setItem('hp_tasks2', JSON.stringify(data.tasks || []));
+      localStorage.setItem('hp_wedding', data.weddingDate || '');
+      localStorage.setItem('hp_templates', JSON.stringify(data.templates || []));
+      localStorage.setItem('hp_updated', data.updatedAt);
+      // Reload app state
+      if (window.reloadFromStorage) window.reloadFromStorage();
+      isSyncing = false;
+    }
+  });
+
+  // Show sync indicator
+  window.addEventListener('load', () => {
+    const dot = document.getElementById('sync-dot');
+    if (dot) { dot.style.background = '#4caf50'; dot.title = 'Verbunden mit Firebase'; }
+  });
+</script>
+
 </body>
 </html>
