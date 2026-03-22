@@ -327,7 +327,6 @@
       <div class="nav-tab" id="tab-zeitplan" data-tab="zeitplan" style="display:none">📅 Zeitplan</div>
       <div class="nav-tab" data-tab="vorlagen" id="tab-vorlagen" style="display:none">📋 Vorlagen</div>
       <div class="nav-tab" data-tab="budget" id="tab-budget" style="display:none">💶 Budget</div>
-      <div class="nav-tab" data-tab="papierkorb" id="tab-papierkorb" style="display:none"><span id="trash-count"></span> Papierkorb</div>
       <div class="nav-tab" data-tab="nutzer" id="tab-nutzer" style="display:none">👥 Nutzer</div>
       <div class="nav-tab" data-tab="info" id="tab-info" style="display:none">⚙️ Info</div>
     </div>
@@ -342,9 +341,10 @@
     <button class="fb on" data-f="alle">Alle</button>
     <button class="fb" data-f="offen">Offen</button>
     <button class="fb" data-f="erledigt">Erledigt</button>
-    <button class="fb" data-f="hoch">🔴 Hoch</button>
+    <button class="fb" data-f="hoch">&#128308; Hoch</button>
     <button class="fb" data-f="woche">Diese Woche</button>
     <button class="fb" data-f="meine">Meine</button>
+    <button class="fb" data-f="papierkorb" id="fb-trash">&#128465; Papierkorb</button>
   </div>
   <div class="scroll" id="scroll"></div>
 </div>
@@ -382,7 +382,7 @@ const ID=doc(db,'wedding','info');
 const BD=doc(db,'wedding','budget');
 const UC=collection(db,'users');
 
-let tasks=[],trash=[],wDate='',tmpls=[],nid=1,user=null,role='gast',firstName='',flt='alle',tab='home';
+let tasks=[],wDate='',tmpls=[],nid=1,user=null,role='gast',firstName='',flt='alle',tab='home';
 let allUsers=[],totalBudget=0,catBudget={};
 let seenMentions=new Set(JSON.parse(localStorage.getItem('seenMentions')||'[]'));
 let addSelectedAssignees=[],editingTaskId=null,budgetView='bvp';
@@ -480,7 +480,6 @@ function updateUI(){
   document.getElementById('tab-zeitplan').style.display=li?'':'none';
   document.getElementById('tab-vorlagen').style.display=li?'':'none';
   document.getElementById('tab-budget').style.display=isA?'':'none';
-  if(document.getElementById('tab-papierkorb'))document.getElementById('tab-papierkorb').style.display=isA?'':'none';
   document.getElementById('tab-nutzer').style.display=isA?'':'none';
   document.getElementById('tab-info').style.display=isA?'':'none';
   document.getElementById('stats-bar').style.display=li?'':'none';
@@ -489,11 +488,12 @@ function updateUI(){
 }
 
 function stats(){
-  const t=tasks.length,d=tasks.filter(x=>x.done).length;
+  const active=tasks.filter(x=>!x.trashed);
+  const t=active.length,d=active.filter(x=>x.done).length;
   document.getElementById('s-tot').textContent=t;
   document.getElementById('s-don').textContent=d;
   document.getElementById('s-opn').textContent=t-d;
-  document.getElementById('s-lat').textContent=tasks.filter(x=>!x.done&&x.due&&x.due<today).length;
+  document.getElementById('s-lat').textContent=active.filter(x=>!x.done&&x.due&&x.due<today).length;
 }
 
 function motiv(p){if(p===100)return'🎊 Alles erledigt!';if(p>=75)return'🎉 Fast geschafft!';if(p>=50)return'🌸 Auf einem tollen Weg!';return'💪 Weiter so!';}
@@ -556,8 +556,8 @@ function openTaskPopup(t){
   // Actions
   html+=`<div class="popup-actions">
     ${canChk?`<button class="act-btn primary" onclick="togAndClose(${t.id})">${t.done?'↩ Wiedereröffnen':'✓ Erledigt'}</button>`:''}
-    ${t.due?`<button class="act-btn" onclick="cal(${t.id})">📅 Kalender</button>`:''}
-    <button class="act-btn danger" onclick="trashTaskAndClose(${t.id})">&#128465; In Papierkorb</button>
+    ${t.due&&!t.trashed?`<button class="act-btn" onclick="cal(${t.id})">&#128197; Kalender</button>`:''}
+    ${t.trashed?`<button class="act-btn" onclick="restoreTask(${t.id});document.getElementById('task-popup').classList.remove('open')">Wiederherstellen</button>`:`<button class="act-btn danger" onclick="trashTaskAndClose(${t.id})">In Papierkorb</button>`}
   </div>`;
 
   document.getElementById('popup-content').innerHTML=html;
@@ -591,9 +591,7 @@ window.togAndClose=async function(id){
 
 window.trashTaskAndClose=async function(id){
   const t=tasks.find(x=>x.id===id);if(!t)return;
-  const trashed={...t,trashedAt:Date.now()};
-  trash=[...trash,trashed];
-  tasks=tasks.filter(x=>x.id!==id);
+  t.trashed=true;t.trashedAt=Date.now();
   await save();
   document.getElementById('task-popup').classList.remove('open');
   render();
@@ -683,14 +681,41 @@ function renderAufgaben(){
   if(late.length)h+=`<div class="alert warn"><div class="aico">⚠️</div><div class="atxt"><strong>${late.length} Aufgabe${late.length>1?'n':''} überfällig!</strong>${late.map(t=>t.title).join(', ')}</div></div>`;
   else if(week.length)h+=`<div class="alert info"><div class="aico">📌</div><div class="atxt"><strong>${week.length} diese Woche fällig</strong>${week.slice(0,3).map(t=>t.title).join(', ')}</div></div>`;
 
-  let vis=tasks;
-  if(flt==='offen')vis=tasks.filter(t=>!t.done);
-  else if(flt==='erledigt')vis=tasks.filter(t=>t.done);
-  else if(flt==='hoch')vis=tasks.filter(t=>t.prio==='hoch'&&!t.done);
-  else if(flt==='woche')vis=tasks.filter(t=>{if(t.done||!t.due)return false;const d=dl(t.due);return d>=0&&d<=7;});
-  else if(flt==='meine')vis=tasks.filter(t=>isAssigned(t));
+  const isAdmin=role==='admin';
+  // Papierkorb filter
+  if(flt==='papierkorb'){
+    const trashed=tasks.filter(t=>t.trashed);
+    if(!trashed.length){h+=`<div class="empty"><div class="ei">&#128465;</div>Papierkorb ist leer.</div>`;document.getElementById('scroll').innerHTML=h;stats();return;}
+    if(isAdmin){h+=`<div style="display:flex;gap:8px;margin-bottom:10px"><button onclick="emptyTrash()" style="font-size:13px;padding:8px 14px;border-radius:10px;border:1px solid #fca5a5;background:var(--red-l);color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif">Alle endgültig löschen</button></div>`;}
+    h+=trashed.map(t=>{
+      const names=(t.assignees||[]).join(', ');
+      const date=t.trashedAt?new Date(t.trashedAt).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+      return`<div class="tc" style="opacity:.6;border-style:dashed" onclick="event.stopPropagation()">
+        <div class="tc-row">
+          <div style="width:26px;height:26px;border-radius:50%;background:var(--bg);border:2px solid var(--brm);flex-shrink:0;margin-top:1px"></div>
+          <div>
+            <div class="tt" style="text-decoration:line-through;color:var(--t3)">${t.title}</div>
+            <div class="tm">${names?`<span class="chip per">${names}</span>`:''}<span class="chip cat">${t.cat}</span>${date?`<span class="chip due">entfernt ${date}</span>`:''}</div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button onclick="restoreTask(${t.id})" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--brm);background:var(--bg);color:var(--t2);cursor:pointer;font-family:'DM Sans',sans-serif">Wiederherstellen</button>
+              ${isAdmin?`<button onclick="finalDelete(${t.id})" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid #fca5a5;background:var(--red-l);color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif">Endgültig löschen</button>`:''}
+            </div>
+          </div>
+          <div class="pdot niedrig"></div>
+        </div>
+      </div>`;
+    }).join('');
+    document.getElementById('scroll').innerHTML=h;stats();return;
+  }
 
-  if(!vis.length){h+=`<div class="empty"><div class="ei">🌸</div>Keine Aufgaben gefunden.</div>`;}
+  let vis=tasks.filter(t=>!t.trashed);
+  if(flt==='offen')vis=vis.filter(t=>!t.done);
+  else if(flt==='erledigt')vis=vis.filter(t=>t.done);
+  else if(flt==='hoch')vis=vis.filter(t=>t.prio==='hoch'&&!t.done);
+  else if(flt==='woche')vis=vis.filter(t=>{if(t.done||!t.due)return false;const d=dl(t.due);return d>=0&&d<=7;});
+  else if(flt==='meine')vis=vis.filter(t=>isAssigned(t));
+
+  if(!vis.length){h+=`<div class="empty"><div class="ei">&#127800;</div>Keine Aufgaben gefunden.</div>`;}
   else h+=vis.map(t=>{
     const late=!t.done&&t.due&&t.due<today;
     const d=t.due?dl(t.due):null;
@@ -722,6 +747,21 @@ function renderAufgaben(){
   a.innerHTML=h;stats();
 }
 
+window.restoreTask=async function(id){
+  const t=tasks.find(x=>x.id===id);if(!t)return;
+  delete t.trashed;delete t.trashedAt;
+  await save();render();
+};
+window.finalDelete=async function(id){
+  if(!confirm('Endgültig löschen? Kann nicht rückgängig gemacht werden.'))return;
+  tasks=tasks.filter(x=>x.id!==id);
+  await save();render();
+};
+window.emptyTrash=async function(){
+  if(!confirm('Alle Aufgaben im Papierkorb endgültig löschen?'))return;
+  tasks=tasks.filter(x=>!x.trashed);
+  await save();render();
+};
 window.togOnly=async function(id){
   const t=tasks.find(x=>x.id===id);
   const canChk=role==='admin'||isAssigned(t);
@@ -755,7 +795,7 @@ function renderVorlagen(){
 
 function renderBudget(){
   const a=document.getElementById('scroll');
-  const totalAct=tasks.reduce((s,t)=>s+(t.costActual||0),0);
+  const totalAct=tasks.filter(t=>!t.trashed).reduce((s,t)=>s+(t.costActual||0),0);
   const totalPlan=CATS.reduce((s,c)=>s+(catBudget[c]||0),0);
   const budgetBase=totalBudget||totalPlan||1;
   const maxCatVal=Math.max(...CATS.map(c=>{
@@ -817,7 +857,7 @@ function renderBudget(){
     </div>`;
     activeCats.forEach(cat=>{
       const plan=catBudget[cat]||0;
-      const act=tasks.filter(t=>t.cat===cat).reduce((s,t)=>s+(t.costActual||0),0);
+      const act=tasks.filter(t=>t.cat===cat&&!t.trashed).reduce((s,t)=>s+(t.costActual||0),0);
       let ref=budgetView==='bvp'?(totalBudget?totalBudget/activeCats.length:plan):plan;
       const refVal=budgetView==='bvp'?totalBudget/activeCats.length:plan;
       const planW=maxCatVal>0?Math.min(Math.round((budgetView==='bvp'?refVal:plan)/maxCatVal*100),100):0;
@@ -860,43 +900,6 @@ function renderBudget(){
 
 window.setBView=function(v){budgetView=v;renderBudget();};
 
-function renderPapierkorb(){
-  const a=document.getElementById('scroll');
-  if(!trash.length){a.innerHTML=`<div class="empty"><div class="ei">🗑</div>Papierkorb ist leer.</div>`;return;}
-  let h=`<div class="sh">Papierkorb</div><p style="font-size:13px;color:var(--t2);margin-bottom:12px">Aufgaben können wiederhergestellt oder endgültig gelöscht werden.</p>`;
-  h+=`<div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button onclick="emptyTrash()" style="font-size:13px;padding:7px 14px;border-radius:10px;border:1px solid #fca5a5;background:var(--red-l);color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif">Alles löschen</button></div>`;
-  h+=trash.map(t=>{
-    const names=(t.assignees||[]).join(', ');
-    const date=t.trashedAt?new Date(t.trashedAt).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
-    return`<div class="trash-card">
-      <div class="tt">${t.title}</div>
-      <div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap">
-        ${names?`<span class="chip per">${names}</span>`:''}
-        <span class="chip cat">${t.cat}</span>
-        ${date?`<span class="chip due">gelöscht ${date}</span>`:''}
-      </div>
-      <div class="trash-actions">
-        <button class="btn-restore" onclick="restoreTask(${t.id})">&#8617; Wiederherstellen</button>
-        <button class="btn-delete-final" onclick="finalDelete(${t.id})">Endgültig löschen</button>
-      </div>
-    </div>`;
-  }).join('');
-  a.innerHTML=h;
-}
-
-window.restoreTask=async function(id){
-  const t=trash.find(x=>x.id===id);if(!t)return;
-  delete t.trashedAt;tasks.push(t);trash=trash.filter(x=>x.id!==id);
-  await save();renderPapierkorb();
-};
-window.finalDelete=async function(id){
-  if(!confirm('Aufgabe endgültig löschen? Das kann nicht rückgängig gemacht werden.'))return;
-  trash=trash.filter(x=>x.id!==id);await save();renderPapierkorb();
-};
-window.emptyTrash=async function(){
-  if(!confirm('Alle Aufgaben im Papierkorb endgültig löschen?'))return;
-  trash=[];await save();renderPapierkorb();
-};
 
 async function renderNutzer(){
   const a=document.getElementById('scroll');
@@ -923,9 +926,10 @@ async function renderInfo(){
 function render(){
   updateUI();
   document.getElementById('fbar').style.display=(tab==='aufgaben'&&(role==='admin'||role==='mithelfer'))?'flex':'none';
-  // Update trash count badge
-  const tc=document.getElementById('trash-count');
-  if(tc)tc.textContent=trash.length>0?'('+trash.length+')':'';
+  // Update trash filter badge
+  const trashCount=tasks.filter(t=>t.trashed).length;
+  const fbTrash=document.getElementById('fb-trash');
+  if(fbTrash)fbTrash.textContent=trashCount>0?'&#128465; Papierkorb ('+trashCount+')':'&#128465; Papierkorb';
   if(tab==='home')renderHome();
   else if(tab==='aufgaben')renderAufgaben();
   else if(tab==='zeitplan')renderZeitplan();
@@ -1011,7 +1015,7 @@ onAuthStateChanged(auth,async(u)=>{
       await loadUsers();
       try{const bs=await getDoc(BD);if(bs.exists()){totalBudget=bs.data().total||0;catBudget=bs.data().catBudget||{};}}catch(e){}
       onSnapshot(DD,(snap)=>{
-        if(snap.exists()){const d=snap.data();tasks=d.tasks||DEFS;trash=d.trash||[];wDate=d.weddingDate||'';tmpls=d.templates||[];nid=tasks.reduce((m,t)=>Math.max(m,t.id),0)+1;document.getElementById('sync').style.background='#4caf50';checkMentions();render();}
+        if(snap.exists()){const d=snap.data();tasks=d.tasks||DEFS;wDate=d.weddingDate||'';tmpls=d.templates||[];nid=tasks.reduce((m,t)=>Math.max(m,t.id),0)+1;document.getElementById('sync').style.background='#4caf50';checkMentions();render();}
         else{tasks=DEFS;save();}
       });
       if(tab==='home')tab='aufgaben';
