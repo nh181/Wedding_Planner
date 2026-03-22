@@ -470,7 +470,7 @@
       <div class="mhdr-acts">
         <div id="sync" style="width:8px;height:8px;border-radius:50%;background:rgba(120,120,128,.2);flex-shrink:0;display:none"></div>
         <button class="hdr-btn" id="notif-btn" onclick="openNotif()" style="display:none">🔔<span class="notif-dot" id="notif-dot"></span></button>
-        <button class="hdr-btn" id="add-btn" style="display:none">＋</button>
+        <button class="hdr-btn" id="add-btn" style="display:none" data-action="open-add-modal">＋</button>
       </div>
     </div>
   </div>
@@ -1107,6 +1107,35 @@ document.getElementById('scroll').addEventListener('click',async function(e){
     const canChk=role==='admin'||(t.assignees&&t.assignees.includes(firstName));
     if(!canChk)return;
     t.done=!t.done;await save();render();
+  } else if(action==='add-vendor'){
+    openVendorModal();
+  } else if(action==='csv-dl'){
+    downloadCSVTemplate();
+  } else if(action==='csv-import'){
+    document.getElementById('csv-file-input').click();
+  } else if(action==='vopen'){
+    const vid=parseInt(btn.dataset.vid);
+    const v=vendors.find(x=>x.id===vid);
+    if(v?.website)window.open(v.website.startsWith('http')?v.website:'https://'+v.website,'_blank');
+  } else if(action==='vedit'){
+    const vid=parseInt(btn.dataset.vid);
+    openVendorModal(vid);
+  } else if(action==='vdelete'){
+    const vid=parseInt(btn.dataset.vid);
+    if(!confirm('Anbieter löschen?'))return;
+    vendors=vendors.filter(v=>v.id!==vid);
+    await save();renderAnbieter();
+  } else if(action==='vstar'){
+    const vid=parseInt(btn.dataset.vid);
+    const star=parseInt(btn.dataset.star);
+    const v=vendors.find(x=>x.id===vid);
+    if(!v)return;
+    v.rating=star;
+    await save();renderAnbieter();
+  } else if(action==='vfilter'){
+    vFilter=btn.dataset.cat;renderAnbieter();
+  } else if(action==='vview'){
+    vView=btn.dataset.view;renderAnbieter();
   }
 });
 
@@ -1249,19 +1278,18 @@ function renderAnbieter(){
   let h=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
     <div style="font-size:17px;font-weight:700;letter-spacing:-.2px">Anbieter</div>
     <div style="display:flex;gap:8px">
-      <button onclick="setVView('karten')" style="font-size:12px;padding:6px 12px;border-radius:8px;border:none;font-family:inherit;font-weight:500;cursor:pointer;background:${vView==='karten'?'var(--rose)':'rgba(120,120,128,.1)'};color:${vView==='karten'?'#fff':'var(--t2)'}">Karten</button>
-      <button onclick="setVView('vergleich')" style="font-size:12px;padding:6px 12px;border-radius:8px;border:none;font-family:inherit;font-weight:500;cursor:pointer;background:${vView==='vergleich'?'var(--rose)':'rgba(120,120,128,.1)'};color:${vView==='vergleich'?'#fff':'var(--t2)'}">Vergleich</button>
+      <button data-action="vview" data-view="karten" style="font-size:12px;padding:6px 12px;border-radius:8px;border:none;font-family:inherit;font-weight:500;cursor:pointer;background:${vView==='karten'?'var(--rose)':'rgba(120,120,128,.1)'};color:${vView==='karten'?'#fff':'var(--t2)'}">Karten</button>
+      <button data-action="vview" data-view="vergleich" style="font-size:12px;padding:6px 12px;border-radius:8px;border:none;font-family:inherit;font-weight:500;cursor:pointer;background:${vView==='vergleich'?'var(--rose)':'rgba(120,120,128,.1)'};color:${vView==='vergleich'?'#fff':'var(--t2)'}">Vergleich</button>
     </div>
   </div>`;
   // Category filter tabs
-  h+=`<div class="v-filter-tabs">${cats.map(cat=>`<button class="v-ftab ${vFilter===cat?'on':''}" onclick="setVFilter('${cat}')">${cat}</button>`).join('')}</div>`;
+  h+=`<div class="v-filter-tabs">${cats.map(cat=>`<button class="v-ftab ${vFilter===cat?'on':''}" data-action="vfilter" data-cat="${cat}">${cat}</button>`).join('')}</div>`;
   // CSV actions
   h+=`<div style="display:flex;gap:8px;margin-bottom:14px">
-    <button id="btn-csv-dl" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:rgba(120,120,128,.1);color:var(--t2);font-family:inherit;font-weight:500;cursor:pointer">📥 CSV Vorlage</button>
-    <label id="btn-csv-import" style="font-size:13px;padding:8px 14px;border-radius:10px;background:rgba(120,120,128,.1);color:var(--t2);font-weight:500;cursor:pointer">
-      📤 CSV Import<input type="file" id="csv-file-input" accept=".csv" style="display:none"/>
-    </label>
-    <button id="btn-add-vendor" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:var(--rose);color:#fff;font-family:inherit;font-weight:600;cursor:pointer;margin-left:auto">＋ Anbieter</button>
+    <button data-action="csv-dl" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:rgba(120,120,128,.1);color:var(--t2);font-family:inherit;font-weight:500;cursor:pointer">📥 CSV Vorlage</button>
+    <button data-action="csv-import" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:rgba(120,120,128,.1);color:var(--t2);font-family:inherit;font-weight:500;cursor:pointer">📤 CSV Import</button>
+    <input type="file" id="csv-file-input" accept=".csv" style="display:none"/>
+    <button data-action="add-vendor" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:var(--rose);color:#fff;font-family:inherit;font-weight:600;cursor:pointer;margin-left:auto">＋ Anbieter</button>
   </div>`;
   const filtered=vendors.filter(v=>vFilter==='Alle'||v.cat===vFilter);
   if(!filtered.length){h+=`<div class="empty"><div class="ei">🏪</div><p>Noch keine Anbieter in dieser Kategorie.</p></div>`;a.innerHTML=h;attachVendorEvents();return;}
@@ -1275,7 +1303,7 @@ function renderAnbieter(){
         <div class="v-status ${statusCls}">${statusLabel}</div>
         <div class="v-name">${v.name}</div>
         <div class="v-cat">${v.cat}</div>
-        <div class="v-stars">${[1,2,3,4,5].map(i=>`<span class="v-star" data-vid="${v.id}" data-star="${i}">${i<=(v.rating||0)?'⭐':'☆'}</span>`).join('')}</div>
+        <div class="v-stars">${[1,2,3,4,5].map(i=>`<span class="v-star" data-action="vstar" data-vid="${v.id}" data-star="${i}">${i<=(v.rating||0)?'⭐':'☆'}</span>`).join('')}</div>
         ${v.price?`<div class="v-price">${eur(v.price)} <span>geschätzt</span></div>`:''}
         ${v.contact_name||v.contact_email||v.contact_phone?`<div style="font-size:12px;color:var(--t3);margin-top:4px;line-height:1.7">
           ${v.contact_name?`👤 ${v.contact_name}<br>`:''}
@@ -1321,7 +1349,6 @@ function renderAnbieter(){
     if(filtered.length>4)h+=`<p style="font-size:12px;color:var(--t3);text-align:center;margin-top:8px">Zeige 4 von ${filtered.length} Anbietern. Kategorie filtern für besseren Überblick.</p>`;
   }
   a.innerHTML=h;
-  attachVendorEvents();
 }
 
 function attachVendorEvents(){
@@ -1428,9 +1455,9 @@ window.downloadCSVTemplate=function(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='anbieter_vorlage.csv';a.click();
 };
 
-window.importCSV=async function(event=null){
+window.importCSV=async function(){
   const fileInput=document.getElementById('csv-file-input');
-  const file=event?.target?.files?.[0]||fileInput?.files?.[0];if(!file)return;
+  const file=fileInput?.files?.[0];if(!file)return;
   const text=await file.text();
   const lines=text.trim().split('\n');
   if(lines.length<2){alert('CSV leer oder ungültig.');return;}
@@ -1542,6 +1569,11 @@ function buildAddAssigneeGrid(){
 }
 window.toggleAddAssignee=function(name){const idx=addSelectedAssignees.indexOf(name);if(idx>-1)addSelectedAssignees.splice(idx,1);else addSelectedAssignees.push(name);buildAddAssigneeGrid();};
 
+// CSV file input change listener
+document.addEventListener('change',async function(e){
+  if(e.target.id==='csv-file-input')await importCSV();
+});
+
 const addModal=document.getElementById('add-modal');
 document.getElementById('add-btn').addEventListener('click',()=>{
   editingTaskId=null;
@@ -1567,38 +1599,7 @@ document.getElementById('save-add').addEventListener('click',async()=>{
 document.querySelectorAll('.fb').forEach(b=>{b.addEventListener('click',()=>{document.querySelectorAll('.fb').forEach(x=>x.classList.remove('on'));b.classList.add('on');flt=b.dataset.f;render();});});
 
 // ── GLOBAL EVENT DELEGATOR ──
-document.getElementById('scroll').addEventListener('click',async function(e){
-  const btn=e.target.closest('[data-action]');
-  if(!btn)return;
-  const action=btn.dataset.action;
-  const id=parseInt(btn.dataset.id);
-  if(action==='cal'){
-    const t=tasks.find(x=>x.id===id);if(!t||!t.due)return;
-    const[y,m,d]=t.due.split('-');
-    const ics=['BEGIN:VCALENDAR','VERSION:2.0','BEGIN:VEVENT',
-      `DTSTART;VALUE=DATE:${y}${m}${d}`,
-      `DTEND;VALUE=DATE:${y}${m}${d}`,
-      `SUMMARY:💍 ${t.title}`,
-      `DESCRIPTION:${t.cat}${t.assignees&&t.assignees.length?' - '+t.assignees.join(', '):''}`,
-      'END:VEVENT','END:VCALENDAR'].join('\r\n');
-    const url=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));
-    const a2=document.createElement('a');
-    a2.href=url;a2.download=t.title.replace(/[^a-z0-9]/gi,'_')+'.ics';
-    a2.click();URL.revokeObjectURL(url);
-  } else if(action==='restore'){
-    const t=tasks.find(x=>x.id===id);if(!t)return;
-    delete t.trashed;delete t.trashedAt;
-    await save();render();
-  } else if(action==='open-task'){
-    const t=tasks.find(x=>x.id===id);if(t)openTaskPopup(t);
-  } else if(action==='tog-task'){
-    e.stopPropagation();
-    const t=tasks.find(x=>x.id===id);if(!t)return;
-    const canChk=role==='admin'||(t.assignees&&t.assignees.includes(firstName));
-    if(!canChk)return;
-    t.done=!t.done;await save();render();
-  }
-});
+
 
 async function loadPublicData(){try{const s=await getDoc(DD);if(s.exists()&&s.data().weddingDate)wDate=s.data().weddingDate;}catch(e){}}
 await loadPublicData();
