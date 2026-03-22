@@ -274,10 +274,7 @@
     <div class="fg"><label>Kategorie</label><select id="f-cat"><option>Location</option><option>Catering</option><option>Dekoration</option><option>Musik</option><option>Fotografie</option><option>Kleidung</option><option>Einladungen</option><option>Flitterwochen</option><option>Sonstiges</option></select></div>
     <div class="fg"><label>Priorität</label><select id="f-pri"><option value="hoch">🔴 Hoch</option><option value="mittel" selected>🟡 Mittel</option><option value="niedrig">🟢 Niedrig</option></select></div>
     <div class="fg"><label>Fällig am</label><input type="date" id="f-due"/></div>
-    <div class="two-col">
-      <div class="fg"><label>Geplante Kosten (€)</label><input type="number" id="f-plan" placeholder="0" min="0"/></div>
-      <div class="fg"><label>Tatsächliche Kosten (€)</label><input type="number" id="f-act" placeholder="0" min="0"/></div>
-    </div>
+    <div class="fg"><label>Tatsächliche Kosten (€)</label><input type="number" id="f-act" placeholder="0" min="0"/></div>
     <div class="m-foot"><button class="btn-c" id="close-m">Abbrechen</button><button class="btn-s" id="save-m">Speichern</button></div>
   </div>
 </div>
@@ -300,15 +297,16 @@ const UC=collection(db,'users');
 let tasks=[],wDate='',tmpls=[],nid=1,user=null,role='gast',firstName='',flt='alle',tab='home';
 let allUsers=[]; // {uid, name, role, email}
 let totalBudget=0;
+let catBudget={}; // {cat: plannedAmount}
 let selectedAssignees=[];
 const today=new Date().toISOString().split('T')[0];
 
 const DEFS=[
-  {id:1,title:'Standesamt buchen',assignees:['Nico'],cat:'Sonstiges',prio:'hoch',due:'2026-04-15',done:false,comments:[],costPlan:0,costActual:0},
-  {id:2,title:'Location besichtigen',assignees:['Luisa','Nico'],cat:'Location',prio:'hoch',due:'2026-04-30',done:true,comments:[],costPlan:2000,costActual:1800},
-  {id:3,title:'Fotografen anfragen',assignees:['Luisa'],cat:'Fotografie',prio:'mittel',due:'2026-05-10',done:false,comments:[],costPlan:1500,costActual:0},
-  {id:4,title:'Einladungen gestalten',assignees:['Luisa'],cat:'Einladungen',prio:'mittel',due:'2026-05-20',done:false,comments:[],costPlan:200,costActual:0},
-  {id:5,title:'Catering vergleichen',assignees:['Nico'],cat:'Catering',prio:'hoch',due:'2026-03-18',done:false,comments:[],costPlan:5000,costActual:0},
+  {id:1,title:'Standesamt buchen',assignees:['Nico'],cat:'Sonstiges',prio:'hoch',due:'2026-04-15',done:false,comments:[],costActual:0},
+  {id:2,title:'Location besichtigen',assignees:['Luisa','Nico'],cat:'Location',prio:'hoch',due:'2026-04-30',done:true,comments:[],costActual:1800},
+  {id:3,title:'Fotografen anfragen',assignees:['Luisa'],cat:'Fotografie',prio:'mittel',due:'2026-05-10',done:false,comments:[],costActual:0},
+  {id:4,title:'Einladungen gestalten',assignees:['Luisa'],cat:'Einladungen',prio:'mittel',due:'2026-05-20',done:false,comments:[],costActual:0},
+  {id:5,title:'Catering vergleichen',assignees:['Nico'],cat:'Catering',prio:'hoch',due:'2026-03-18',done:false,comments:[],costActual:0},
 ];
 const TPLS=[
   {id:'loc',ico:'🏰',name:'Location',ts:['Locations besichtigen','Vertrag unterschreiben','Raumplan erstellen','Parkplätze klären']},
@@ -432,7 +430,7 @@ function renderAufgaben(){
             ${assigneeNames?`<span class="chip per">${assigneeNames}</span>`:''}
             <span class="chip cat">${t.cat}</span>
             ${t.due?`<span class="chip due ${late?'late':soon?'soon':''}">${lbl}</span>`:''}
-            ${showCost&&(t.costPlan||t.costActual)?`<span class="chip cost">€ ${t.costActual?eur(t.costActual):eur(t.costPlan)}</span>`:''}
+            ${showCost&&t.costActual?`<span class="chip cost">${eur(t.costActual)}</span>`:''}
             ${t.due&&!t.done?`<span class="chip" onclick="cal(${t.id})" style="cursor:pointer;background:#EAF3DE;color:#27500A">📅</span>`:''}
             ${isA?`<span class="chip" onclick="editTask(${t.id})" style="cursor:pointer;background:var(--blue-l);color:#1e40af">✏️</span>`:''}
             ${isA?`<span class="chip" onclick="delTask(${t.id})" style="cursor:pointer;background:var(--red-l);color:var(--red)">✕</span>`:''}
@@ -480,30 +478,42 @@ function renderVorlagen(){
 
 function renderBudget(){
   const a=document.getElementById('scroll');
-  const totalPlan=tasks.reduce((s,t)=>s+(t.costPlan||0),0);
+  const cats=['Location','Catering','Dekoration','Musik','Fotografie','Kleidung','Einladungen','Flitterwochen','Sonstiges'];
+  const totalPlan=cats.reduce((s,cat)=>s+(catBudget[cat]||0),0);
   const totalAct=tasks.reduce((s,t)=>s+(t.costActual||0),0);
-  const remaining=totalBudget-totalAct;
-  const pct=totalBudget?Math.min(Math.round(totalAct/totalBudget*100),100):0;
-  const cls=pct>=100?'over':pct>=80?'warn':'ok';
+  const remaining=totalBudget-(totalAct||totalPlan);
+  const base=totalBudget||totalPlan||1;
+  const pct=Math.min(Math.round((totalAct||totalPlan)/base*100),100);
+  const cls=totalAct>totalBudget&&totalBudget>0?'over':pct>=80?'warn':'ok';
   let h=`<div class="b-hero"><h3>💶 Budgetübersicht</h3>
     <div class="b-totals">
-      <div class="b-num"><div class="b-val">${eur(totalBudget)}</div><div class="b-lbl">Gesamtbudget</div></div>
-      <div class="b-num"><div class="b-val ${cls}">${eur(totalAct)}</div><div class="b-lbl">Ausgegeben</div></div>
-      <div class="b-num"><div class="b-val ${remaining<0?'over':'ok'}">${eur(remaining)}</div><div class="b-lbl">Verfügbar</div></div>
+      <div class="b-num"><div class="b-val">${eur(totalBudget||totalPlan)}</div><div class="b-lbl">Gesamtbudget</div></div>
+      <div class="b-num"><div class="b-val ${totalAct>(totalBudget||totalPlan)?'over':'ok'}">${eur(totalAct)}</div><div class="b-lbl">Ausgegeben</div></div>
+      <div class="b-num"><div class="b-val ${remaining<0?'over':'ok'}">${eur(Math.max(remaining,0))}</div><div class="b-lbl">Verfügbar</div></div>
     </div>
-    <div class="bpbar"><div class="bpfill ${cls}" style="width:${pct}%"></div></div>`;
-  // Per category
-  const cats=[...new Set(tasks.map(t=>t.cat))];
-  cats.forEach(cat=>{
-    const catTasks=tasks.filter(t=>t.cat===cat);
-    const cp=catTasks.reduce((s,t)=>s+(t.costPlan||0),0);
-    const ca=catTasks.reduce((s,t)=>s+(t.costActual||0),0);
-    if(!cp&&!ca)return;
-    const over=ca>cp&&cp>0;
-    h+=`<div class="b-cat"><span class="b-cat-n">${cat}</span><div class="b-cat-v"><span class="b-plan">geplant ${eur(cp)}</span><span class="b-act ${over?'over':'ok'}">${eur(ca)}</span></div></div>`;
+    <div class="bpbar"><div class="bpfill ${cls}" style="width:${pct}%"></div></div>
+  </div>`;
+  h+=`<div class="srow" style="margin-bottom:16px"><div><div class="slbl">Gesamtbudget</div><div class="ssub">Obere Grenze für alle Kosten</div></div><div style="display:flex;align-items:center;gap:8px"><input type="number" class="sinp" id="budget-inp" value="${totalBudget||''}" placeholder="z.B. 15000" style="width:120px" onchange="setBudget(this.value)"/><span style="font-size:13px;color:var(--t3)">€</span></div></div>`;
+  h+=`<div class="sh">Plankosten pro Kategorie</div>`;
+  h+=`<div style="background:var(--sur);border:1px solid var(--br);border-radius:14px;overflow:hidden;margin-bottom:12px">`;
+  cats.forEach((cat,i)=>{
+    const plan=catBudget[cat]||0;
+    const act=tasks.filter(t=>t.cat===cat).reduce((s,t)=>s+(t.costActual||0),0);
+    const over=act>plan&&plan>0;
+    const diff=plan-act;
+    h+=`<div style="padding:12px 14px;${i>0?'border-top:1px solid var(--br)':''}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:500">${cat}</span>
+        <span style="font-size:12px;color:${over?'var(--red)':act>0?'var(--sage)':'var(--t3)'}">${act>0?`${eur(act)} ausgegeben`:''}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="number" class="sinp" placeholder="Plankosten" value="${plan||''}" style="flex:1;font-size:13px;padding:7px 10px" onchange="setCatBudget('${cat}',this.value)"/>
+        <span style="font-size:12px;color:var(--t3);flex-shrink:0">€ geplant</span>
+        ${plan>0?`<span style="font-size:12px;font-weight:500;color:${diff<0?'var(--red)':'var(--sage)'};flex-shrink:0">${diff>=0?'-'+eur(diff):'⚠ +'+eur(Math.abs(diff))}</span>`:''}
+      </div>
+    </div>`;
   });
   h+=`</div>`;
-  h+=`<div class="srow"><div><div class="slbl">Gesamtbudget festlegen</div></div><div style="display:flex;align-items:center;gap:8px"><input type="number" class="sinp" id="budget-inp" value="${totalBudget||''}" placeholder="z.B. 15000" style="width:120px" onchange="setBudget(this.value)"/><span style="font-size:13px;color:var(--t3)">€</span></div></div>`;
   a.innerHTML=h;
 }
 
@@ -555,7 +565,12 @@ window.saveInfo=async function(){
 };
 window.setBudget=async function(v){
   totalBudget=parseFloat(v)||0;
-  await setDoc(BD,{total:totalBudget});
+  await setDoc(BD,{total:totalBudget,catBudget});
+  render();
+};
+window.setCatBudget=async function(cat,v){
+  catBudget[cat]=parseFloat(v)||0;
+  await setDoc(BD,{total:totalBudget,catBudget});
   render();
 };
 window.addTpl=async function(id){
@@ -593,7 +608,6 @@ window.editTask=function(id){
   document.getElementById('f-cat').value=t.cat;
   document.getElementById('f-pri').value=t.prio;
   document.getElementById('f-due').value=t.due||'';
-  document.getElementById('f-plan').value=t.costPlan||'';
   document.getElementById('f-act').value=t.costActual||'';
   selectedAssignees=[...(t.assignees||[])];
   buildAssigneeGrid();
@@ -633,7 +647,7 @@ document.getElementById('close-m').addEventListener('click',cm);
 mb.addEventListener('click',e=>{if(e.target===mb)cm();});
 document.getElementById('save-m').addEventListener('click',async()=>{
   const ttl=document.getElementById('f-ttl').value.trim();if(!ttl){document.getElementById('f-ttl').focus();return;}
-  const data={title:ttl,assignees:[...selectedAssignees],cat:document.getElementById('f-cat').value,prio:document.getElementById('f-pri').value,due:document.getElementById('f-due').value,costPlan:parseFloat(document.getElementById('f-plan').value)||0,costActual:parseFloat(document.getElementById('f-act').value)||0};
+  const data={title:ttl,assignees:[...selectedAssignees],cat:document.getElementById('f-cat').value,prio:document.getElementById('f-pri').value,due:document.getElementById('f-due').value,costActual:parseFloat(document.getElementById('f-act').value)||0};
   if(editingId){const t=tasks.find(x=>x.id===editingId);if(t)Object.assign(t,data);}
   else{tasks.push({id:nid++,...data,done:false,comments:[]});}
   await save();render();cm();
@@ -678,7 +692,7 @@ onAuthStateChanged(auth,async(u)=>{
     if(role==='admin'||role==='mithelfer'){
       document.getElementById('sync').style.background='#f59e0b';
       await loadUsers();
-      try{const bs=await getDoc(BD);if(bs.exists())totalBudget=bs.data().total||0;}catch(e){}
+      try{const bs=await getDoc(BD);if(bs.exists()){totalBudget=bs.data().total||0;catBudget=bs.data().catBudget||{};}}catch(e){}
       onSnapshot(DD,(snap)=>{
         if(snap.exists()){const d=snap.data();tasks=d.tasks||DEFS;wDate=d.weddingDate||'';tmpls=d.templates||[];nid=tasks.reduce((m,t)=>Math.max(m,t.id),0)+1;document.getElementById('sync').style.background='#4caf50';render();}
         else{tasks=DEFS;save();}
