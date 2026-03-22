@@ -344,7 +344,7 @@
     <button class="fb" data-f="hoch">Hoch</button>
     <button class="fb" data-f="woche">Diese Woche</button>
     <button class="fb" data-f="meine">Meine</button>
-    <button class="fb" data-f="papierkorb" id="fb-trash">🗑 Papierkorb</button>
+    <button class="fb" data-f="papierkorb" id="fb-trash">Papierkorb</button>
   </div>
   <div class="scroll" id="scroll"></div>
 </div>
@@ -557,11 +557,48 @@ function openTaskPopup(t){
   html+=`<div class="popup-actions">
     ${canChk?`<button class="act-btn primary" onclick="togAndClose(${t.id})">${t.done?'↩ Wiedereröffnen':'✓ Erledigt'}</button>`:''}
     ${t.due&&!t.trashed?`<button class="act-btn" onclick="cal(${t.id})">📅 Kalender</button>`:''}
-    ${t.trashed?`<button class="act-btn" onclick="restoreTask(${t.id});document.getElementById('task-popup').classList.remove('open')">↩ Wiederherstellen</button>`:`<button class="act-btn danger" onclick="trashTaskAndClose(${t.id})">🗑 In Papierkorb</button>`}
+    ${!t.trashed&&isA?`<button class="act-btn primary" data-popup-edit="${t.id}">✏️ Bearbeiten</button>`:''}
+    ${t.trashed?`<button class="act-btn" data-popup-restore="${t.id}">↩ Wiederherstellen</button>`:`<button class="act-btn danger" data-popup-trash="${t.id}">In Papierkorb</button>`}
   </div>`;
 
   document.getElementById('popup-content').innerHTML=html;
   document.getElementById('task-popup').classList.add('open');
+  // Attach popup button events
+  const pc=document.getElementById('popup-content');
+  // Edit button
+  const editBtn=pc.querySelector('[data-popup-edit]');
+  if(editBtn){editBtn.addEventListener('click',()=>{
+    const id=parseInt(editBtn.dataset.popupEdit);
+    const tt=tasks.find(x=>x.id===id);if(!tt)return;
+    editingTaskId=id;
+    document.getElementById('add-modal-title').textContent='Aufgabe bearbeiten';
+    document.getElementById('f-ttl').value=tt.title||'';
+    document.getElementById('f-cat').value=tt.cat||'Location';
+    document.getElementById('f-pri').value=tt.prio||'mittel';
+    document.getElementById('f-due').value=tt.due||'';
+    document.getElementById('f-act').value=tt.costActual||'';
+    addSelectedAssignees=[...(tt.assignees||[])];
+    buildAddAssigneeGrid();
+    document.getElementById('task-popup').classList.remove('open');
+    document.getElementById('add-modal').classList.add('open');
+    setTimeout(()=>document.getElementById('f-ttl').focus(),300);
+  });}
+  // Trash button
+  const trashBtn=pc.querySelector('[data-popup-trash]');
+  if(trashBtn){trashBtn.addEventListener('click',async()=>{
+    const id=parseInt(trashBtn.dataset.popupTrash);
+    const tt=tasks.find(x=>x.id===id);if(!tt)return;
+    tt.trashed=true;tt.trashedAt=Date.now();
+    await save();document.getElementById('task-popup').classList.remove('open');render();
+  });}
+  // Restore button
+  const restBtn=pc.querySelector('[data-popup-restore]');
+  if(restBtn){restBtn.addEventListener('click',async()=>{
+    const id=parseInt(restBtn.dataset.popupRestore);
+    const tt=tasks.find(x=>x.id===id);if(!tt)return;
+    delete tt.trashed;delete tt.trashedAt;
+    await save();document.getElementById('task-popup').classList.remove('open');render();
+  });}
 }
 
 window.togglePopupAssignee=async function(id,name){
@@ -685,33 +722,6 @@ function renderAufgaben(){
   if(late.length)h+=`<div class="alert warn"><div class="aico">⚠️</div><div class="atxt"><strong>${late.length} Aufgabe${late.length>1?'n':''} überfällig!</strong>${late.map(t=>t.title).join(', ')}</div></div>`;
   else if(week.length)h+=`<div class="alert info"><div class="aico">📌</div><div class="atxt"><strong>${week.length} diese Woche fällig</strong>${week.slice(0,3).map(t=>t.title).join(', ')}</div></div>`;
 
-  const isAdmin=role==='admin';
-  // Papierkorb filter
-  if(flt==='papierkorb'){
-    const trashed=tasks.filter(t=>t.trashed);
-    if(!trashed.length){h+=`<div class="empty"><div class="ei"></div>Papierkorb ist leer.</div>`;document.getElementById('scroll').innerHTML=h;stats();return;}
-    if(isAdmin){h+=`<div style="display:flex;gap:8px;margin-bottom:10px"><button onclick="emptyTrash()" style="font-size:13px;padding:8px 14px;border-radius:10px;border:1px solid #fca5a5;background:var(--red-l);color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif">Alle endgültig löschen</button></div>`;}
-    h+=trashed.map(t=>{
-      const names=(t.assignees||[]).join(', ');
-      const date=t.trashedAt?new Date(t.trashedAt).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
-      return`<div class="tc" style="opacity:.6;border-style:dashed" onclick="event.stopPropagation()">
-        <div class="tc-row">
-          <div style="width:26px;height:26px;border-radius:50%;background:var(--bg);border:2px solid var(--brm);flex-shrink:0;margin-top:1px"></div>
-          <div>
-            <div class="tt" style="text-decoration:line-through;color:var(--t3)">${t.title}</div>
-            <div class="tm">${names?`<span class="chip per">${names}</span>`:''}<span class="chip cat">${t.cat}</span>${date?`<span class="chip due">entfernt ${date}</span>`:''}</div>
-            <div style="display:flex;gap:8px;margin-top:8px">
-              <button onclick="restoreTask(${t.id})" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--brm);background:var(--bg);color:var(--t2);cursor:pointer;font-family:'DM Sans',sans-serif">Wiederherstellen</button>
-              ${isAdmin?`<button onclick="finalDelete(${t.id})" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid #fca5a5;background:var(--red-l);color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif">Endgültig löschen</button>`:''}
-            </div>
-          </div>
-          <div class="pdot niedrig"></div>
-        </div>
-      </div>`;
-    }).join('');
-    document.getElementById('scroll').innerHTML=h;stats();return;
-  }
-
   let vis=tasks.filter(t=>!t.trashed);
   if(flt==='offen')vis=vis.filter(t=>!t.done);
   else if(flt==='erledigt')vis=vis.filter(t=>t.done);
@@ -795,6 +805,70 @@ function renderVorlagen(){
   let h=`<div class="sh">Aufgaben-Vorlagen</div><p style="font-size:13px;color:var(--t2);margin-bottom:12px">Alle typischen Aufgaben einer Kategorie auf einmal hinzufügen.</p><div class="tpl-grid">`;
   TPLS.forEach(tpl=>{const add=tmpls.includes(tpl.id);h+=`<button class="tpl-card ${add?'added':''}" onclick="addTpl('${tpl.id}')"><div class="tpl-ico">${tpl.ico}</div><div class="tpl-name">${tpl.name}</div><div class="tpl-cnt">${add?'✓ Hinzugefügt':tpl.ts.length+' Aufgaben'}</div></button>`;});
   h+='</div>';a.innerHTML=h;
+}
+
+function renderPapierkorb(){
+  const a=document.getElementById('scroll');
+  const isAdmin=role==='admin';
+  const trashed=tasks.filter(t=>t.trashed);
+  let h='<div class="sh">Papierkorb</div>';
+  if(!trashed.length){
+    a.innerHTML=h+'<div class="empty"><div class="ei">🗑</div><p>Papierkorb ist leer.</p></div>';
+    return;
+  }
+  if(isAdmin){
+    h+=`<div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+      <button id="btn-empty-trash" style="font-size:13px;padding:8px 16px;border-radius:10px;border:1px solid #fca5a5;background:var(--red-l);color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif">Alle endgültig löschen</button>
+    </div>`;
+  }
+  trashed.forEach(t=>{
+    const names=(t.assignees||[]).join(', ');
+    const date=t.trashedAt?new Date(t.trashedAt).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+    h+=`<div class="tc" style="opacity:.65;border-style:dashed">
+      <div class="tc-row">
+        <div style="width:26px;height:26px;border-radius:50%;background:var(--bg);border:2px solid var(--brm);flex-shrink:0;margin-top:1px"></div>
+        <div style="flex:1">
+          <div class="tt" style="text-decoration:line-through;color:var(--t3)">${t.title}</div>
+          <div class="tm">
+            ${names?`<span class="chip per">${names}</span>`:''}
+            <span class="chip cat">${t.cat}</span>
+            ${date?`<span class="chip due">entfernt ${date}</span>`:''}
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px" id="trash-btns-${t.id}">
+            <button data-restore="${t.id}" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--brm);background:var(--bg);color:var(--t2);cursor:pointer;font-family:'DM Sans',sans-serif">Wiederherstellen</button>
+            ${isAdmin?`<button data-delete="${t.id}" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid #fca5a5;background:var(--red-l);color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif">Endgültig löschen</button>`:''}
+          </div>
+        </div>
+        <div class="pdot niedrig"></div>
+      </div>
+    </div>`;
+  });
+  a.innerHTML=h;
+  // Attach events via JS (avoids inline onclick issues)
+  a.querySelectorAll('[data-restore]').forEach(btn=>{
+    btn.addEventListener('click',async()=>{
+      const id=parseInt(btn.dataset.restore);
+      const t=tasks.find(x=>x.id===id);if(!t)return;
+      delete t.trashed;delete t.trashedAt;
+      await save();render();
+    });
+  });
+  a.querySelectorAll('[data-delete]').forEach(btn=>{
+    btn.addEventListener('click',async()=>{
+      if(!confirm('Endgültig löschen?'))return;
+      const id=parseInt(btn.dataset.delete);
+      tasks=tasks.filter(x=>x.id!==id);
+      await save();render();
+    });
+  });
+  const emptyBtn=document.getElementById('btn-empty-trash');
+  if(emptyBtn){
+    emptyBtn.addEventListener('click',async()=>{
+      if(!confirm('Alle Aufgaben im Papierkorb endgültig löschen?'))return;
+      tasks=tasks.filter(x=>!x.trashed);
+      await save();render();
+    });
+  }
 }
 
 function renderBudget(){
@@ -933,7 +1007,7 @@ function render(){
   // Update trash filter badge
   const trashCount=tasks.filter(t=>t.trashed).length;
   const fbTrash=document.getElementById('fb-trash');
-  if(fbTrash)fbTrash.textContent=trashCount>0?'🗑 Papierkorb ('+trashCount+')':'🗑 Papierkorb';
+  if(fbTrash)fbTrash.textContent=trashCount>0?'Papierkorb ('+trashCount+')':'Papierkorb';
   if(tab==='home')renderHome();
   else if(tab==='aufgaben')renderAufgaben();
   else if(tab==='zeitplan')renderZeitplan();
@@ -967,6 +1041,8 @@ document.getElementById('add-btn').addEventListener('click',()=>{
   editingTaskId=null;
   document.getElementById('add-modal-title').textContent='Neue Aufgabe';
   ['f-ttl','f-due','f-act'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('f-cat').value='Location';
+  document.getElementById('f-pri').value='mittel';
   document.getElementById('f-cat').value='Location';
   document.getElementById('f-pri').value='mittel';
   addSelectedAssignees=[];buildAddAssigneeGrid();
