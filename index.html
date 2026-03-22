@@ -1483,27 +1483,39 @@ function downloadCSVTemplate(){
 }
 
 async function importCSVFile(){
-  var fileInput = document.getElementById('csv-file-input');
-  var file = fileInput ? fileInput.files[0] : null;
-  if(!file) return;
-  var text = await file.text();
-  var lines = text.trim().split('\n');
-  if(lines.length < 2){ alert('CSV leer oder ungültig.'); return; }
-  var headers = lines[0].split(',').map(function(h){ return h.trim().toLowerCase(); });
-  function get(row, key){ var i=headers.indexOf(key); return i>-1?(row[i]||'').trim():''; }
-  var imported = [];
-  for(var i=1;i<lines.length;i++){
-    var row = lines[i].split(',');
-    var name = get(row,'name');
-    if(!name) continue;
-    imported.push({ id:vnid++, name:name, cat:get(row,'kategorie')||'Sonstiges', price:parseFloat(get(row,'preis'))||0, rating:parseInt(get(row,'bewertung'))||0, status:get(row,'status')||'In Prüfung', website:get(row,'website')||'', contact_name:get(row,'kontakt_name')||'', contact_email:get(row,'kontakt_email')||'', contact_phone:get(row,'kontakt_telefon')||'', notes:get(row,'notizen')||'', createdAt:Date.now() });
+  try{
+    var fileInput = document.getElementById('csv-file-input');
+    var file = fileInput ? fileInput.files[0] : null;
+    if(!file){ alert('Keine Datei ausgewählt.'); return; }
+    var text = await file.text();
+    // Strip BOM (Excel/Windows adds this)
+    text = text.replace(/^\uFEFF/, '');
+    // Normalize line endings
+    text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    var lines = text.trim().split('\n');
+    if(lines.length < 2){ alert('CSV leer oder ungültig.'); return; }
+    // Auto-detect delimiter: semicolon (German Excel) or comma
+    var delim = lines[0].includes(';') ? ';' : ',';
+    var headers = lines[0].split(delim).map(function(h){ return h.trim().toLowerCase().replace(/^["']|["']$/g, ''); });
+    function get(row, key){ var i=headers.indexOf(key); return i>-1?(row[i]||'').trim().replace(/^["']|["']$/g, ''):''; }
+    var imported = [];
+    for(var i=1;i<lines.length;i++){
+      if(!lines[i].trim()) continue;
+      var row = lines[i].split(delim);
+      var name = get(row,'name');
+      if(!name) continue;
+      imported.push({ id:vnid++, name:name, cat:get(row,'kategorie')||'Sonstiges', price:parseFloat(get(row,'preis'))||0, rating:parseInt(get(row,'bewertung'))||0, status:get(row,'status')||'In Prüfung', website:get(row,'website')||'', contact_name:get(row,'kontakt_name')||'', contact_email:get(row,'kontakt_email')||'', contact_phone:get(row,'kontakt_telefon')||'', notes:get(row,'notizen')||'', createdAt:Date.now() });
+    }
+    if(!imported.length){ alert('Keine gültigen Einträge gefunden. Prüfe ob die CSV-Spalten korrekt benannt sind (Name, Kategorie, Preis, etc.).'); return; }
+    if(!confirm(imported.length+' Anbieter importieren?')) return;
+    vendors = vendors.concat(imported);
+    await save();
+    fileInput.value = '';
+    renderAnbieter();
+    alert(imported.length+' Anbieter erfolgreich importiert!');
+  }catch(e){
+    alert('Fehler beim CSV-Import: '+e.message);
   }
-  if(!imported.length){ alert('Keine gültigen Einträge.'); return; }
-  if(!confirm(imported.length+' Anbieter importieren?')) return;
-  vendors = vendors.concat(imported);
-  await save();
-  fileInput.value = '';
-  renderAnbieter();
 }
 
 // ── AUTH FUNCTIONS ──
