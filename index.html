@@ -322,6 +322,42 @@
     .empty{text-align:center;padding:3rem 1rem;color:var(--t3);font-size:15px}
     .ei{font-size:40px;margin-bottom:8px}
 
+
+    /* ── VENDOR / ANBIETER ── */
+    .v-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:12px}
+    .v-card{background:var(--sur);border-radius:16px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;transition:all .15s;position:relative}
+    .v-card:active{transform:scale(.98)}
+    .v-card.favorit{border:2px solid var(--rose)}
+    .v-card.abgelehnt{opacity:.5}
+    .v-status{position:absolute;top:14px;right:14px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:8px}
+    .v-status.favorit{background:var(--rose-l);color:var(--rose-d)}
+    .v-status.pruefung{background:var(--amber-l);color:#92400e}
+    .v-status.abgelehnt{background:rgba(120,120,128,.12);color:var(--t3)}
+    .v-name{font-size:16px;font-weight:700;letter-spacing:-.2px;margin-bottom:4px;padding-right:70px}
+    .v-cat{font-size:12px;font-weight:500;color:var(--t3);margin-bottom:10px}
+    .v-stars{display:flex;gap:2px;margin-bottom:8px}
+    .v-star{font-size:16px;cursor:pointer;transition:transform .1s}
+    .v-star:active{transform:scale(1.3)}
+    .v-price{font-size:18px;font-weight:700;letter-spacing:-.5px;color:var(--t);margin-bottom:6px}
+    .v-price span{font-size:13px;font-weight:400;color:var(--t3)}
+    .v-note{font-size:13px;color:var(--t2);line-height:1.5;margin-top:6px}
+    .v-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--br)}
+    .v-btn{flex:1;padding:8px;border-radius:10px;border:none;background:rgba(120,120,128,.1);font-family:inherit;font-size:12px;font-weight:500;color:var(--t2);cursor:pointer;text-align:center}
+    .v-btn.primary{background:var(--rose);color:#fff}
+    .v-btn.danger{background:var(--red-l);color:var(--red)}
+    .v-compare{background:var(--sur);border-radius:16px;padding:0;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden;margin-bottom:12px}
+    .v-compare-hdr{display:grid;gap:1px;background:var(--br)}
+    .v-compare-row{display:grid;gap:1px;background:var(--br)}
+    .v-compare-cell{background:var(--sur);padding:10px 12px;font-size:13px}
+    .v-compare-label{background:var(--bg);font-weight:600;font-size:12px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px}
+    .v-filter-tabs{display:flex;background:rgba(120,120,128,.1);border-radius:10px;padding:2px;margin-bottom:14px;overflow-x:auto;gap:2px;scrollbar-width:none}
+    .v-filter-tabs::-webkit-scrollbar{display:none}
+    .v-ftab{font-family:inherit;font-size:12px;font-weight:500;padding:6px 12px;border-radius:8px;border:none;background:transparent;color:var(--t3);cursor:pointer;white-space:nowrap;transition:all .15s}
+    .v-ftab.on{background:var(--sur);color:var(--t);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+    .csv-zone{border:2px dashed rgba(120,120,128,.3);border-radius:14px;padding:24px;text-align:center;margin-bottom:12px;cursor:pointer;transition:all .15s}
+    .csv-zone:hover{border-color:var(--rose);background:var(--rose-l)}
+    .csv-zone p{font-size:14px;color:var(--t3);margin-top:6px}
+
     /* ── SETTINGS ROWS ── */
     .srow{background:var(--sur);border-radius:12px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
     .slbl{font-size:15px;font-weight:500}
@@ -489,7 +525,7 @@ const ID=doc(db,'wedding','info');
 const BD=doc(db,'wedding','budget');
 const UC=collection(db,'users');
 
-let tasks=[],wDate='',tmpls=[],nid=1,user=null,role='gast',firstName='',flt='alle',tab='home';
+let tasks=[],vendors=[],wDate='',tmpls=[],nid=1,vnid=1,user=null,role='gast',firstName='',flt='alle',tab='home';
 let allUsers=[],totalBudget=0,catBudget={};
 let seenMentions=new Set(JSON.parse(localStorage.getItem('seenMentions')||'[]'));
 let addSelectedAssignees=[],editingTaskId=null,budgetView='bvp';
@@ -583,6 +619,7 @@ const TAB_DEFS=[
   {id:'vorlagen',ico:'📋',lbl:'Vorlagen',roles:['admin','mithelfer']},
   {id:'budget',ico:'💶',lbl:'Budget',roles:['admin']},
   {id:'nutzer',ico:'👥',lbl:'Nutzer',roles:['admin']},
+  {id:'anbieter',ico:'🏪',lbl:'Anbieter',roles:['admin','mithelfer']},
   {id:'info',ico:'⚙️',lbl:'Info',roles:['admin']},
 ];
 function getVisibleTabs(){return TAB_DEFS.filter(t=>t.always||(t.roles&&t.roles.includes(role)));}
@@ -870,6 +907,7 @@ function render(){
   }
   else if(tab==='zeitplan')renderZeitplan();
   else if(tab==='vorlagen')renderVorlagen();
+  else if(tab==='anbieter')renderAnbieter();
   else if(tab==='budget')renderBudget();
   else if(tab==='papierkorb')renderPapierkorb();
   else if(tab==='nutzer')renderNutzer();
@@ -1198,6 +1236,219 @@ window.saveInfo=async function(){
   await setDoc(ID,{location:g('si-loc'),time:g('si-time'),dresscode:g('si-dress')});
 };
 
+
+// ── ANBIETER / VENDOR FUNCTIONS ──
+const V_CATS=['Location','Catering','Fotografie','Musik','Dekoration','Kleidung','Sonstiges'];
+const V_STATUS=['In Prüfung','Favorit','Abgelehnt'];
+let vFilter='Alle';let vView='karten';
+
+function renderAnbieter(){
+  const a=document.getElementById('scroll');
+  const isA=role==='admin',isH=role==='mithelfer';
+  const cats=['Alle',...V_CATS];
+  let h=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div style="font-size:17px;font-weight:700;letter-spacing:-.2px">Anbieter</div>
+    <div style="display:flex;gap:8px">
+      <button onclick="setVView('karten')" style="font-size:12px;padding:6px 12px;border-radius:8px;border:none;font-family:inherit;font-weight:500;cursor:pointer;background:${vView==='karten'?'var(--rose)':'rgba(120,120,128,.1)'};color:${vView==='karten'?'#fff':'var(--t2)'}">Karten</button>
+      <button onclick="setVView('vergleich')" style="font-size:12px;padding:6px 12px;border-radius:8px;border:none;font-family:inherit;font-weight:500;cursor:pointer;background:${vView==='vergleich'?'var(--rose)':'rgba(120,120,128,.1)'};color:${vView==='vergleich'?'#fff':'var(--t2)'}">Vergleich</button>
+    </div>
+  </div>`;
+  // Category filter tabs
+  h+=`<div class="v-filter-tabs">${cats.map(cat=>`<button class="v-ftab ${vFilter===cat?'on':''}" onclick="setVFilter('${cat}')">${cat}</button>`).join('')}</div>`;
+  // CSV actions
+  h+=`<div style="display:flex;gap:8px;margin-bottom:14px">
+    <button onclick="downloadCSVTemplate()" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:rgba(120,120,128,.1);color:var(--t2);font-family:inherit;font-weight:500;cursor:pointer">📥 CSV Vorlage</button>
+    <label style="font-size:13px;padding:8px 14px;border-radius:10px;background:rgba(120,120,128,.1);color:var(--t2);font-weight:500;cursor:pointer">
+      📤 CSV Import<input type="file" accept=".csv" style="display:none" onchange="importCSV(event)"/>
+    </label>
+    <button onclick="openVendorModal()" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:var(--rose);color:#fff;font-family:inherit;font-weight:600;cursor:pointer;margin-left:auto">＋ Anbieter</button>
+  </div>`;
+  const filtered=vendors.filter(v=>vFilter==='Alle'||v.cat===vFilter);
+  if(!filtered.length){h+=`<div class="empty"><div class="ei">🏪</div><p>Noch keine Anbieter in dieser Kategorie.</p></div>`;a.innerHTML=h;attachVendorEvents();return;}
+  if(vView==='karten'){
+    h+=`<div class="v-grid">`;
+    h+=filtered.map(v=>{
+      const stars='⭐'.repeat(v.rating||0)+'☆'.repeat(5-(v.rating||0));
+      const statusCls=v.status==='Favorit'?'favorit':v.status==='Abgelehnt'?'abgelehnt':'pruefung';
+      const statusLabel=v.status||'In Prüfung';
+      return`<div class="v-card ${statusCls}" data-vid="${v.id}">
+        <div class="v-status ${statusCls}">${statusLabel}</div>
+        <div class="v-name">${v.name}</div>
+        <div class="v-cat">${v.cat}</div>
+        <div class="v-stars">${[1,2,3,4,5].map(i=>`<span class="v-star" data-vid="${v.id}" data-star="${i}">${i<=(v.rating||0)?'⭐':'☆'}</span>`).join('')}</div>
+        ${v.price?`<div class="v-price">${eur(v.price)} <span>geschätzt</span></div>`:''}
+        ${v.contact_name||v.contact_email||v.contact_phone?`<div style="font-size:12px;color:var(--t3);margin-top:4px;line-height:1.7">
+          ${v.contact_name?`👤 ${v.contact_name}<br>`:''}
+          ${v.contact_email?`<a href="mailto:${v.contact_email}" style="color:var(--blue);text-decoration:none">✉️ ${v.contact_email}</a><br>`:''}
+          ${v.contact_phone?`<a href="tel:${v.contact_phone}" style="color:var(--blue);text-decoration:none">📞 ${v.contact_phone}</a>`:''}
+        </div>`:''}
+        ${v.notes?`<div class="v-note">${v.notes}</div>`:''}
+        <div class="v-actions">
+          ${v.website?`<button class="v-btn" data-action="vopen" data-vid="${v.id}">🌐 Website</button>`:''}
+          <button class="v-btn primary" data-action="vedit" data-vid="${v.id}">Bearbeiten</button>
+          ${isA?`<button class="v-btn danger" data-action="vdelete" data-vid="${v.id}">Löschen</button>`:''}
+        </div>
+      </div>`;
+    }).join('');
+    h+=`</div>`;
+  } else {
+    // Comparison table
+    const maxCols=Math.min(filtered.length,4);
+    const shown=filtered.slice(0,maxCols);
+    const colW=`${100/(maxCols+1)}%`;
+    h+=`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;background:var(--sur);border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)">`;
+    // Header row
+    h+=`<tr><th style="padding:12px;font-size:12px;color:var(--t3);font-weight:600;text-align:left;background:var(--bg);border-bottom:1px solid var(--br);width:${colW}">Kriterium</th>`;
+    shown.forEach(v=>{h+=`<th style="padding:12px;font-size:14px;font-weight:700;text-align:center;border-bottom:1px solid var(--br);border-left:1px solid var(--br);width:${colW}">${v.name}<br><span style="font-size:11px;font-weight:400;color:var(--t3)">${v.cat}</span></th>`;});
+    h+=`</tr>`;
+    // Rows
+    const rows=[
+      ['Status',v=>`<span style="font-size:12px;font-weight:600;padding:3px 8px;border-radius:6px;background:${v.status==='Favorit'?'var(--rose-l)':v.status==='Abgelehnt'?'rgba(120,120,128,.1)':'var(--amber-l)'};color:${v.status==='Favorit'?'var(--rose-d)':v.status==='Abgelehnt'?'var(--t3)':'#92400e'}">${v.status||'In Prüfung'}</span>`],
+      ['Bewertung',v=>'⭐'.repeat(v.rating||0)+'☆'.repeat(5-(v.rating||0))],
+      ['Preis',v=>v.price?eur(v.price):'–'],
+      ['Kontakt',v=>v.contact_name||'–'],
+      ['E-Mail',v=>v.contact_email?`<a href="mailto:${v.contact_email}" style="color:var(--blue);font-size:12px">${v.contact_email}</a>`:'–'],
+      ['Telefon',v=>v.contact_phone?`<a href="tel:${v.contact_phone}" style="color:var(--blue)">${v.contact_phone}</a>`:'–'],
+      ['Website',v=>v.website?`<a href="${v.website}" target="_blank" style="color:var(--rose);font-size:12px">🌐 Öffnen</a>`:'–'],
+      ['Notizen',v=>v.notes?`<span style="font-size:12px">${v.notes}</span>`:'–'],
+    ];
+    rows.forEach(([label,fn])=>{
+      h+=`<tr><td style="padding:10px 12px;font-size:12px;font-weight:600;color:var(--t3);background:var(--bg);border-top:1px solid var(--br)">${label}</td>`;
+      shown.forEach(v=>{h+=`<td style="padding:10px 12px;font-size:13px;text-align:center;border-top:1px solid var(--br);border-left:1px solid var(--br)">${fn(v)}</td>`;});
+      h+=`</tr>`;
+    });
+    h+=`</table></div>`;
+    if(filtered.length>4)h+=`<p style="font-size:12px;color:var(--t3);text-align:center;margin-top:8px">Zeige 4 von ${filtered.length} Anbietern. Kategorie filtern für besseren Überblick.</p>`;
+  }
+  a.innerHTML=h;
+  attachVendorEvents();
+}
+
+function attachVendorEvents(){
+  document.querySelectorAll('[data-action="vopen"]').forEach(btn=>{
+    btn.addEventListener('click',e=>{e.stopPropagation();const v=vendors.find(x=>x.id===parseInt(btn.dataset.vid));if(v?.website)window.open(v.website,'_blank');});
+  });
+  document.querySelectorAll('[data-action="vedit"]').forEach(btn=>{
+    btn.addEventListener('click',e=>{e.stopPropagation();openVendorModal(parseInt(btn.dataset.vid));});
+  });
+  document.querySelectorAll('[data-action="vdelete"]').forEach(btn=>{
+    btn.addEventListener('click',async e=>{
+      e.stopPropagation();
+      if(!confirm('Anbieter löschen?'))return;
+      vendors=vendors.filter(v=>v.id!==parseInt(btn.dataset.vid));
+      await save();renderAnbieter();
+    });
+  });
+  document.querySelectorAll('.v-star[data-star]').forEach(star=>{
+    star.addEventListener('click',async e=>{
+      e.stopPropagation();
+      const v=vendors.find(x=>x.id===parseInt(star.dataset.vid));
+      if(!v)return;
+      v.rating=parseInt(star.dataset.star);
+      await save();renderAnbieter();
+    });
+  });
+}
+
+window.setVFilter=function(cat){vFilter=cat;renderAnbieter();};
+window.setVView=function(v){vView=v;renderAnbieter();};
+
+// ── VENDOR MODAL ──
+let editingVendorId=null;
+window.openVendorModal=function(id=null){
+  editingVendorId=id;
+  const v=id?vendors.find(x=>x.id===id):null;
+  const overlay=document.createElement('div');
+  overlay.className='overlay open';overlay.id='vendor-overlay';
+  overlay.innerHTML=`<div class="sheet" style="max-width:480px">
+    <div class="sh-handle"></div>
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:16px">${v?'Anbieter bearbeiten':'Neuer Anbieter'}</h2>
+    <div class="fg"><label>Name</label><input id="v-name" class="inp" placeholder="z.B. Villa Rothschild" value="${v?.name||''}"/></div>
+    <div class="fg"><label>Kategorie</label><select id="v-cat" class="inp">${V_CATS.map(c=>`<option ${v?.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
+    <div class="fg"><label>Status</label><select id="v-status" class="inp">${V_STATUS.map(s=>`<option ${(v?.status||'In Prüfung')===s?'selected':''}>${s}</option>`).join('')}</select></div>
+    <div class="fg"><label>Geschätzter Preis (€)</label><input id="v-price" class="inp" type="number" placeholder="0" value="${v?.price||''}"/></div>
+    <div class="fg"><label>Website</label><input id="v-web" class="inp" type="url" placeholder="https://..." value="${v?.website||''}"/></div>
+    <div style="background:rgba(120,120,128,.06);border-radius:14px;padding:14px;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px">Kontakt</div>
+      <div class="fg"><label>Ansprechpartner</label><input id="v-cname" class="inp" placeholder="Vor- und Nachname" value="${v?.contact_name||''}"/></div>
+      <div class="fg"><label>E-Mail</label><input id="v-cemail" class="inp" type="email" placeholder="name@anbieter.de" value="${v?.contact_email||''}"/></div>
+      <div class="fg"><label>Telefon</label><input id="v-cphone" class="inp" type="tel" placeholder="+49 123 456789" value="${v?.contact_phone||''}"/></div>
+    </div>
+    <div class="fg"><label>Notizen</label><textarea id="v-notes" class="inp" rows="3" placeholder="Besonderheiten, Eindrücke...">${v?.notes||''}</textarea></div>
+    <div class="mfoot">
+      <button class="btn-ghost" onclick="document.getElementById('vendor-overlay').remove()">Abbrechen</button>
+      <button class="btn-save" onclick="saveVendor()">Speichern</button>
+    </div>
+  </div>`;
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+  document.body.appendChild(overlay);
+};
+
+window.saveVendor=async function(){
+  const name=document.getElementById('v-name').value.trim();
+  if(!name)return;
+  const data={
+    name,
+    cat:document.getElementById('v-cat').value,
+    status:document.getElementById('v-status').value,
+    price:parseFloat(document.getElementById('v-price').value)||0,
+    website:document.getElementById('v-web').value.trim(),
+    contact_name:document.getElementById('v-cname').value.trim(),
+    contact_email:document.getElementById('v-cemail').value.trim(),
+    contact_phone:document.getElementById('v-cphone').value.trim(),
+    notes:document.getElementById('v-notes').value.trim(),
+  };
+  if(editingVendorId){
+    const v=vendors.find(x=>x.id===editingVendorId);
+    if(v)Object.assign(v,data);
+  }else{
+    vendors.push({id:vnid++,...data,rating:0,createdAt:Date.now()});
+  }
+  await save();
+  document.getElementById('vendor-overlay').remove();
+  renderAnbieter();
+};
+
+// ── CSV ──
+window.downloadCSVTemplate=function(){
+  const header='Name,Kategorie,Preis,Bewertung,Status,Website,Kontakt_Name,Kontakt_Email,Kontakt_Telefon,Notizen';
+  const example='Beispiel Villa,Location,5000,4,Favorit,https://example.com,Max Mustermann,max@villa.de,+49 123 456,Schöner Garten';
+  const blob=new Blob([header+'\n'+example],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='anbieter_vorlage.csv';a.click();
+};
+
+window.importCSV=async function(event){
+  const file=event.target.files[0];if(!file)return;
+  const text=await file.text();
+  const lines=text.trim().split('\n');
+  if(lines.length<2){alert('CSV leer oder ungültig.');return;}
+  const headers=lines[0].split(',').map(h=>h.trim().toLowerCase());
+  const get=(row,key)=>{const i=headers.indexOf(key);return i>-1?(row[i]||'').trim():'';};
+  const imported=[];
+  for(let i=1;i<lines.length;i++){
+    const row=lines[i].split(',');
+    const name=get(row,'name');if(!name)continue;
+    imported.push({
+      id:vnid++,name,
+      cat:get(row,'kategorie')||'Sonstiges',
+      price:parseFloat(get(row,'preis'))||0,
+      rating:parseInt(get(row,'bewertung'))||0,
+      status:get(row,'status')||'In Prüfung',
+      website:get(row,'website')||'',
+      contact_name:get(row,'kontakt_name')||'',
+      contact_email:get(row,'kontakt_email')||'',
+      contact_phone:get(row,'kontakt_telefon')||'',
+      notes:get(row,'notizen')||'',
+      createdAt:Date.now(),
+    });
+  }
+  if(!imported.length){alert('Keine gültigen Einträge gefunden.');return;}
+  if(!confirm(`${imported.length} Anbieter importieren?`))return;
+  vendors=[...vendors,...imported];
+  await save();renderAnbieter();
+  event.target.value='';
+};
+
 // ── AUTH FUNCTIONS ──
 function openAuth(){document.getElementById('auth-overlay').classList.add('open');}
 document.getElementById('auth-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('auth-overlay'))document.getElementById('auth-overlay').classList.remove('open');});
@@ -1261,7 +1512,7 @@ onAuthStateChanged(auth,async(u)=>{
       await loadUsers();
       try{const bs=await getDoc(BD);if(bs.exists()){totalBudget=bs.data().total||0;catBudget=bs.data().catBudget||{};}}catch(e){}
       onSnapshot(DD,(snap)=>{
-        if(snap.exists()){const d=snap.data();tasks=d.tasks||DEFS;wDate=d.weddingDate||'';tmpls=d.templates||[];nid=tasks.reduce((m,t)=>Math.max(m,t.id),0)+1;document.getElementById('sync').style.background='#34c759';checkMentions();render();}
+        if(snap.exists()){const d=snap.data();tasks=d.tasks||DEFS;vendors=d.vendors||[];vnid=vendors.reduce((m,v)=>Math.max(m,v.id),0)+1;wDate=d.weddingDate||'';tmpls=d.templates||[];nid=tasks.reduce((m,t)=>Math.max(m,t.id),0)+1;document.getElementById('sync').style.background='#34c759';checkMentions();render();}
         else{tasks=DEFS;save();}
       });
       if(tab==='home')tab='aufgaben';
