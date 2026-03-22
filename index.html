@@ -589,7 +589,7 @@ const isAssigned=t=>t.assignees&&t.assignees.includes(firstName);
 
 async function save(){
   if(role==='gast')return;
-  try{await setDoc(DD,{tasks,weddingDate:wDate,templates:tmpls,updatedAt:Date.now()});
+  try{await setDoc(DD,{tasks,vendors,weddingDate:wDate,templates:tmpls,updatedAt:Date.now()});
   document.getElementById('sync').style.background='#4caf50';}
   catch(e){document.getElementById('sync').style.background='#ef4444';}
 }
@@ -1586,10 +1586,7 @@ function buildAddAssigneeGrid(){
 }
 window.toggleAddAssignee=function(name){const idx=addSelectedAssignees.indexOf(name);if(idx>-1)addSelectedAssignees.splice(idx,1);else addSelectedAssignees.push(name);buildAddAssigneeGrid();};
 
-// CSV file input change listener
-document.addEventListener('change',async function(e){
-  if(e.target.id==='csv-file-input')await importCSV();
-});
+// CSV file input change listener (handled by dedicated listener below)
 
 // Body-level delegator for vendor modal (appended outside #scroll)
 document.body.addEventListener('click',async function(e){
