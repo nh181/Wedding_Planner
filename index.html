@@ -1009,7 +1009,10 @@ function render(){
   const fbTrash=document.getElementById('fb-trash');
   if(fbTrash)fbTrash.textContent=trashCount>0?'Papierkorb ('+trashCount+')':'Papierkorb';
   if(tab==='home')renderHome();
-  else if(tab==='aufgaben')renderAufgaben();
+  else if(tab==='aufgaben'){
+    if(flt==='papierkorb')renderPapierkorb();
+    else renderAufgaben();
+  }
   else if(tab==='zeitplan')renderZeitplan();
   else if(tab==='vorlagen')renderVorlagen();
   else if(tab==='budget')renderBudget();
