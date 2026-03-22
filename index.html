@@ -739,9 +739,9 @@ function renderAufgaben(){
     const showCost=isA||(assigned&&t.costActual);
     const names=(t.assignees||[]).join(', ');
     const cCount=(t.comments||[]).length;
-    return`<div class="tc ${t.done?'done':''}" onclick="openTaskById(${t.id})">
+    return`<div class="tc ${t.done?'done':''}" data-action="open-task" data-id="${t.id}">
       <div class="tc-row">
-        <button class="chk ${t.done?'done':''}" onclick="event.stopPropagation();togOnly(${t.id})">
+        <button class="chk ${t.done?'done':''}" data-action="tog-task" data-id="${t.id}">
           <span class="chk-ico"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         </button>
         <div>
@@ -818,7 +818,7 @@ function renderPapierkorb(){
   }
   if(isAdmin){
     h+=`<div style="display:flex;justify-content:flex-end;margin-bottom:10px">
-      <button id="btn-empty-trash" style="font-size:13px;padding:8px 16px;border-radius:10px;border:1px solid #fca5a5;background:var(--red-l);color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif">Alle endgültig löschen</button>
+      <button data-action="empty-trash" style="font-size:13px;padding:8px 16px;border-radius:10px;border:1px solid #fca5a5;background:var(--red-l);color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif">Alle endgültig löschen</button>
     </div>`;
   }
   trashed.forEach(t=>{
@@ -834,9 +834,9 @@ function renderPapierkorb(){
             <span class="chip cat">${t.cat}</span>
             ${date?`<span class="chip due">entfernt ${date}</span>`:''}
           </div>
-          <div style="display:flex;gap:8px;margin-top:10px" id="trash-btns-${t.id}">
-            <button data-restore="${t.id}" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--brm);background:var(--bg);color:var(--t2);cursor:pointer;font-family:'DM Sans',sans-serif">Wiederherstellen</button>
-            ${isAdmin?`<button data-delete="${t.id}" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid #fca5a5;background:var(--red-l);color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif">Endgültig löschen</button>`:''}
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button data-action="restore" data-id="${t.id}" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--brm);background:var(--bg);color:var(--t2);cursor:pointer;font-family:'DM Sans',sans-serif">Wiederherstellen</button>
+            ${isAdmin?`<button data-action="delete-final" data-id="${t.id}" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid #fca5a5;background:var(--red-l);color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif">Endgültig löschen</button>`:''}
           </div>
         </div>
         <div class="pdot niedrig"></div>
@@ -844,31 +844,6 @@ function renderPapierkorb(){
     </div>`;
   });
   a.innerHTML=h;
-  // Attach events via JS (avoids inline onclick issues)
-  a.querySelectorAll('[data-restore]').forEach(btn=>{
-    btn.addEventListener('click',async()=>{
-      const id=parseInt(btn.dataset.restore);
-      const t=tasks.find(x=>x.id===id);if(!t)return;
-      delete t.trashed;delete t.trashedAt;
-      await save();render();
-    });
-  });
-  a.querySelectorAll('[data-delete]').forEach(btn=>{
-    btn.addEventListener('click',async()=>{
-      if(!confirm('Endgültig löschen?'))return;
-      const id=parseInt(btn.dataset.delete);
-      tasks=tasks.filter(x=>x.id!==id);
-      await save();render();
-    });
-  });
-  const emptyBtn=document.getElementById('btn-empty-trash');
-  if(emptyBtn){
-    emptyBtn.addEventListener('click',async()=>{
-      if(!confirm('Alle Aufgaben im Papierkorb endgültig löschen?'))return;
-      tasks=tasks.filter(x=>!x.trashed);
-      await save();render();
-    });
-  }
 }
 
 function renderBudget(){
@@ -1109,6 +1084,36 @@ onAuthStateChanged(auth,async(u)=>{
 
 document.querySelectorAll('.nav-tab').forEach(t=>{t.addEventListener('click',()=>{document.querySelectorAll('.nav-tab').forEach(x=>x.classList.remove('on'));t.classList.add('on');tab=t.dataset.tab;render();});});
 document.querySelectorAll('.fb').forEach(b=>{b.addEventListener('click',()=>{document.querySelectorAll('.fb').forEach(x=>x.classList.remove('on'));b.classList.add('on');flt=b.dataset.f;render();});});
+
+// Global event delegator - handles all dynamic button clicks robustly
+document.getElementById('scroll').addEventListener('click',async function(e){
+  const btn=e.target.closest('[data-action]');
+  if(!btn)return;
+  const action=btn.dataset.action;
+  const id=parseInt(btn.dataset.id);
+  if(action==='restore'){
+    const t=tasks.find(x=>x.id===id);if(!t)return;
+    delete t.trashed;delete t.trashedAt;
+    await save();render();
+  } else if(action==='delete-final'){
+    if(!confirm('Endgültig löschen? Kann nicht rückgängig gemacht werden.'))return;
+    tasks=tasks.filter(x=>x.id!==id);
+    await save();render();
+  } else if(action==='empty-trash'){
+    if(!confirm('Alle Aufgaben im Papierkorb endgültig löschen?'))return;
+    tasks=tasks.filter(x=>!x.trashed);
+    await save();render();
+  } else if(action==='open-task'){
+    const t=tasks.find(x=>x.id===id);if(t)openTaskPopup(t);
+  } else if(action==='tog-task'){
+    e.stopPropagation();
+    const t=tasks.find(x=>x.id===id);
+    if(!t)return;
+    const canChk=role==='admin'||(t.assignees&&t.assignees.includes(firstName));
+    if(!canChk)return;
+    t.done=!t.done;await save();render();
+  }
+});
 
 async function loadPublicData(){try{const s=await getDoc(DD);if(s.exists()&&s.data().weddingDate)wDate=s.data().weddingDate;}catch(e){}}
 await loadPublicData();
