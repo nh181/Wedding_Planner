@@ -1070,7 +1070,7 @@ function renderPapierkorb(){
 }
 
 // Global event delegator - handles all dynamic button clicks robustly
-document.getElementById('scroll').addEventListener('click',async function(e){
+document.body.addEventListener('click',async function(e){
   const btn=e.target.closest('[data-action]');
   if(!btn)return;
   const action=btn.dataset.action;
@@ -1290,7 +1290,6 @@ function renderAnbieter(){
   h+=`<div style="display:flex;gap:8px;margin-bottom:14px">
     <button data-action="csv-dl" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:rgba(120,120,128,.1);color:var(--t2);font-family:inherit;font-weight:500;cursor:pointer">📥 CSV Vorlage</button>
     <button data-action="csv-import" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:rgba(120,120,128,.1);color:var(--t2);font-family:inherit;font-weight:500;cursor:pointer">📤 CSV Import</button>
-    <input type="file" id="csv-file-input" accept=".csv" style="display:none"/>
     <button data-action="add-vendor" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:var(--rose);color:#fff;font-family:inherit;font-weight:600;cursor:pointer;margin-left:auto">＋ Anbieter</button>
   </div>`;
   const filtered=vendors.filter(v=>vFilter==='Alle'||v.cat===vFilter);
@@ -1644,5 +1643,6 @@ renderHome(); // Show immediately for guests
 render();
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
+<input type="file" id="csv-file-input" accept=".csv" style="display:none"/>
 </body>
 </html>
