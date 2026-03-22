@@ -1110,9 +1110,9 @@ document.getElementById('scroll').addEventListener('click',async function(e){
     if(!canChk)return;
     t.done=!t.done;await save();render();
   } else if(action==='add-vendor'){
-    openVendorModal();
+    window.openVendorModal();
   } else if(action==='csv-dl'){
-    downloadCSVTemplate();
+    window.downloadCSVTemplate();
   } else if(action==='csv-import'){
     document.getElementById('csv-file-input').click();
   } else if(action==='vopen'){
@@ -1121,7 +1121,7 @@ document.getElementById('scroll').addEventListener('click',async function(e){
     if(v?.website)window.open(v.website.startsWith('http')?v.website:'https://'+v.website,'_blank');
   } else if(action==='vedit'){
     const vid=parseInt(btn.dataset.vid);
-    openVendorModal(vid);
+    window.openVendorModal(vid);
   } else if(action==='vdelete'){
     const vid=parseInt(btn.dataset.vid);
     if(!confirm('Anbieter löschen?'))return;
