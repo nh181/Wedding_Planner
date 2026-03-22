@@ -1257,11 +1257,11 @@ function renderAnbieter(){
   h+=`<div class="v-filter-tabs">${cats.map(cat=>`<button class="v-ftab ${vFilter===cat?'on':''}" onclick="setVFilter('${cat}')">${cat}</button>`).join('')}</div>`;
   // CSV actions
   h+=`<div style="display:flex;gap:8px;margin-bottom:14px">
-    <button onclick="downloadCSVTemplate()" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:rgba(120,120,128,.1);color:var(--t2);font-family:inherit;font-weight:500;cursor:pointer">📥 CSV Vorlage</button>
-    <label style="font-size:13px;padding:8px 14px;border-radius:10px;background:rgba(120,120,128,.1);color:var(--t2);font-weight:500;cursor:pointer">
-      📤 CSV Import<input type="file" accept=".csv" style="display:none" onchange="importCSV(event)"/>
+    <button id="btn-csv-dl" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:rgba(120,120,128,.1);color:var(--t2);font-family:inherit;font-weight:500;cursor:pointer">📥 CSV Vorlage</button>
+    <label id="btn-csv-import" style="font-size:13px;padding:8px 14px;border-radius:10px;background:rgba(120,120,128,.1);color:var(--t2);font-weight:500;cursor:pointer">
+      📤 CSV Import<input type="file" id="csv-file-input" accept=".csv" style="display:none"/>
     </label>
-    <button onclick="openVendorModal()" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:var(--rose);color:#fff;font-family:inherit;font-weight:600;cursor:pointer;margin-left:auto">＋ Anbieter</button>
+    <button id="btn-add-vendor" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:var(--rose);color:#fff;font-family:inherit;font-weight:600;cursor:pointer;margin-left:auto">＋ Anbieter</button>
   </div>`;
   const filtered=vendors.filter(v=>vFilter==='Alle'||v.cat===vFilter);
   if(!filtered.length){h+=`<div class="empty"><div class="ei">🏪</div><p>Noch keine Anbieter in dieser Kategorie.</p></div>`;a.innerHTML=h;attachVendorEvents();return;}
@@ -1325,6 +1325,14 @@ function renderAnbieter(){
 }
 
 function attachVendorEvents(){
+  // Top action buttons
+  const addBtn=document.getElementById('btn-add-vendor');
+  if(addBtn)addBtn.addEventListener('click',()=>openVendorModal());
+  const dlBtn=document.getElementById('btn-csv-dl');
+  if(dlBtn)dlBtn.addEventListener('click',downloadCSVTemplate);
+  const csvInput=document.getElementById('csv-file-input');
+  if(csvInput)csvInput.addEventListener('change',importCSV);
+
   document.querySelectorAll('[data-action="vopen"]').forEach(btn=>{
     btn.addEventListener('click',e=>{e.stopPropagation();const v=vendors.find(x=>x.id===parseInt(btn.dataset.vid));if(v?.website)window.open(v.website,'_blank');});
   });
@@ -1376,12 +1384,15 @@ window.openVendorModal=function(id=null){
     </div>
     <div class="fg"><label>Notizen</label><textarea id="v-notes" class="inp" rows="3" placeholder="Besonderheiten, Eindrücke...">${v?.notes||''}</textarea></div>
     <div class="mfoot">
-      <button class="btn-ghost" onclick="document.getElementById('vendor-overlay').remove()">Abbrechen</button>
-      <button class="btn-save" onclick="saveVendor()">Speichern</button>
+      <button id="v-cancel-btn" class="btn-ghost">Abbrechen</button>
+      <button id="v-save-btn" class="btn-save">Speichern</button>
     </div>
   </div>`;
   overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
   document.body.appendChild(overlay);
+  // Attach modal button listeners after DOM insertion
+  document.getElementById('v-cancel-btn').addEventListener('click',()=>overlay.remove());
+  document.getElementById('v-save-btn').addEventListener('click',saveVendor);
 };
 
 window.saveVendor=async function(){
@@ -1417,8 +1428,9 @@ window.downloadCSVTemplate=function(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='anbieter_vorlage.csv';a.click();
 };
 
-window.importCSV=async function(event){
-  const file=event.target.files[0];if(!file)return;
+window.importCSV=async function(event=null){
+  const fileInput=document.getElementById('csv-file-input');
+  const file=event?.target?.files?.[0]||fileInput?.files?.[0];if(!file)return;
   const text=await file.text();
   const lines=text.trim().split('\n');
   if(lines.length<2){alert('CSV leer oder ungültig.');return;}
