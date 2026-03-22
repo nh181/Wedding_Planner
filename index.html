@@ -809,22 +809,16 @@ function renderVorlagen(){
 
 function renderPapierkorb(){
   const a=document.getElementById('scroll');
-  const isAdmin=role==='admin';
   const trashed=tasks.filter(t=>t.trashed);
   let h='<div class="sh">Papierkorb</div>';
   if(!trashed.length){
     a.innerHTML=h+'<div class="empty"><div class="ei">🗑</div><p>Papierkorb ist leer.</p></div>';
     return;
   }
-  if(isAdmin){
-    h+=`<div style="display:flex;justify-content:flex-end;margin-bottom:10px">
-      <button data-action="empty-trash" style="font-size:13px;padding:8px 16px;border-radius:10px;border:1px solid #fca5a5;background:var(--red-l);color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif">Alle endgültig löschen</button>
-    </div>`;
-  }
-  trashed.forEach(t=>{
+  h+=trashed.map(t=>{
     const names=(t.assignees||[]).join(', ');
     const date=t.trashedAt?new Date(t.trashedAt).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
-    h+=`<div class="tc" style="opacity:.65;border-style:dashed">
+    return`<div class="tc" style="opacity:.65;border-style:dashed">
       <div class="tc-row">
         <div style="width:26px;height:26px;border-radius:50%;background:var(--bg);border:2px solid var(--brm);flex-shrink:0;margin-top:1px"></div>
         <div style="flex:1">
@@ -834,256 +828,16 @@ function renderPapierkorb(){
             <span class="chip cat">${t.cat}</span>
             ${date?`<span class="chip due">entfernt ${date}</span>`:''}
           </div>
-          <div style="display:flex;gap:8px;margin-top:10px">
-            <button data-action="restore" data-id="${t.id}" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--brm);background:var(--bg);color:var(--t2);cursor:pointer;font-family:'DM Sans',sans-serif">Wiederherstellen</button>
-            ${isAdmin?`<button data-action="delete-final" data-id="${t.id}" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid #fca5a5;background:var(--red-l);color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif">Endgültig löschen</button>`:''}
+          <div style="margin-top:10px">
+            <button data-action="restore" data-id="${t.id}" style="font-size:12px;padding:6px 14px;border-radius:8px;border:1px solid var(--brm);background:var(--bg);color:var(--t2);cursor:pointer;font-family:'DM Sans',sans-serif">↩ Wiederherstellen</button>
           </div>
         </div>
         <div class="pdot niedrig"></div>
       </div>
     </div>`;
-  });
+  }).join('');
   a.innerHTML=h;
 }
-
-function renderBudget(){
-  const a=document.getElementById('scroll');
-  const totalAct=tasks.filter(t=>!t.trashed).reduce((s,t)=>s+(t.costActual||0),0);
-  const totalPlan=CATS.reduce((s,c)=>s+(catBudget[c]||0),0);
-  const budgetBase=totalBudget||totalPlan||1;
-  const maxCatVal=Math.max(...CATS.map(c=>{
-    const plan=catBudget[c]||0;
-    const act=tasks.filter(t=>t.cat===c).reduce((s,t)=>s+(t.costActual||0),0);
-    return Math.max(plan,act);
-  }),1);
-
-  let h=`<div class="b-tabs">
-    <button class="b-tab ${budgetView==='bvp'?'on':''}" onclick="setBView('bvp')">Budget vs. Plan</button>
-    <button class="b-tab ${budgetView==='bvi'?'on':''}" onclick="setBView('bvi')">Budget vs. Ist</button>
-    <button class="b-tab ${budgetView==='pvi'?'on':''}" onclick="setBView('pvi')">Plan vs. Ist</button>
-  </div>`;
-
-  // Summary card
-  let v1,v2,v3,l1,l2,l3,cls1,cls2,cls3,pct,barCls;
-  if(budgetView==='bvp'){
-    v1=totalBudget;v2=totalPlan;v3=totalBudget-totalPlan;
-    l1='Gesamtbudget';l2='Gesamt geplant';l3='Puffer';
-    pct=totalBudget?Math.min(Math.round(totalPlan/totalBudget*100),100):0;
-    cls2=pct>=100?'over':pct>=80?'warn':'ok';
-    cls3=v3<0?'over':'ok';barCls=cls2;
-  }else if(budgetView==='bvi'){
-    v1=totalBudget;v2=totalAct;v3=totalBudget-totalAct;
-    l1='Gesamtbudget';l2='Ist-Kosten';l3='Verfügbar';
-    pct=totalBudget?Math.min(Math.round(totalAct/totalBudget*100),100):0;
-    cls2=pct>=100?'over':pct>=80?'warn':'ok';
-    cls3=v3<0?'over':'ok';barCls=cls2;
-  }else{
-    v1=totalPlan;v2=totalAct;v3=totalPlan-totalAct;
-    l1='Gesamt geplant';l2='Ist-Kosten';l3='Abweichung';
-    pct=totalPlan?Math.min(Math.round(totalAct/totalPlan*100),100):0;
-    cls2=totalAct>totalPlan&&totalPlan>0?'over':totalAct>0?'ok':'';
-    cls3=v3<0?'over':'ok';barCls=cls2;
-  }
-
-  h+=`<div class="b-hero"><h3>📊 ${budgetView==='bvp'?'Budget vs. Plan':budgetView==='bvi'?'Budget vs. Ist':'Plan vs. Ist'}</h3>
-    <div class="b-totals">
-      <div class="b-num"><div class="b-val">${eur(v1)}</div><div class="b-lbl">${l1}</div></div>
-      <div class="b-num"><div class="b-val ${cls2||''}">${eur(v2)}</div><div class="b-lbl">${l2}</div></div>
-      <div class="b-num"><div class="b-val ${cls3}">${v3>=0?eur(v3):'-'+eur(Math.abs(v3))}</div><div class="b-lbl">${l3}</div></div>
-    </div>
-    <div class="bpbar"><div class="bpfill ${barCls||'ok'}" style="width:${pct}%"></div></div>
-    <div style="font-size:12px;color:var(--t3);text-align:right;margin-top:4px">${pct}%</div>
-  </div>`;
-
-  // Bar chart per category
-  const activeCats=CATS.filter(c=>{
-    const plan=catBudget[c]||0;
-    const act=tasks.filter(t=>t.cat===c).reduce((s,t)=>s+(t.costActual||0),0);
-    return plan>0||act>0;
-  });
-
-  if(activeCats.length){
-    h+=`<div class="b-hero" style="padding-bottom:8px"><h3>Kategorie-Übersicht</h3>
-    <div class="b-legend">
-      <span><span class="b-leg-dot" style="background:var(--brm)"></span>${budgetView==='bvp'?'Budget':'Plan'}</span>
-      <span><span class="b-leg-dot" style="background:var(--sage)"></span>Ist-Kosten</span>
-    </div>`;
-    activeCats.forEach(cat=>{
-      const plan=catBudget[cat]||0;
-      const act=tasks.filter(t=>t.cat===cat&&!t.trashed).reduce((s,t)=>s+(t.costActual||0),0);
-      let ref=budgetView==='bvp'?(totalBudget?totalBudget/activeCats.length:plan):plan;
-      const refVal=budgetView==='bvp'?totalBudget/activeCats.length:plan;
-      const planW=maxCatVal>0?Math.min(Math.round((budgetView==='bvp'?refVal:plan)/maxCatVal*100),100):0;
-      const actW=maxCatVal>0?Math.min(Math.round(act/maxCatVal*100),100):0;
-      const over=act>(budgetView==='bvp'?refVal:plan)&&(budgetView==='bvp'?refVal:plan)>0;
-      const actCls=over?'over':actW>80?'warn':'';
-      h+=`<div class="b-chart-row">
-        <div class="b-chart-label">
-          <span>${cat}</span>
-          <span>${act>0?eur(act):'–'}${plan>0?' / '+eur(plan):''}</span>
-        </div>
-        <div class="b-bar-wrap">
-          <div class="b-bar-plan" style="width:${planW}%"></div>
-          <div class="b-bar-act ${actCls}" style="width:${actW}%"></div>
-        </div>
-      </div>`;
-    });
-    h+=`</div>`;
-  }
-
-  // Category plan input (only in bvp view)
-  if(budgetView==='bvp'){
-    h+=`<div class="b-hero"><h3>Plankosten eingeben</h3>`;
-    CATS.forEach(cat=>{
-      const plan=catBudget[cat]||0;
-      h+=`<div class="b-cat-row" style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--br)">
-        <span style="font-size:13px;font-weight:500">${cat}</span>
-        <div style="display:flex;align-items:center;gap:6px">
-          <input type="number" class="sinp" placeholder="0" value="${plan||''}" style="width:100px;font-size:13px;padding:6px 8px" onchange="setCatBudget('${cat}',this.value)"/>
-          <span style="font-size:12px;color:var(--t3)">€</span>
-        </div>
-      </div>`;
-    });
-    h+=`</div>`;
-  }
-
-  h+=`<div class="srow"><div><div class="slbl">Gesamtbudget</div><div class="ssub">Obergrenze für alle Kosten</div></div><div style="display:flex;align-items:center;gap:8px"><input type="number" class="sinp" value="${totalBudget||''}" placeholder="z.B. 15000" style="width:110px" onchange="setBudget(this.value)"/><span style="font-size:12px;color:var(--t3)">€</span></div></div>`;
-  a.innerHTML=h;
-}
-
-window.setBView=function(v){budgetView=v;renderBudget();};
-
-
-async function renderNutzer(){
-  const a=document.getElementById('scroll');
-  a.innerHTML=`<div class="sh">Nutzer verwalten</div><p style="font-size:13px;color:var(--t2);margin-bottom:12px">Rollen: <strong>gast</strong> = nur Home · <strong>mithelfer</strong> = Aufgaben & Kommentare · <strong>admin</strong> = voller Zugriff</p><div id="ulist"><div class="empty"><div class="ei">⏳</div>Wird geladen...</div></div>`;
-  try{const snap=await getDocs(UC);const ul=document.getElementById('ulist');
-    if(snap.empty){ul.innerHTML=`<div class="empty"><div class="ei">👥</div>Noch keine Nutzer.</div>`;return;}
-    ul.innerHTML=snap.docs.map(d=>{const u=d.data();return`<div class="uc"><div class="uav">${ini(u.firstName||u.email)}</div><div style="flex:1;min-width:0"><div class="un">${u.firstName||'–'}</div><div class="ue">${u.email}</div></div><select class="rsel" onchange="setRole('${d.id}',this.value)"><option value="gast" ${(!u.role||u.role==='gast')?'selected':''}>Gast</option><option value="mithelfer" ${u.role==='mithelfer'?'selected':''}>Mithelfer</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select></div>`;}).join('');
-  }catch(e){}
-}
-
-async function renderInfo(){
-  const a=document.getElementById('scroll');
-  let h=`<div class="sh">Einstellungen</div>`;
-  h+=`<div class="srow"><div><div class="slbl">Hochzeitsdatum</div></div><input type="date" class="sinp" value="${wDate}" onchange="setWDate(this.value)"/></div>`;
-  h+=`<div class="srow"><div><div class="slbl">Location</div></div><input type="text" class="sinp" id="si-loc" placeholder="Ort" onchange="saveInfo()"/></div>`;
-  h+=`<div class="srow"><div><div class="slbl">Uhrzeit</div></div><input type="text" class="sinp" id="si-time" placeholder="z.B. 14:00 Uhr" onchange="saveInfo()"/></div>`;
-  h+=`<div class="srow"><div><div class="slbl">Dresscode</div></div><input type="text" class="sinp" id="si-dress" placeholder="z.B. Festlich" onchange="saveInfo()"/></div>`;
-  h+=`<div class="srow"><div><div class="slbl">Angemeldet als</div><div class="ssub">${user?.email}</div></div><div style="font-size:13px;color:var(--rose);font-weight:500">${role==='admin'?'Admin':'Mithelfer'}</div></div>`;
-  h+=`<button class="dbtn" onclick="doLogout()">↩ Abmelden</button>`;
-  a.innerHTML=h;
-  try{const s=await getDoc(ID);if(s.exists()){const d=s.data();['si-loc','si-time','si-dress'].forEach((id,i)=>{const e=document.getElementById(id);if(e)e.value=[d.location,d.time,d.dresscode][i]||'';});}}catch(e){}
-}
-
-function render(){
-  updateUI();
-  document.getElementById('fbar').style.display=(tab==='aufgaben'&&(role==='admin'||role==='mithelfer'))?'flex':'none';
-  // Update trash filter badge
-  const trashCount=tasks.filter(t=>t.trashed).length;
-  const fbTrash=document.getElementById('fb-trash');
-  if(fbTrash)fbTrash.textContent=trashCount>0?'Papierkorb ('+trashCount+')':'Papierkorb';
-  if(tab==='home')renderHome();
-  else if(tab==='aufgaben'){
-    if(flt==='papierkorb')renderPapierkorb();
-    else renderAufgaben();
-  }
-  else if(tab==='zeitplan')renderZeitplan();
-  else if(tab==='vorlagen')renderVorlagen();
-  else if(tab==='budget')renderBudget();
-  else if(tab==='papierkorb')renderPapierkorb();
-  else if(tab==='nutzer')renderNutzer();
-  else renderInfo();
-}
-
-// ACTIONS
-window.setWDate=async function(v){wDate=v;await save();render();};
-window.saveInfo=async function(){const g=id=>document.getElementById(id)?.value||'';await setDoc(ID,{location:g('si-loc'),time:g('si-time'),dresscode:g('si-dress')});};
-window.setBudget=async function(v){totalBudget=parseFloat(v)||0;await setDoc(BD,{total:totalBudget,catBudget});renderBudget();};
-window.setCatBudget=async function(cat,v){catBudget[cat]=parseFloat(v)||0;await setDoc(BD,{total:totalBudget,catBudget});};
-window.addTpl=async function(id){if(tmpls.includes(id))return;const tpl=TPLS.find(t=>t.id===id);if(!tpl)return;tpl.ts.forEach(title=>tasks.push({id:nid++,title,assignees:[],cat:tpl.name,prio:'mittel',due:'',done:false,comments:[],costActual:0}));tmpls.push(id);await save();render();};
-window.setRole=async function(uid,r){await updateDoc(doc(db,'users',uid),{role:r});await loadUsers();renderNutzer();};
-window.cal=function(id){const t=tasks.find(x=>x.id===id);if(!t||!t.due)return;const[y,m,d]=t.due.split('-');const ics=['BEGIN:VCALENDAR','VERSION:2.0','BEGIN:VEVENT',`DTSTART;VALUE=DATE:${y}${m}${d}`,`DTEND;VALUE=DATE:${y}${m}${d}`,`SUMMARY:💍 ${t.title}`,'END:VEVENT','END:VCALENDAR'].join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));a.download=`${t.title.replace(/[^a-z0-9]/gi,'_')}.ics`;a.click();};
-
-// ADD TASK MODAL
-function buildAddAssigneeGrid(){
-  const grid=document.getElementById('add-assignee-grid');
-  const helpers=allUsers.filter(u=>u.firstName);
-  if(!helpers.length){grid.innerHTML=`<span style="font-size:13px;color:var(--t3)">Noch keine Nutzer</span>`;return;}
-  grid.innerHTML=helpers.map(u=>`<button class="aschip ${addSelectedAssignees.includes(u.firstName)?'on':''}" onclick="toggleAddAssignee('${u.firstName}')">${u.firstName}</button>`).join('');
-}
-window.toggleAddAssignee=function(name){const idx=addSelectedAssignees.indexOf(name);if(idx>-1)addSelectedAssignees.splice(idx,1);else addSelectedAssignees.push(name);buildAddAssigneeGrid();};
-
-const addModal=document.getElementById('add-modal');
-document.getElementById('add-btn').addEventListener('click',()=>{
-  editingTaskId=null;
-  document.getElementById('add-modal-title').textContent='Neue Aufgabe';
-  ['f-ttl','f-due','f-act'].forEach(id=>{document.getElementById(id).value='';});
-  document.getElementById('f-cat').value='Location';
-  document.getElementById('f-pri').value='mittel';
-  document.getElementById('f-cat').value='Location';
-  document.getElementById('f-pri').value='mittel';
-  addSelectedAssignees=[];buildAddAssigneeGrid();
-  addModal.classList.add('open');
-  setTimeout(()=>document.getElementById('f-ttl').focus(),300);
-});
-document.getElementById('close-add').addEventListener('click',()=>addModal.classList.remove('open'));
-addModal.addEventListener('click',e=>{if(e.target===addModal)addModal.classList.remove('open');});
-document.getElementById('save-add').addEventListener('click',async()=>{
-  const ttl=document.getElementById('f-ttl').value.trim();if(!ttl){document.getElementById('f-ttl').focus();return;}
-  const data={title:ttl,assignees:[...addSelectedAssignees],cat:document.getElementById('f-cat').value,prio:document.getElementById('f-pri').value,due:document.getElementById('f-due').value,costActual:parseFloat(document.getElementById('f-act').value)||0};
-  if(editingTaskId){const t=tasks.find(x=>x.id===editingTaskId);if(t)Object.assign(t,data);}
-  else tasks.push({id:nid++,...data,done:false,comments:[]});
-  await save();render();addModal.classList.remove('open');
-});
-
-// AUTH
-window.openAuth=function(){document.getElementById('auth-overlay').classList.add('open');};
-document.getElementById('auth-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('auth-overlay'))document.getElementById('auth-overlay').classList.remove('open');});
-window.switchAuthTab=function(m){
-  document.querySelectorAll('.a-tab').forEach((t,i)=>t.classList.toggle('on',(m==='login'&&i===0)||(m==='register'&&i===1)));
-  document.getElementById('a-btn').textContent=m==='login'?'Anmelden':'Registrieren';
-  window._am=m;
-};
-window._am='login';
-window.doAuth=async function(){
-  const email=document.getElementById('a-email').value.trim(),pw=document.getElementById('a-pw').value;
-  const err=document.getElementById('a-err');err.textContent='';
-  try{if(window._am==='login')await signInWithEmailAndPassword(auth,email,pw);else await createUserWithEmailAndPassword(auth,email,pw);document.getElementById('auth-overlay').classList.remove('open');}
-  catch(e){const m={'auth/invalid-credential':'Falsche E-Mail oder Passwort.','auth/email-already-in-use':'E-Mail bereits registriert.','auth/weak-password':'Passwort mind. 6 Zeichen.','auth/invalid-email':'Ungültige E-Mail.'};err.textContent=m[e.code]||'Fehler: '+e.message;}
-};
-window.doGoogle=async function(){try{await signInWithPopup(auth,gp);document.getElementById('auth-overlay').classList.remove('open');}catch(e){document.getElementById('a-err').textContent='Google Login fehlgeschlagen.';}};
-window.doLogout=async function(){await signOut(auth);user=null;role='gast';firstName='';tab='home';render();};
-window.saveName=async function(){
-  const n=document.getElementById('name-inp').value.trim();if(!n)return;
-  firstName=n;await updateDoc(doc(db,'users',user.uid),{firstName:n});
-  document.getElementById('name-overlay').classList.remove('open');render();
-};
-
-onAuthStateChanged(auth,async(u)=>{
-  if(u){
-    user=u;
-    const uref=doc(db,'users',u.uid);
-    const usnap=await getDoc(uref);
-    if(!usnap.exists()){await setDoc(uref,{email:u.email,name:u.displayName||'',role:'gast',createdAt:Date.now()});role='gast';firstName='';}
-    else{const d=usnap.data();role=d.role||'gast';firstName=d.firstName||'';}
-    if((role==='admin'||role==='mithelfer')&&!firstName){document.getElementById('name-overlay').classList.add('open');}
-    if(role==='admin'||role==='mithelfer'){
-      document.getElementById('sync').style.background='#f59e0b';
-      await loadUsers();
-      try{const bs=await getDoc(BD);if(bs.exists()){totalBudget=bs.data().total||0;catBudget=bs.data().catBudget||{};}}catch(e){}
-      onSnapshot(DD,(snap)=>{
-        if(snap.exists()){const d=snap.data();tasks=d.tasks||DEFS;wDate=d.weddingDate||'';tmpls=d.templates||[];nid=tasks.reduce((m,t)=>Math.max(m,t.id),0)+1;document.getElementById('sync').style.background='#4caf50';checkMentions();render();}
-        else{tasks=DEFS;save();}
-      });
-      if(tab==='home')tab='aufgaben';
-    }
-    render();
-  }else{user=null;role='gast';firstName='';}
-});
-
-document.querySelectorAll('.nav-tab').forEach(t=>{t.addEventListener('click',()=>{document.querySelectorAll('.nav-tab').forEach(x=>x.classList.remove('on'));t.classList.add('on');tab=t.dataset.tab;render();});});
-document.querySelectorAll('.fb').forEach(b=>{b.addEventListener('click',()=>{document.querySelectorAll('.fb').forEach(x=>x.classList.remove('on'));b.classList.add('on');flt=b.dataset.f;render();});});
 
 // Global event delegator - handles all dynamic button clicks robustly
 document.getElementById('scroll').addEventListener('click',async function(e){
