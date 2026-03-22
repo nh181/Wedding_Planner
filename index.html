@@ -1333,7 +1333,7 @@ function renderAnbieter(){
   h += '<div style="display:flex;gap:8px;margin-bottom:14px">';
   h += '<button id="btn-csv-dl" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:rgba(120,120,128,.1);color:var(--t2);font-family:inherit;font-weight:500;cursor:pointer">Vorlage CSV</button>';
   h += '<button id="btn-csv-import" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:rgba(120,120,128,.1);color:var(--t2);font-family:inherit;font-weight:500;cursor:pointer">Import CSV</button>';
-  h += '<button id="btn-add-vendor" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:var(--rose);color:#fff;font-family:inherit;font-weight:600;cursor:pointer;margin-left:auto">+ Anbieter</button>';
+  h += '<button data-body-action="open-vendor-modal" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:var(--rose);color:#fff;font-family:inherit;font-weight:600;cursor:pointer;margin-left:auto">+ Anbieter</button>';
   h += '</div>';
 
   if(!filtered.length){
@@ -1415,9 +1415,7 @@ function attachAnbieterListeners(cats){
     btn.addEventListener('click', function(){ vFilter = btn.textContent; renderAnbieter(); });
   });
 
-  // Add vendor button
-  var addBtn = document.getElementById('btn-add-vendor');
-  if(addBtn) addBtn.addEventListener('click', function(){ openVendorModal(null); });
+  // Add vendor button handled by body delegator via data-body-action
 
   // CSV buttons
   var dlBtn = document.getElementById('btn-csv-dl');
@@ -1598,7 +1596,9 @@ document.body.addEventListener('click',async function(e){
   const btn=e.target.closest('[data-body-action]');
   if(!btn)return;
   const action=btn.dataset.bodyAction;
-  if(action==='open-add-modal'){
+  if(action==='open-vendor-modal'){
+    openVendorModal(null);
+  } else if(action==='open-add-modal'){
     editingTaskId=null;
     document.getElementById('add-modal-title').textContent='Neue Aufgabe';
     ['f-ttl','f-due','f-act'].forEach(id=>{document.getElementById(id).value='';});
