@@ -985,6 +985,133 @@ document.getElementById('scroll').addEventListener('click',async function(e){
   }
 });
 
+
+// ── AUTH FUNCTIONS ──
+function openAuth(){document.getElementById('auth-overlay').classList.add('open');}
+document.getElementById('auth-overlay').addEventListener('click',e=>{if(e.target===document.getElementById('auth-overlay'))document.getElementById('auth-overlay').classList.remove('open');});
+
+function switchAuthTab(m){
+  document.querySelectorAll('.a-tab').forEach((t,i)=>t.classList.toggle('on',(m==='login'&&i===0)||(m==='register'&&i===1)));
+  document.getElementById('a-btn').textContent=m==='login'?'Anmelden':'Registrieren';
+  window._am=m;
+}
+window._am='login';
+
+async function doAuth(){
+  const email=document.getElementById('a-email').value.trim(),pw=document.getElementById('a-pw').value;
+  const err=document.getElementById('a-err');err.textContent='';
+  try{
+    if(window._am==='login')await signInWithEmailAndPassword(auth,email,pw);
+    else await createUserWithEmailAndPassword(auth,email,pw);
+    document.getElementById('auth-overlay').classList.remove('open');
+  }catch(e){
+    const m={'auth/invalid-credential':'Falsche E-Mail oder Passwort.','auth/email-already-in-use':'E-Mail bereits registriert.','auth/weak-password':'Passwort mind. 6 Zeichen.','auth/invalid-email':'Ungültige E-Mail.'};
+    err.textContent=m[e.code]||'Fehler: '+e.message;
+  }
+}
+
+async function doGoogle(){
+  try{await signInWithPopup(auth,gp);document.getElementById('auth-overlay').classList.remove('open');}
+  catch(e){document.getElementById('a-err').textContent='Google Login fehlgeschlagen.';}
+}
+
+async function doLogout(){
+  await signOut(auth);user=null;role='gast';firstName='';tab='home';render();
+}
+
+async function saveName(){
+  const n=document.getElementById('name-inp').value.trim();if(!n)return;
+  firstName=n;
+  await updateDoc(doc(db,'users',user.uid),{firstName:n});
+  document.getElementById('name-overlay').classList.remove('open');
+  render();
+}
+
+// Expose to window for inline onclick handlers
+window.openAuth=openAuth;
+window.switchAuthTab=switchAuthTab;
+window.doAuth=doAuth;
+window.doGoogle=doGoogle;
+window.doLogout=doLogout;
+window.saveName=saveName;
+
+// ── AUTH STATE ──
+onAuthStateChanged(auth,async(u)=>{
+  if(u){
+    user=u;
+    const uref=doc(db,'users',u.uid);
+    const usnap=await getDoc(uref);
+    if(!usnap.exists()){await setDoc(uref,{email:u.email,name:u.displayName||'',role:'gast',createdAt:Date.now()});role='gast';firstName='';}
+    else{const d=usnap.data();role=d.role||'gast';firstName=d.firstName||'';}
+    if((role==='admin'||role==='mithelfer')&&!firstName){document.getElementById('name-overlay').classList.add('open');}
+    if(role==='admin'||role==='mithelfer'){
+      document.getElementById('sync').style.background='#ff9500';
+      await loadUsers();
+      try{const bs=await getDoc(BD);if(bs.exists()){totalBudget=bs.data().total||0;catBudget=bs.data().catBudget||{};}}catch(e){}
+      onSnapshot(DD,(snap)=>{
+        if(snap.exists()){const d=snap.data();tasks=d.tasks||DEFS;wDate=d.weddingDate||'';tmpls=d.templates||[];nid=tasks.reduce((m,t)=>Math.max(m,t.id),0)+1;document.getElementById('sync').style.background='#34c759';checkMentions();render();}
+        else{tasks=DEFS;save();}
+      });
+      if(tab==='home')tab='aufgaben';
+    }
+    render();
+  }else{user=null;role='gast';firstName='';}
+});
+
+// ── ADD TASK MODAL ──
+function buildAddAssigneeGrid(){
+  const grid=document.getElementById('add-assignee-grid');
+  const helpers=allUsers.filter(u=>u.firstName);
+  if(!helpers.length){grid.innerHTML=`<span style="font-size:13px;color:var(--t3)">Noch keine Nutzer</span>`;return;}
+  grid.innerHTML=helpers.map(u=>`<button class="aschip ${addSelectedAssignees.includes(u.firstName)?'on':''}" onclick="toggleAddAssignee('${u.firstName}')">${u.firstName}</button>`).join('');
+}
+window.toggleAddAssignee=function(name){const idx=addSelectedAssignees.indexOf(name);if(idx>-1)addSelectedAssignees.splice(idx,1);else addSelectedAssignees.push(name);buildAddAssigneeGrid();};
+
+const addModal=document.getElementById('add-modal');
+document.getElementById('add-btn').addEventListener('click',()=>{
+  editingTaskId=null;
+  document.getElementById('add-modal-title').textContent='Neue Aufgabe';
+  ['f-ttl','f-due','f-act'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('f-cat').value='Location';
+  document.getElementById('f-pri').value='mittel';
+  addSelectedAssignees=[];buildAddAssigneeGrid();
+  addModal.classList.add('open');
+  setTimeout(()=>document.getElementById('f-ttl').focus(),300);
+});
+document.getElementById('close-add').addEventListener('click',()=>addModal.classList.remove('open'));
+addModal.addEventListener('click',e=>{if(e.target===addModal)addModal.classList.remove('open');});
+document.getElementById('save-add').addEventListener('click',async()=>{
+  const ttl=document.getElementById('f-ttl').value.trim();if(!ttl){document.getElementById('f-ttl').focus();return;}
+  const data={title:ttl,assignees:[...addSelectedAssignees],cat:document.getElementById('f-cat').value,prio:document.getElementById('f-pri').value,due:document.getElementById('f-due').value,costActual:parseFloat(document.getElementById('f-act').value)||0};
+  if(editingTaskId){const t=tasks.find(x=>x.id===editingTaskId);if(t)Object.assign(t,data);}
+  else tasks.push({id:nid++,...data,done:false,comments:[],trashed:false});
+  await save();render();addModal.classList.remove('open');
+});
+
+// ── FILTER BAR ──
+document.querySelectorAll('.fb').forEach(b=>{b.addEventListener('click',()=>{document.querySelectorAll('.fb').forEach(x=>x.classList.remove('on'));b.classList.add('on');flt=b.dataset.f;render();});});
+
+// ── GLOBAL EVENT DELEGATOR ──
+document.getElementById('scroll').addEventListener('click',async function(e){
+  const btn=e.target.closest('[data-action]');
+  if(!btn)return;
+  const action=btn.dataset.action;
+  const id=parseInt(btn.dataset.id);
+  if(action==='restore'){
+    const t=tasks.find(x=>x.id===id);if(!t)return;
+    delete t.trashed;delete t.trashedAt;
+    await save();render();
+  } else if(action==='open-task'){
+    const t=tasks.find(x=>x.id===id);if(t)openTaskPopup(t);
+  } else if(action==='tog-task'){
+    e.stopPropagation();
+    const t=tasks.find(x=>x.id===id);if(!t)return;
+    const canChk=role==='admin'||(t.assignees&&t.assignees.includes(firstName));
+    if(!canChk)return;
+    t.done=!t.done;await save();render();
+  }
+});
+
 async function loadPublicData(){try{const s=await getDoc(DD);if(s.exists()&&s.data().weddingDate)wDate=s.data().weddingDate;}catch(e){}}
 await loadPublicData();
 renderHome(); // Show immediately for guests
