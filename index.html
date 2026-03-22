@@ -327,7 +327,7 @@
       <div class="nav-tab" id="tab-zeitplan" data-tab="zeitplan" style="display:none">📅 Zeitplan</div>
       <div class="nav-tab" data-tab="vorlagen" id="tab-vorlagen" style="display:none">📋 Vorlagen</div>
       <div class="nav-tab" data-tab="budget" id="tab-budget" style="display:none">💶 Budget</div>
-      <div class="nav-tab" data-tab="papierkorb" id="tab-papierkorb" style="display:none">🗑 Papierkorb</div>
+      <div class="nav-tab" data-tab="papierkorb" id="tab-papierkorb" style="display:none"><span id="trash-count"></span> Papierkorb</div>
       <div class="nav-tab" data-tab="nutzer" id="tab-nutzer" style="display:none">👥 Nutzer</div>
       <div class="nav-tab" data-tab="info" id="tab-info" style="display:none">⚙️ Info</div>
     </div>
@@ -480,7 +480,7 @@ function updateUI(){
   document.getElementById('tab-zeitplan').style.display=li?'':'none';
   document.getElementById('tab-vorlagen').style.display=li?'':'none';
   document.getElementById('tab-budget').style.display=isA?'':'none';
-  document.getElementById('tab-papierkorb').style.display=isA?'':'none';
+  if(document.getElementById('tab-papierkorb'))document.getElementById('tab-papierkorb').style.display=isA?'':'none';
   document.getElementById('tab-nutzer').style.display=isA?'':'none';
   document.getElementById('tab-info').style.display=isA?'':'none';
   document.getElementById('stats-bar').style.display=li?'':'none';
@@ -557,7 +557,7 @@ function openTaskPopup(t){
   html+=`<div class="popup-actions">
     ${canChk?`<button class="act-btn primary" onclick="togAndClose(${t.id})">${t.done?'↩ Wiedereröffnen':'✓ Erledigt'}</button>`:''}
     ${t.due?`<button class="act-btn" onclick="cal(${t.id})">📅 Kalender</button>`:''}
-    <button class="act-btn danger" onclick="trashTaskAndClose(${t.id})">🗑 In Papierkorb</button>
+    <button class="act-btn danger" onclick="trashTaskAndClose(${t.id})">&#128465; In Papierkorb</button>
   </div>`;
 
   document.getElementById('popup-content').innerHTML=html;
@@ -591,8 +591,8 @@ window.togAndClose=async function(id){
 
 window.trashTaskAndClose=async function(id){
   const t=tasks.find(x=>x.id===id);if(!t)return;
-  t.trashedAt=Date.now();
-  trash.push(t);
+  const trashed={...t,trashedAt:Date.now()};
+  trash=[...trash,trashed];
   tasks=tasks.filter(x=>x.id!==id);
   await save();
   document.getElementById('task-popup').classList.remove('open');
@@ -876,8 +876,8 @@ function renderPapierkorb(){
         ${date?`<span class="chip due">gelöscht ${date}</span>`:''}
       </div>
       <div class="trash-actions">
-        <button class="btn-restore" onclick="restoreTask(${t.id})">↩ Wiederherstellen</button>
-        <button class="btn-delete-final" onclick="finalDelete(${t.id})">✕ Endgültig löschen</button>
+        <button class="btn-restore" onclick="restoreTask(${t.id})">&#8617; Wiederherstellen</button>
+        <button class="btn-delete-final" onclick="finalDelete(${t.id})">Endgültig löschen</button>
       </div>
     </div>`;
   }).join('');
@@ -923,6 +923,9 @@ async function renderInfo(){
 function render(){
   updateUI();
   document.getElementById('fbar').style.display=(tab==='aufgaben'&&(role==='admin'||role==='mithelfer'))?'flex':'none';
+  // Update trash count badge
+  const tc=document.getElementById('trash-count');
+  if(tc)tc.textContent=trash.length>0?'('+trash.length+')':'';
   if(tab==='home')renderHome();
   else if(tab==='aufgaben')renderAufgaben();
   else if(tab==='zeitplan')renderZeitplan();
