@@ -1275,82 +1275,72 @@ let vFilter='Alle';let vView='karten';
 
 function renderAnbieter(){
   const a=document.getElementById('scroll');
-  const isA=role==='admin',isH=role==='mithelfer';
+  const isA=role==='admin';
   const cats=['Alle',...V_CATS];
-  let h=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-    <div style="font-size:17px;font-weight:700;letter-spacing:-.2px">Anbieter</div>
-    <div style="display:flex;gap:8px">
-      <button data-action="vview" data-view="karten" style="font-size:12px;padding:6px 12px;border-radius:8px;border:none;font-family:inherit;font-weight:500;cursor:pointer;background:${vView==='karten'?'var(--rose)':'rgba(120,120,128,.1)'};color:${vView==='karten'?'#fff':'var(--t2)'}">Karten</button>
-      <button data-action="vview" data-view="vergleich" style="font-size:12px;padding:6px 12px;border-radius:8px;border:none;font-family:inherit;font-weight:500;cursor:pointer;background:${vView==='vergleich'?'var(--rose)':'rgba(120,120,128,.1)'};color:${vView==='vergleich'?'#fff':'var(--t2)'}">Vergleich</button>
-    </div>
-  </div>`;
-  // Category filter tabs
-  h+=`<div class="v-filter-tabs">${cats.map(cat=>`<button class="v-ftab ${vFilter===cat?'on':''}" data-action="vfilter" data-cat="${cat}">${cat}</button>`).join('')}</div>`;
-  // CSV actions
-  h+=`<div style="display:flex;gap:8px;margin-bottom:14px">
-    <button data-action="csv-dl" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:rgba(120,120,128,.1);color:var(--t2);font-family:inherit;font-weight:500;cursor:pointer">📥 CSV Vorlage</button>
-    <button data-action="csv-import" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:rgba(120,120,128,.1);color:var(--t2);font-family:inherit;font-weight:500;cursor:pointer">📤 CSV Import</button>
-    <button data-action="add-vendor" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:var(--rose);color:#fff;font-family:inherit;font-weight:600;cursor:pointer;margin-left:auto">＋ Anbieter</button>
-  </div>`;
-  const filtered=vendors.filter(v=>vFilter==='Alle'||v.cat===vFilter);
-  if(!filtered.length){h+=`<div class="empty"><div class="ei">🏪</div><p>Noch keine Anbieter in dieser Kategorie.</p></div>`;a.innerHTML=h;attachVendorEvents();return;}
+  let h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+  h+='<div style="font-size:17px;font-weight:700;letter-spacing:-.2px">Anbieter</div>';
+  h+='<div style="display:flex;gap:8px">';
+  h+='<button data-action="vview" data-view="karten" style="font-size:12px;padding:6px 12px;border-radius:8px;border:none;font-family:inherit;font-weight:500;cursor:pointer;background:'+(vView==='karten'?'var(--rose)':'rgba(120,120,128,.1)')+';color:'+(vView==='karten'?'#fff':'var(--t2)')+'">Karten</button>';
+  h+='<button data-action="vview" data-view="vergleich" style="font-size:12px;padding:6px 12px;border-radius:8px;border:none;font-family:inherit;font-weight:500;cursor:pointer;background:'+(vView==='vergleich'?'var(--rose)':'rgba(120,120,128,.1)')+';color:'+(vView==='vergleich'?'#fff':'var(--t2)')+'">Vergleich</button>';
+  h+='</div></div>';
+  h+='<div class="v-filter-tabs">';
+  cats.forEach(function(cat){ h+='<button class="v-ftab '+(vFilter===cat?'on':'')+'" data-action="vfilter" data-cat="'+cat+'">'+cat+'</button>'; });
+  h+='</div>';
+  h+='<div style="display:flex;gap:8px;margin-bottom:14px">';
+  h+='<button data-action="csv-dl" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:rgba(120,120,128,.1);color:var(--t2);font-family:inherit;font-weight:500;cursor:pointer">Vorlage CSV</button>';
+  h+='<button data-action="csv-import" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:rgba(120,120,128,.1);color:var(--t2);font-family:inherit;font-weight:500;cursor:pointer">Import CSV</button>';
+  h+='<button data-action="add-vendor" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:var(--rose);color:#fff;font-family:inherit;font-weight:600;cursor:pointer;margin-left:auto">+ Anbieter</button>';
+  h+='</div>';
+  const filtered=vendors.filter(function(v){ return vFilter==='Alle'||v.cat===vFilter; });
+  if(!filtered.length){
+    h+='<div class="empty"><div class="ei">&#127978;</div><p>Noch keine Anbieter.</p></div>';
+    a.innerHTML=h;return;
+  }
   if(vView==='karten'){
-    h+=`<div class="v-grid">`;
-    h+=filtered.map(v=>{
-      const stars='⭐'.repeat(v.rating||0)+'☆'.repeat(5-(v.rating||0));
-      const statusCls=v.status==='Favorit'?'favorit':v.status==='Abgelehnt'?'abgelehnt':'pruefung';
-      const statusLabel=v.status||'In Prüfung';
-      return`<div class="v-card ${statusCls}" data-vid="${v.id}">
-        <div class="v-status ${statusCls}">${statusLabel}</div>
-        <div class="v-name">${v.name}</div>
-        <div class="v-cat">${v.cat}</div>
-        <div class="v-stars">${[1,2,3,4,5].map(i=>`<span class="v-star" data-action="vstar" data-vid="${v.id}" data-star="${i}">${i<=(v.rating||0)?'⭐':'☆'}</span>`).join('')}</div>
-        ${v.price?`<div class="v-price">${eur(v.price)} <span>geschätzt</span></div>`:''}
-        ${v.contact_name||v.contact_email||v.contact_phone?`<div style="font-size:12px;color:var(--t3);margin-top:4px;line-height:1.7">
-          ${v.contact_name?`👤 ${v.contact_name}<br>`:''}
-          ${v.contact_email?`<a href="mailto:${v.contact_email}" style="color:var(--blue);text-decoration:none">✉️ ${v.contact_email}</a><br>`:''}
-          ${v.contact_phone?`<a href="tel:${v.contact_phone}" style="color:var(--blue);text-decoration:none">📞 ${v.contact_phone}</a>`:''}
-        </div>`:''}
-        ${v.notes?`<div class="v-note">${v.notes}</div>`:''}
-        <div class="v-actions">
-          ${v.website?`<button class="v-btn" data-action="vopen" data-vid="${v.id}">🌐 Website</button>`:''}
-          <button class="v-btn primary" data-action="vedit" data-vid="${v.id}">Bearbeiten</button>
-          ${isA?`<button class="v-btn danger" data-action="vdelete" data-vid="${v.id}">Löschen</button>`:''}
-        </div>
-      </div>`;
-    }).join('');
-    h+=`</div>`;
-  } else {
-    // Comparison table
-    const maxCols=Math.min(filtered.length,4);
-    const shown=filtered.slice(0,maxCols);
-    const colW=`${100/(maxCols+1)}%`;
-    h+=`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;background:var(--sur);border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)">`;
-    // Header row
-    h+=`<tr><th style="padding:12px;font-size:12px;color:var(--t3);font-weight:600;text-align:left;background:var(--bg);border-bottom:1px solid var(--br);width:${colW}">Kriterium</th>`;
-    shown.forEach(v=>{h+=`<th style="padding:12px;font-size:14px;font-weight:700;text-align:center;border-bottom:1px solid var(--br);border-left:1px solid var(--br);width:${colW}">${v.name}<br><span style="font-size:11px;font-weight:400;color:var(--t3)">${v.cat}</span></th>`;});
-    h+=`</tr>`;
-    // Rows
-    const rows=[
-      ['Status',v=>`<span style="font-size:12px;font-weight:600;padding:3px 8px;border-radius:6px;background:${v.status==='Favorit'?'var(--rose-l)':v.status==='Abgelehnt'?'rgba(120,120,128,.1)':'var(--amber-l)'};color:${v.status==='Favorit'?'var(--rose-d)':v.status==='Abgelehnt'?'var(--t3)':'#92400e'}">${v.status||'In Prüfung'}</span>`],
-      ['Bewertung',v=>'⭐'.repeat(v.rating||0)+'☆'.repeat(5-(v.rating||0))],
-      ['Preis',v=>v.price?eur(v.price):'–'],
-      ['Kontakt',v=>v.contact_name||'–'],
-      ['E-Mail',v=>v.contact_email?`<a href="mailto:${v.contact_email}" style="color:var(--blue);font-size:12px">${v.contact_email}</a>`:'–'],
-      ['Telefon',v=>v.contact_phone?`<a href="tel:${v.contact_phone}" style="color:var(--blue)">${v.contact_phone}</a>`:'–'],
-      ['Website',v=>v.website?`<a href="${v.website}" target="_blank" style="color:var(--rose);font-size:12px">🌐 Öffnen</a>`:'–'],
-      ['Notizen',v=>v.notes?`<span style="font-size:12px">${v.notes}</span>`:'–'],
-    ];
-    rows.forEach(([label,fn])=>{
-      h+=`<tr><td style="padding:10px 12px;font-size:12px;font-weight:600;color:var(--t3);background:var(--bg);border-top:1px solid var(--br)">${label}</td>`;
-      shown.forEach(v=>{h+=`<td style="padding:10px 12px;font-size:13px;text-align:center;border-top:1px solid var(--br);border-left:1px solid var(--br)">${fn(v)}</td>`;});
-      h+=`</tr>`;
+    h+='<div class="v-grid">';
+    filtered.forEach(function(v){
+      var sc=v.status==='Favorit'?'favorit':v.status==='Abgelehnt'?'abgelehnt':'pruefung';
+      var sl=v.status||'In Pruefung';
+      var stars='';
+      for(var i=1;i<=5;i++) stars+='<span class="v-star" data-action="vstar" data-vid="'+v.id+'" data-star="'+i+'">'+(i<=(v.rating||0)?'&#11088;':'&#9734;')+'</span>';
+      h+='<div class="v-card '+sc+'">';
+      h+='<div class="v-status '+sc+'">'+sl+'</div>';
+      h+='<div class="v-name">'+v.name+'</div>';
+      h+='<div class="v-cat">'+v.cat+'</div>';
+      h+='<div class="v-stars">'+stars+'</div>';
+      if(v.price) h+='<div style="font-size:17px;font-weight:700;margin-bottom:6px">'+eur(v.price)+'</div>';
+      if(v.contact_name||v.contact_email||v.contact_phone){
+        h+='<div style="font-size:13px;color:var(--t3);margin-top:6px;line-height:1.8">';
+        if(v.contact_name) h+='<div>'+v.contact_name+'</div>';
+        if(v.contact_email) h+='<div><a href="mailto:'+v.contact_email+'" style="color:var(--blue);text-decoration:none">'+v.contact_email+'</a></div>';
+        if(v.contact_phone) h+='<div><a href="tel:'+v.contact_phone+'" style="color:var(--blue);text-decoration:none">'+v.contact_phone+'</a></div>';
+        h+='</div>';
+      }
+      if(v.notes) h+='<div style="font-size:13px;color:var(--t2);margin-top:8px">'+v.notes+'</div>';
+      h+='<div class="v-actions">';
+      if(v.website) h+='<button class="v-btn" data-action="vopen" data-vid="'+v.id+'">Website</button>';
+      h+='<button class="v-btn primary" data-action="vedit" data-vid="'+v.id+'">Bearbeiten</button>';
+      if(isA) h+='<button class="v-btn danger" data-action="vdelete" data-vid="'+v.id+'">Loeschen</button>';
+      h+='</div></div>';
     });
-    h+=`</table></div>`;
-    if(filtered.length>4)h+=`<p style="font-size:12px;color:var(--t3);text-align:center;margin-top:8px">Zeige 4 von ${filtered.length} Anbietern. Kategorie filtern für besseren Überblick.</p>`;
+    h+='</div>';
+  } else {
+    var shown=filtered.slice(0,4);
+    var cw=Math.floor(100/(shown.length+1))+'%';
+    h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;background:var(--sur);border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)">';
+    h+='<tr><th style="padding:12px;font-size:12px;color:var(--t3);text-align:left;background:var(--bg);border-bottom:1px solid var(--br);width:'+cw+'">Kriterium</th>';
+    shown.forEach(function(v){ h+='<th style="padding:12px;font-size:14px;font-weight:700;text-align:center;border-bottom:1px solid var(--br);border-left:1px solid var(--br);width:'+cw+'">'+v.name+'</th>'; });
+    h+='</tr>';
+    [['Status',function(v){return v.status||'In Pruefung';}],['Bewertung',function(v){var s='';for(var i=1;i<=5;i++)s+=(i<=(v.rating||0)?'&#11088;':'&#9734;');return s;}],['Preis',function(v){return v.price?eur(v.price):'--';}],['Kontakt',function(v){return v.contact_name||'--';}],['E-Mail',function(v){return v.contact_email||'--';}],['Telefon',function(v){return v.contact_phone||'--';}],['Notizen',function(v){return v.notes||'--';}]].forEach(function(row){
+      h+='<tr><td style="padding:10px 12px;font-size:12px;font-weight:600;color:var(--t3);background:var(--bg);border-top:1px solid var(--br)">'+row[0]+'</td>';
+      shown.forEach(function(v){ h+='<td style="padding:10px 12px;font-size:13px;text-align:center;border-top:1px solid var(--br);border-left:1px solid var(--br)">'+row[1](v)+'</td>'; });
+      h+='</tr>';
+    });
+    h+='</table></div>';
   }
   a.innerHTML=h;
 }
+
 
 
 
