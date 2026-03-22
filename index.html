@@ -341,10 +341,10 @@
     <button class="fb on" data-f="alle">Alle</button>
     <button class="fb" data-f="offen">Offen</button>
     <button class="fb" data-f="erledigt">Erledigt</button>
-    <button class="fb" data-f="hoch">&#128308; Hoch</button>
+    <button class="fb" data-f="hoch">Hoch</button>
     <button class="fb" data-f="woche">Diese Woche</button>
     <button class="fb" data-f="meine">Meine</button>
-    <button class="fb" data-f="papierkorb" id="fb-trash">&#128465; Papierkorb</button>
+    <button class="fb" data-f="papierkorb" id="fb-trash">🗑 Papierkorb</button>
   </div>
   <div class="scroll" id="scroll"></div>
 </div>
@@ -556,8 +556,8 @@ function openTaskPopup(t){
   // Actions
   html+=`<div class="popup-actions">
     ${canChk?`<button class="act-btn primary" onclick="togAndClose(${t.id})">${t.done?'↩ Wiedereröffnen':'✓ Erledigt'}</button>`:''}
-    ${t.due&&!t.trashed?`<button class="act-btn" onclick="cal(${t.id})">&#128197; Kalender</button>`:''}
-    ${t.trashed?`<button class="act-btn" onclick="restoreTask(${t.id});document.getElementById('task-popup').classList.remove('open')">Wiederherstellen</button>`:`<button class="act-btn danger" onclick="trashTaskAndClose(${t.id})">In Papierkorb</button>`}
+    ${t.due&&!t.trashed?`<button class="act-btn" onclick="cal(${t.id})">📅 Kalender</button>`:''}
+    ${t.trashed?`<button class="act-btn" onclick="restoreTask(${t.id});document.getElementById('task-popup').classList.remove('open')">↩ Wiederherstellen</button>`:`<button class="act-btn danger" onclick="trashTaskAndClose(${t.id})">🗑 In Papierkorb</button>`}
   </div>`;
 
   document.getElementById('popup-content').innerHTML=html;
@@ -651,18 +651,22 @@ document.getElementById('task-popup').addEventListener('click',e=>{if(e.target==
 // RENDER FUNCTIONS
 function renderHome(){
   const a=document.getElementById('scroll');
+  if(!a)return;
   let h='';
-  const mentions=checkMentions();
-  if(mentions.length)h+=`<div class="alert mention"><div class="aico">🔔</div><div class="atxt"><strong>Du wurdest ${mentions.length}x erwähnt!</strong><a onclick="openNotif()" style="color:var(--rose-d);cursor:pointer">Jetzt ansehen →</a></div></div>`;
-  if(wDate){const d=dl(wDate);h+=`<div class="cdown"><div class="cl"><p>Bis zur Hochzeit</p><h3>Luisa & Nico</h3><div class="dt">${fmt(wDate)}</div></div><div class="cr"><div class="num">${d>0?d:'🎊'}</div><div class="lbl">${d>0?'Tage':''}</div></div></div>`;}
-  else h+=`<div class="cdown"><div class="cl"><p>Bis zur Hochzeit</p><h3>Luisa & Nico</h3></div><div class="cr"><div class="num">💍</div></div></div>`;
-  h+=`<div class="info-card"><h3>📅 Hochzeitsinfos</h3>
+  try{
+    const mentions=checkMentions();
+    if(mentions.length)h+=`<div class="alert mention"><div class="aico">🔔</div><div class="atxt"><strong>Du wurdest ${mentions.length}x erwaehnt!</strong><a onclick="openNotif()" style="color:var(--rose-d);cursor:pointer">Jetzt ansehen</a></div></div>`;
+  }catch(e){}
+  if(wDate){const d=dl(wDate);h+=`<div class="cdown"><div class="cl"><p>Bis zur Hochzeit</p><h3>Luisa & Nico</h3><div class="dt">${fmt(wDate)}</div></div><div class="cr"><div class="num">${d>0?d:'!'}</div><div class="lbl">${d>0?'Tage':''}</div></div></div>`;}
+  else{h+=`<div class="cdown"><div class="cl"><p>Bis zur Hochzeit</p><h3>Luisa & Nico</h3></div><div class="cr"><div class="num">-</div></div></div>`;}
+  h+=`<div class="info-card"><h3>Hochzeitsinfos</h3>
     <div class="irow"><div class="iico">📍</div><div><strong>Ort</strong><br><span style="color:var(--t2);font-size:13px" id="g-loc">Wird bekannt gegeben</span></div></div>
     <div class="irow"><div class="iico">🕐</div><div><strong>Datum & Uhrzeit</strong><br><span style="color:var(--t2);font-size:13px" id="g-time">Wird bekannt gegeben</span></div></div>
     <div class="irow"><div class="iico">👗</div><div><strong>Dresscode</strong><br><span style="color:var(--t2);font-size:13px" id="g-dress">Wird bekannt gegeben</span></div></div>
   </div>`;
-  if(role==='gast')h+=`<div class="alert info"><div class="aico">👤</div><div class="atxt"><strong>Mithelfer oder Trauzeuge?</strong><a onclick="openAuth()" style="color:var(--rose);cursor:pointer"> Hier anmelden →</a></div></div>`;
-  a.innerHTML=h;loadInfo();
+  if(role==='gast')h+=`<div class="alert info"><div class="aico">👤</div><div class="atxt"><strong>Mithelfer oder Trauzeuge?</strong><a onclick="openAuth()" style="color:var(--rose);cursor:pointer"> Hier anmelden</a></div></div>`;
+  a.innerHTML=h;
+  loadInfo();
 }
 
 async function loadInfo(){
@@ -685,7 +689,7 @@ function renderAufgaben(){
   // Papierkorb filter
   if(flt==='papierkorb'){
     const trashed=tasks.filter(t=>t.trashed);
-    if(!trashed.length){h+=`<div class="empty"><div class="ei">&#128465;</div>Papierkorb ist leer.</div>`;document.getElementById('scroll').innerHTML=h;stats();return;}
+    if(!trashed.length){h+=`<div class="empty"><div class="ei"></div>Papierkorb ist leer.</div>`;document.getElementById('scroll').innerHTML=h;stats();return;}
     if(isAdmin){h+=`<div style="display:flex;gap:8px;margin-bottom:10px"><button onclick="emptyTrash()" style="font-size:13px;padding:8px 14px;border-radius:10px;border:1px solid #fca5a5;background:var(--red-l);color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif">Alle endgültig löschen</button></div>`;}
     h+=trashed.map(t=>{
       const names=(t.assignees||[]).join(', ');
@@ -929,7 +933,7 @@ function render(){
   // Update trash filter badge
   const trashCount=tasks.filter(t=>t.trashed).length;
   const fbTrash=document.getElementById('fb-trash');
-  if(fbTrash)fbTrash.textContent=trashCount>0?'&#128465; Papierkorb ('+trashCount+')':'&#128465; Papierkorb';
+  if(fbTrash)fbTrash.textContent=trashCount>0?'🗑 Papierkorb ('+trashCount+')':'🗑 Papierkorb';
   if(tab==='home')renderHome();
   else if(tab==='aufgaben')renderAufgaben();
   else if(tab==='zeitplan')renderZeitplan();
@@ -1029,6 +1033,7 @@ document.querySelectorAll('.fb').forEach(b=>{b.addEventListener('click',()=>{doc
 
 async function loadPublicData(){try{const s=await getDoc(DD);if(s.exists()&&s.data().weddingDate)wDate=s.data().weddingDate;}catch(e){}}
 await loadPublicData();
+renderHome(); // Show immediately for guests
 render();
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
