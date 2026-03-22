@@ -511,6 +511,36 @@
   </div>
 </div>
 
+<!-- VENDOR MODAL -->
+<div id="vendor-modal" class="overlay" style="z-index:501">
+  <div class="sheet" style="max-width:480px">
+    <div class="sh-handle"></div>
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:16px" id="vendor-modal-title">Neuer Anbieter</h2>
+    <div class="fg"><label>Name</label><input type="text" id="v-name" class="inp" placeholder="z.B. Villa Rothschild"/></div>
+    <div class="fg"><label>Kategorie</label><select id="v-cat" class="inp">
+      <option>Location</option><option>Catering</option><option>Fotografie</option>
+      <option>Musik</option><option>Dekoration</option><option>Kleidung</option><option>Sonstiges</option>
+    </select></div>
+    <div class="fg"><label>Status</label><select id="v-status" class="inp">
+      <option>In Prüfung</option><option>Favorit</option><option>Abgelehnt</option>
+    </select></div>
+    <div class="fg"><label>Geschätzter Preis (€)</label><input type="number" id="v-price" class="inp" placeholder="0" min="0"/></div>
+    <div class="fg"><label>Website</label><input type="url" id="v-web" class="inp" placeholder="https://..."/></div>
+    <div style="background:rgba(120,120,128,.06);border-radius:14px;padding:14px;margin-bottom:12px">
+      <div style="font-size:12px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px">Kontakt</div>
+      <div class="fg"><label>Ansprechpartner</label><input type="text" id="v-cname" class="inp" placeholder="Vor- und Nachname"/></div>
+      <div class="fg"><label>E-Mail</label><input type="email" id="v-cemail" class="inp" placeholder="name@anbieter.de"/></div>
+      <div class="fg"><label>Telefon</label><input type="tel" id="v-cphone" class="inp" placeholder="+49 123 456789"/></div>
+    </div>
+    <div class="fg"><label>Notizen</label><textarea id="v-notes" class="inp" rows="3" placeholder="Besonderheiten, Eindrücke..."></textarea></div>
+    <div class="mfoot">
+      <button class="btn-ghost" id="vendor-modal-cancel">Abbrechen</button>
+      <button class="btn-save" id="vendor-modal-save">Speichern</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="csv-file-input" accept=".csv" style="display:none"/>
+
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import{getFirestore,doc,setDoc,getDoc,onSnapshot,collection,getDocs,updateDoc}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -1273,218 +1303,209 @@ const V_CATS=['Location','Catering','Fotografie','Musik','Dekoration','Kleidung'
 const V_STATUS=['In Prüfung','Favorit','Abgelehnt'];
 let vFilter='Alle';let vView='karten';
 
+let editingVendorId = null;
+
 function renderAnbieter(){
-  const a=document.getElementById('scroll');
-  const isA=role==='admin';
-  const cats=['Alle',...V_CATS];
-  let h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
-  h+='<div style="font-size:17px;font-weight:700;letter-spacing:-.2px">Anbieter</div>';
-  h+='<div style="display:flex;gap:8px">';
-  h+='<button data-action="vview" data-view="karten" style="font-size:12px;padding:6px 12px;border-radius:8px;border:none;font-family:inherit;font-weight:500;cursor:pointer;background:'+(vView==='karten'?'var(--rose)':'rgba(120,120,128,.1)')+';color:'+(vView==='karten'?'#fff':'var(--t2)')+'">Karten</button>';
-  h+='<button data-action="vview" data-view="vergleich" style="font-size:12px;padding:6px 12px;border-radius:8px;border:none;font-family:inherit;font-weight:500;cursor:pointer;background:'+(vView==='vergleich'?'var(--rose)':'rgba(120,120,128,.1)')+';color:'+(vView==='vergleich'?'#fff':'var(--t2)')+'">Vergleich</button>';
-  h+='</div></div>';
-  h+='<div class="v-filter-tabs">';
-  cats.forEach(function(cat){ h+='<button class="v-ftab '+(vFilter===cat?'on':'')+'" data-action="vfilter" data-cat="'+cat+'">'+cat+'</button>'; });
-  h+='</div>';
-  h+='<div style="display:flex;gap:8px;margin-bottom:14px">';
-  h+='<button data-action="csv-dl" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:rgba(120,120,128,.1);color:var(--t2);font-family:inherit;font-weight:500;cursor:pointer">Vorlage CSV</button>';
-  h+='<button data-action="csv-import" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:rgba(120,120,128,.1);color:var(--t2);font-family:inherit;font-weight:500;cursor:pointer">Import CSV</button>';
-  h+='<button data-action="add-vendor" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:var(--rose);color:#fff;font-family:inherit;font-weight:600;cursor:pointer;margin-left:auto">+ Anbieter</button>';
-  h+='</div>';
-  const filtered=vendors.filter(function(v){ return vFilter==='Alle'||v.cat===vFilter; });
+  const a = document.getElementById('scroll');
+  const isA = role === 'admin';
+  const cats = ['Alle','Location','Catering','Fotografie','Musik','Dekoration','Kleidung','Sonstiges'];
+  const filtered = vendors.filter(function(v){ return vFilter === 'Alle' || v.cat === vFilter; });
+
+  let h = '';
+
+  // Top bar
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+  h += '<div style="font-size:17px;font-weight:700">Anbieter</div>';
+  h += '<div style="display:flex;gap:8px">';
+  h += '<button id="btn-vview-karten" style="font-size:12px;padding:6px 12px;border-radius:8px;border:none;font-family:inherit;font-weight:500;cursor:pointer">Karten</button>';
+  h += '<button id="btn-vview-vergleich" style="font-size:12px;padding:6px 12px;border-radius:8px;border:none;font-family:inherit;font-weight:500;cursor:pointer">Vergleich</button>';
+  h += '</div></div>';
+
+  // Filter tabs
+  h += '<div class="v-filter-tabs">';
+  for(var ci=0; ci<cats.length; ci++){
+    var cat = cats[ci];
+    h += '<button id="vfilter-' + ci + '" class="v-ftab' + (vFilter===cat?' on':'') + '">' + cat + '</button>';
+  }
+  h += '</div>';
+
+  // Action buttons
+  h += '<div style="display:flex;gap:8px;margin-bottom:14px">';
+  h += '<button id="btn-csv-dl" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:rgba(120,120,128,.1);color:var(--t2);font-family:inherit;font-weight:500;cursor:pointer">Vorlage CSV</button>';
+  h += '<button id="btn-csv-import" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:rgba(120,120,128,.1);color:var(--t2);font-family:inherit;font-weight:500;cursor:pointer">Import CSV</button>';
+  h += '<button id="btn-add-vendor" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:var(--rose);color:#fff;font-family:inherit;font-weight:600;cursor:pointer;margin-left:auto">+ Anbieter</button>';
+  h += '</div>';
+
   if(!filtered.length){
-    h+='<div class="empty"><div class="ei">&#127978;</div><p>Noch keine Anbieter.</p></div>';
-    a.innerHTML=h;return;
+    h += '<div class="empty"><div class="ei">&#127978;</div><p>Noch keine Anbieter.</p></div>';
+    a.innerHTML = h;
+    attachAnbieterListeners(cats);
+    return;
   }
-  if(vView==='karten'){
-    h+='<div class="v-grid">';
-    filtered.forEach(function(v){
-      var sc=v.status==='Favorit'?'favorit':v.status==='Abgelehnt'?'abgelehnt':'pruefung';
-      var sl=v.status||'In Pruefung';
-      var stars='';
-      for(var i=1;i<=5;i++) stars+='<span class="v-star" data-action="vstar" data-vid="'+v.id+'" data-star="'+i+'">'+(i<=(v.rating||0)?'&#11088;':'&#9734;')+'</span>';
-      h+='<div class="v-card '+sc+'">';
-      h+='<div class="v-status '+sc+'">'+sl+'</div>';
-      h+='<div class="v-name">'+v.name+'</div>';
-      h+='<div class="v-cat">'+v.cat+'</div>';
-      h+='<div class="v-stars">'+stars+'</div>';
-      if(v.price) h+='<div style="font-size:17px;font-weight:700;margin-bottom:6px">'+eur(v.price)+'</div>';
-      if(v.contact_name||v.contact_email||v.contact_phone){
-        h+='<div style="font-size:13px;color:var(--t3);margin-top:6px;line-height:1.8">';
-        if(v.contact_name) h+='<div>'+v.contact_name+'</div>';
-        if(v.contact_email) h+='<div><a href="mailto:'+v.contact_email+'" style="color:var(--blue);text-decoration:none">'+v.contact_email+'</a></div>';
-        if(v.contact_phone) h+='<div><a href="tel:'+v.contact_phone+'" style="color:var(--blue);text-decoration:none">'+v.contact_phone+'</a></div>';
-        h+='</div>';
-      }
-      if(v.notes) h+='<div style="font-size:13px;color:var(--t2);margin-top:8px">'+v.notes+'</div>';
-      h+='<div class="v-actions">';
-      if(v.website) h+='<button class="v-btn" data-action="vopen" data-vid="'+v.id+'">Website</button>';
-      h+='<button class="v-btn primary" data-action="vedit" data-vid="'+v.id+'">Bearbeiten</button>';
-      if(isA) h+='<button class="v-btn danger" data-action="vdelete" data-vid="'+v.id+'">Loeschen</button>';
-      h+='</div></div>';
-    });
-    h+='</div>';
+
+  if(vView === 'karten'){
+    h += '<div class="v-grid">';
+    for(var vi=0; vi<filtered.length; vi++){
+      var v = filtered[vi];
+      var sc = v.status==='Favorit'?'favorit':v.status==='Abgelehnt'?'abgelehnt':'pruefung';
+      h += '<div class="v-card ' + sc + '">';
+      h += '<div class="v-status ' + sc + '">' + (v.status||'In Prüfung') + '</div>';
+      h += '<div class="v-name">' + v.name + '</div>';
+      h += '<div class="v-cat">' + v.cat + '</div>';
+      var stars = '';
+      for(var si=1;si<=5;si++) stars += '<span id="star-'+v.id+'-'+si+'" style="font-size:16px;cursor:pointer">'+(si<=(v.rating||0)?'★':'☆')+'</span>';
+      h += '<div style="margin-bottom:8px">' + stars + '</div>';
+      if(v.price) h += '<div style="font-size:17px;font-weight:700;margin-bottom:6px">' + eur(v.price) + '</div>';
+      if(v.contact_name) h += '<div style="font-size:13px;color:var(--t3)">' + v.contact_name + '</div>';
+      if(v.contact_email) h += '<div style="font-size:13px"><a href="mailto:'+v.contact_email+'" style="color:var(--blue);text-decoration:none">'+v.contact_email+'</a></div>';
+      if(v.contact_phone) h += '<div style="font-size:13px"><a href="tel:'+v.contact_phone+'" style="color:var(--blue);text-decoration:none">'+v.contact_phone+'</a></div>';
+      if(v.notes) h += '<div style="font-size:13px;color:var(--t2);margin-top:6px">' + v.notes + '</div>';
+      h += '<div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--br)">';
+      if(v.website) h += '<button id="vopen-'+v.id+'" class="v-btn">Website</button>';
+      h += '<button id="vedit-'+v.id+'" class="v-btn primary">Bearbeiten</button>';
+      if(isA) h += '<button id="vdel-'+v.id+'" class="v-btn danger">Löschen</button>';
+      h += '</div></div>';
+    }
+    h += '</div>';
   } else {
-    var shown=filtered.slice(0,4);
-    var cw=Math.floor(100/(shown.length+1))+'%';
-    h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;background:var(--sur);border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)">';
-    h+='<tr><th style="padding:12px;font-size:12px;color:var(--t3);text-align:left;background:var(--bg);border-bottom:1px solid var(--br);width:'+cw+'">Kriterium</th>';
-    shown.forEach(function(v){ h+='<th style="padding:12px;font-size:14px;font-weight:700;text-align:center;border-bottom:1px solid var(--br);border-left:1px solid var(--br);width:'+cw+'">'+v.name+'</th>'; });
-    h+='</tr>';
-    [['Status',function(v){return v.status||'In Pruefung';}],['Bewertung',function(v){var s='';for(var i=1;i<=5;i++)s+=(i<=(v.rating||0)?'&#11088;':'&#9734;');return s;}],['Preis',function(v){return v.price?eur(v.price):'--';}],['Kontakt',function(v){return v.contact_name||'--';}],['E-Mail',function(v){return v.contact_email||'--';}],['Telefon',function(v){return v.contact_phone||'--';}],['Notizen',function(v){return v.notes||'--';}]].forEach(function(row){
-      h+='<tr><td style="padding:10px 12px;font-size:12px;font-weight:600;color:var(--t3);background:var(--bg);border-top:1px solid var(--br)">'+row[0]+'</td>';
-      shown.forEach(function(v){ h+='<td style="padding:10px 12px;font-size:13px;text-align:center;border-top:1px solid var(--br);border-left:1px solid var(--br)">'+row[1](v)+'</td>'; });
-      h+='</tr>';
-    });
-    h+='</table></div>';
+    var shown = filtered.slice(0,4);
+    h += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;background:var(--sur);border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)">';
+    h += '<tr><th style="padding:12px;font-size:12px;color:var(--t3);text-align:left;background:var(--bg);border-bottom:1px solid var(--br)">Kriterium</th>';
+    for(var ti=0;ti<shown.length;ti++) h += '<th style="padding:12px;font-size:14px;font-weight:700;text-align:center;border-bottom:1px solid var(--br);border-left:1px solid var(--br)">' + shown[ti].name + '</th>';
+    h += '</tr>';
+    var tableRows = [
+      ['Status', function(v){ return v.status||'In Prüfung'; }],
+      ['Bewertung', function(v){ var s=''; for(var i=1;i<=5;i++) s+=(i<=(v.rating||0)?'★':'☆'); return s; }],
+      ['Preis', function(v){ return v.price?eur(v.price):'–'; }],
+      ['Kontakt', function(v){ return v.contact_name||'–'; }],
+      ['E-Mail', function(v){ return v.contact_email||'–'; }],
+      ['Telefon', function(v){ return v.contact_phone||'–'; }],
+      ['Notizen', function(v){ return v.notes||'–'; }]
+    ];
+    for(var ri=0;ri<tableRows.length;ri++){
+      h += '<tr><td style="padding:10px 12px;font-size:12px;font-weight:600;color:var(--t3);background:var(--bg);border-top:1px solid var(--br)">' + tableRows[ri][0] + '</td>';
+      for(var ti2=0;ti2<shown.length;ti2++) h += '<td style="padding:10px 12px;font-size:13px;text-align:center;border-top:1px solid var(--br);border-left:1px solid var(--br)">' + tableRows[ri][1](shown[ti2]) + '</td>';
+      h += '</tr>';
+    }
+    h += '</table></div>';
   }
-  a.innerHTML=h;
+
+  a.innerHTML = h;
+  attachAnbieterListeners(cats);
+}
+
+function attachAnbieterListeners(cats){
+  var a = document.getElementById('scroll');
+
+  // View toggle
+  var kBtn = document.getElementById('btn-vview-karten');
+  var vBtn = document.getElementById('btn-vview-vergleich');
+  if(kBtn){ kBtn.style.background = vView==='karten'?'var(--rose)':'rgba(120,120,128,.1)'; kBtn.style.color = vView==='karten'?'#fff':'var(--t2)'; kBtn.addEventListener('click', function(){ vView='karten'; renderAnbieter(); }); }
+  if(vBtn){ vBtn.style.background = vView==='vergleich'?'var(--rose)':'rgba(120,120,128,.1)'; vBtn.style.color = vView==='vergleich'?'#fff':'var(--t2)'; vBtn.addEventListener('click', function(){ vView='vergleich'; renderAnbieter(); }); }
+
+  // Filter tabs
+  for(var ci=0; ci<cats.length; ci++){
+    (function(cat){
+      var el = document.getElementById('vfilter-' + ci);
+      // reassign ci via closure issue fix
+    })(cats[ci]);
+  }
+  // Simpler filter tab approach
+  a.querySelectorAll('.v-ftab').forEach(function(btn){
+    btn.addEventListener('click', function(){ vFilter = btn.textContent; renderAnbieter(); });
+  });
+
+  // Add vendor button
+  var addBtn = document.getElementById('btn-add-vendor');
+  if(addBtn) addBtn.addEventListener('click', function(){ openVendorModal(null); });
+
+  // CSV buttons
+  var dlBtn = document.getElementById('btn-csv-dl');
+  if(dlBtn) dlBtn.addEventListener('click', downloadCSVTemplate);
+  var impBtn = document.getElementById('btn-csv-import');
+  if(impBtn) impBtn.addEventListener('click', function(){ document.getElementById('csv-file-input').click(); });
+
+  // Per-vendor buttons
+  vendors.filter(function(v){ return vFilter==='Alle'||v.cat===vFilter; }).forEach(function(v){
+    var openBtn = document.getElementById('vopen-'+v.id);
+    if(openBtn) openBtn.addEventListener('click', function(){ window.open(v.website.startsWith('http')?v.website:'https://'+v.website,'_blank'); });
+    var editBtn = document.getElementById('vedit-'+v.id);
+    if(editBtn) editBtn.addEventListener('click', function(){ openVendorModal(v.id); });
+    var delBtn = document.getElementById('vdel-'+v.id);
+    if(delBtn) delBtn.addEventListener('click', async function(){
+      if(!confirm('Anbieter löschen?'))return;
+      vendors = vendors.filter(function(x){ return x.id!==v.id; });
+      await save(); renderAnbieter();
+    });
+    for(var si=1;si<=5;si++){
+      (function(starVal){
+        var starEl = document.getElementById('star-'+v.id+'-'+starVal);
+        if(starEl) starEl.addEventListener('click', async function(){
+          v.rating = starVal; await save(); renderAnbieter();
+        });
+      })(si);
+    }
+  });
 }
 
 
 
 
-window.setVFilter=function(cat){vFilter=cat;renderAnbieter();};
-window.setVView=function(v){vView=v;renderAnbieter();};
-
-// ── VENDOR MODAL ──
-let editingVendorId=null;
-window.openVendorModal=function(id=null){
-  editingVendorId=id;
-  const v=id?vendors.find(x=>x.id===id):null;
-  const existing=document.getElementById('vendor-overlay');
-  if(existing)existing.remove();
-
-  const overlay=document.createElement('div');
-  overlay.className='overlay open';
-  overlay.id='vendor-overlay';
-  overlay.style.zIndex='9500';
-  document.body.appendChild(overlay);
-
-  const sheet=document.createElement('div');
-  sheet.className='sheet';
-  sheet.style.maxWidth='480px';
-  overlay.appendChild(sheet);
-
-  function el(tag,props={}){
-    const e=document.createElement(tag);
-    Object.entries(props).forEach(([k,val])=>{if(k==='style')e.style.cssText=val;else if(k==='text')e.textContent=val;else e[k]=val;});
-    return e;
-  }
-  function field(id,labelTxt,type,placeholder,value){
-    const wrap=el('div',{className:'fg'});
-    wrap.appendChild(el('label',{text:labelTxt}));
-    let inp;
-    if(type==='select'){
-      inp=el('select',{id,className:'inp'});
-    } else if(type==='textarea'){
-      inp=el('textarea',{id,className:'inp',rows:3,placeholder,value});
-    } else {
-      inp=el('input',{id,className:'inp',type,placeholder,value:value||''});
-    }
-    wrap.appendChild(inp);
-    sheet.appendChild(wrap);
-    return inp;
-  }
-
-  sheet.appendChild(el('div',{className:'sh-handle'}));
-  sheet.appendChild(el('h2',{text:v?'Anbieter bearbeiten':'Neuer Anbieter',style:'font-size:20px;font-weight:700;margin-bottom:16px'}));
-
-  const nameInp=field('v-name','Name','text','z.B. Villa Rothschild',v?.name||'');
-  const catSel=field('v-cat','Kategorie','select','','');
-  V_CATS.forEach(o=>{const opt=el('option',{value:o,text:o});if(o===v?.cat)opt.selected=true;catSel.appendChild(opt);});
-  const statusSel=field('v-status','Status','select','','');
-  V_STATUS.forEach(o=>{const opt=el('option',{value:o,text:o});if(o===(v?.status||'In Prüfung'))opt.selected=true;statusSel.appendChild(opt);});
-  field('v-price','Geschätzter Preis (€)','number','0',v?.price||'');
-  field('v-web','Website','url','https://...',v?.website||'');
-
-  const cs=el('div',{style:'background:rgba(120,120,128,.06);border-radius:14px;padding:14px;margin-bottom:12px'});
-  cs.appendChild(el('div',{text:'Kontakt',style:'font-size:13px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px'}));
-  sheet.appendChild(cs);
-  [['v-cname','Ansprechpartner','text','Vor- und Nachname',v?.contact_name||''],['v-cemail','E-Mail','email','name@anbieter.de',v?.contact_email||''],['v-cphone','Telefon','tel','+49 123 456789',v?.contact_phone||'']].forEach(([id,lbl,type,ph,val])=>{
-    const wrap=el('div',{className:'fg'});
-    wrap.appendChild(el('label',{text:lbl}));
-    const inp=el('input',{id,className:'inp',type,placeholder:ph,value:val});
-    wrap.appendChild(inp);cs.appendChild(wrap);
-  });
-
-  field('v-notes','Notizen','textarea','Besonderheiten, Eindrücke...',v?.notes||'');
-
-  const foot=el('div',{className:'mfoot'});
-  const cancelBtn=el('button',{className:'btn-ghost',text:'Abbrechen'});
-  const saveBtn=el('button',{className:'btn-save',text:'Speichern'});
-  foot.appendChild(cancelBtn);foot.appendChild(saveBtn);sheet.appendChild(foot);
-
-  cancelBtn.addEventListener('click',()=>overlay.remove());
-  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
-  saveBtn.addEventListener('click',async()=>{
-    const name=document.getElementById('v-name').value.trim();
-    if(!name){document.getElementById('v-name').focus();return;}
-    const data={
-      name,
-      cat:document.getElementById('v-cat').value,
-      status:document.getElementById('v-status').value,
-      price:parseFloat(document.getElementById('v-price').value)||0,
-      website:document.getElementById('v-web').value.trim(),
-      contact_name:document.getElementById('v-cname').value.trim(),
-      contact_email:document.getElementById('v-cemail').value.trim(),
-      contact_phone:document.getElementById('v-cphone').value.trim(),
-      notes:document.getElementById('v-notes').value.trim(),
-    };
-    if(editingVendorId){
-      const vend=vendors.find(x=>x.id===editingVendorId);
-      if(vend)Object.assign(vend,data);
-    }else{
-      vendors.push({id:vnid++,...data,rating:0,createdAt:Date.now()});
-    }
-    await save();
-    overlay.remove();
-    renderAnbieter();
-  });
-};
-
-// saveVendor is now inline in openVendorModal
 
 // ── CSV ──
-window.downloadCSVTemplate=function(){
-  const header='Name,Kategorie,Preis,Bewertung,Status,Website,Kontakt_Name,Kontakt_Email,Kontakt_Telefon,Notizen';
-  const example='Beispiel Villa,Location,5000,4,Favorit,https://example.com,Max Mustermann,max@villa.de,+49 123 456,Schöner Garten';
-  const blob=new Blob([header+'\n'+example],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='anbieter_vorlage.csv';a.click();
-};
 
-window.importCSV=async function(){
-  const fileInput=document.getElementById('csv-file-input');
-  const file=fileInput?.files?.[0];if(!file)return;
-  const text=await file.text();
-  const lines=text.trim().split('\n');
-  if(lines.length<2){alert('CSV leer oder ungültig.');return;}
-  const headers=lines[0].split(',').map(h=>h.trim().toLowerCase());
-  const get=(row,key)=>{const i=headers.indexOf(key);return i>-1?(row[i]||'').trim():'';};
-  const imported=[];
-  for(let i=1;i<lines.length;i++){
-    const row=lines[i].split(',');
-    const name=get(row,'name');if(!name)continue;
-    imported.push({
-      id:vnid++,name,
-      cat:get(row,'kategorie')||'Sonstiges',
-      price:parseFloat(get(row,'preis'))||0,
-      rating:parseInt(get(row,'bewertung'))||0,
-      status:get(row,'status')||'In Prüfung',
-      website:get(row,'website')||'',
-      contact_name:get(row,'kontakt_name')||'',
-      contact_email:get(row,'kontakt_email')||'',
-      contact_phone:get(row,'kontakt_telefon')||'',
-      notes:get(row,'notizen')||'',
-      createdAt:Date.now(),
-    });
+
+
+function openVendorModal(id){
+  editingVendorId = id || null;
+  var v = id ? vendors.find(function(x){ return x.id===id; }) : null;
+  document.getElementById('vendor-modal-title').textContent = v ? 'Anbieter bearbeiten' : 'Neuer Anbieter';
+  document.getElementById('v-name').value = v ? v.name : '';
+  document.getElementById('v-cat').value = v ? v.cat : 'Location';
+  document.getElementById('v-status').value = v ? (v.status||'In Prüfung') : 'In Prüfung';
+  document.getElementById('v-price').value = v ? (v.price||'') : '';
+  document.getElementById('v-web').value = v ? (v.website||'') : '';
+  document.getElementById('v-cname').value = v ? (v.contact_name||'') : '';
+  document.getElementById('v-cemail').value = v ? (v.contact_email||'') : '';
+  document.getElementById('v-cphone').value = v ? (v.contact_phone||'') : '';
+  document.getElementById('v-notes').value = v ? (v.notes||'') : '';
+  document.getElementById('vendor-modal').classList.add('open');
+  setTimeout(function(){ document.getElementById('v-name').focus(); }, 300);
+}
+
+function downloadCSVTemplate(){
+  var header = 'Name,Kategorie,Preis,Bewertung,Status,Website,Kontakt_Name,Kontakt_Email,Kontakt_Telefon,Notizen';
+  var example = 'Beispiel Villa,Location,5000,4,Favorit,https://example.com,Max Mustermann,max@villa.de,+49 123 456,Schoener Garten';
+  var blob = new Blob([header+'\n'+example], {type:'text/csv;charset=utf-8'});
+  var a2 = document.createElement('a');
+  a2.href = URL.createObjectURL(blob);
+  a2.download = 'anbieter_vorlage.csv';
+  a2.click();
+}
+
+async function importCSVFile(){
+  var fileInput = document.getElementById('csv-file-input');
+  var file = fileInput ? fileInput.files[0] : null;
+  if(!file) return;
+  var text = await file.text();
+  var lines = text.trim().split('\n');
+  if(lines.length < 2){ alert('CSV leer oder ungültig.'); return; }
+  var headers = lines[0].split(',').map(function(h){ return h.trim().toLowerCase(); });
+  function get(row, key){ var i=headers.indexOf(key); return i>-1?(row[i]||'').trim():''; }
+  var imported = [];
+  for(var i=1;i<lines.length;i++){
+    var row = lines[i].split(',');
+    var name = get(row,'name');
+    if(!name) continue;
+    imported.push({ id:vnid++, name:name, cat:get(row,'kategorie')||'Sonstiges', price:parseFloat(get(row,'preis'))||0, rating:parseInt(get(row,'bewertung'))||0, status:get(row,'status')||'In Prüfung', website:get(row,'website')||'', contact_name:get(row,'kontakt_name')||'', contact_email:get(row,'kontakt_email')||'', contact_phone:get(row,'kontakt_telefon')||'', notes:get(row,'notizen')||'', createdAt:Date.now() });
   }
-  if(!imported.length){alert('Keine gültigen Einträge gefunden.');return;}
-  if(!confirm(`${imported.length} Anbieter importieren?`))return;
-  vendors=[...vendors,...imported];
-  await save();renderAnbieter();
-  const fi=document.getElementById('csv-file-input');if(fi)fi.value='';
-};
+  if(!imported.length){ alert('Keine gültigen Einträge.'); return; }
+  if(!confirm(imported.length+' Anbieter importieren?')) return;
+  vendors = vendors.concat(imported);
+  await save();
+  fileInput.value = '';
+  renderAnbieter();
+}
 
 // ── AUTH FUNCTIONS ──
 function openAuth(){document.getElementById('auth-overlay').classList.add('open');}
@@ -1577,9 +1598,7 @@ document.body.addEventListener('click',async function(e){
   const btn=e.target.closest('[data-body-action]');
   if(!btn)return;
   const action=btn.dataset.bodyAction;
-  if(action==='v-save')await saveVendor();
-  else if(action==='v-cancel'){const ov=document.getElementById('vendor-overlay');if(ov)ov.remove();}
-  else if(action==='open-add-modal'){
+  if(action==='open-add-modal'){
     editingTaskId=null;
     document.getElementById('add-modal-title').textContent='Neue Aufgabe';
     ['f-ttl','f-due','f-act'].forEach(id=>{document.getElementById(id).value='';});
@@ -1612,6 +1631,38 @@ const sAddBtnEl=document.getElementById('sidebar-add-btn');
 if(sAddBtnEl)sAddBtnEl.addEventListener('click',openAddModal);
 
 document.getElementById('close-add').addEventListener('click',()=>addModal.classList.remove('open'));
+
+// Vendor modal listeners
+var vendorModal = document.getElementById('vendor-modal');
+document.getElementById('vendor-modal-cancel').addEventListener('click', function(){ vendorModal.classList.remove('open'); });
+vendorModal.addEventListener('click', function(e){ if(e.target===vendorModal) vendorModal.classList.remove('open'); });
+document.getElementById('vendor-modal-save').addEventListener('click', async function(){
+  var name = document.getElementById('v-name').value.trim();
+  if(!name){ document.getElementById('v-name').focus(); return; }
+  var data = {
+    name: name,
+    cat: document.getElementById('v-cat').value,
+    status: document.getElementById('v-status').value,
+    price: parseFloat(document.getElementById('v-price').value)||0,
+    website: document.getElementById('v-web').value.trim(),
+    contact_name: document.getElementById('v-cname').value.trim(),
+    contact_email: document.getElementById('v-cemail').value.trim(),
+    contact_phone: document.getElementById('v-cphone').value.trim(),
+    notes: document.getElementById('v-notes').value.trim()
+  };
+  if(editingVendorId){
+    var v = vendors.find(function(x){ return x.id===editingVendorId; });
+    if(v) Object.assign(v, data);
+  } else {
+    vendors.push(Object.assign({id:vnid++, rating:0, createdAt:Date.now()}, data));
+  }
+  await save();
+  vendorModal.classList.remove('open');
+  renderAnbieter();
+});
+
+// CSV file input change listener
+document.getElementById('csv-file-input').addEventListener('change', importCSVFile);
 addModal.addEventListener('click',e=>{if(e.target===addModal)addModal.classList.remove('open');});
 document.getElementById('save-add').addEventListener('click',async()=>{
   const ttl=document.getElementById('f-ttl').value.trim();if(!ttl){document.getElementById('f-ttl').focus();return;}
@@ -1633,6 +1684,5 @@ renderHome(); // Show immediately for guests
 render();
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
-<input type="file" id="csv-file-input" accept=".csv" style="display:none"/>
 </body>
 </html>
