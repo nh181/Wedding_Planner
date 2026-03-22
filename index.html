@@ -728,7 +728,7 @@ function openTaskPopup(t){
   // Actions
   html+=`<div class="popup-actions">
     ${canChk?`<button class="act-btn primary" onclick="togAndClose(${t.id})">${t.done?'↩ Wiedereröffnen':'✓ Erledigt'}</button>`:''}
-    ${t.due&&!t.trashed?`<button class="act-btn" onclick="cal(${t.id})">📅 Kalender</button>`:''}
+    ${t.due&&!t.trashed?`<button class="act-btn" data-action="cal" data-id="${t.id}">📅 Kalender</button>`:''}
     ${!t.trashed&&isA?`<button class="act-btn primary" data-popup-edit="${t.id}">✏️ Bearbeiten</button>`:''}
     ${t.trashed?`<button class="act-btn" data-popup-restore="${t.id}">↩ Wiederherstellen</button>`:`<button class="act-btn danger" data-popup-trash="${t.id}">In Papierkorb</button>`}
   </div>`;
@@ -1035,7 +1035,20 @@ document.getElementById('scroll').addEventListener('click',async function(e){
   if(!btn)return;
   const action=btn.dataset.action;
   const id=parseInt(btn.dataset.id);
-  if(action==='restore'){
+  if(action==='cal'){
+    const t=tasks.find(x=>x.id===id);if(!t||!t.due)return;
+    const[y,m,d]=t.due.split('-');
+    const ics=['BEGIN:VCALENDAR','VERSION:2.0','BEGIN:VEVENT',
+      `DTSTART;VALUE=DATE:${y}${m}${d}`,
+      `DTEND;VALUE=DATE:${y}${m}${d}`,
+      `SUMMARY:💍 ${t.title}`,
+      `DESCRIPTION:${t.cat}${t.assignees&&t.assignees.length?' - '+t.assignees.join(', '):''}`,
+      'END:VEVENT','END:VCALENDAR'].join('\r\n');
+    const url=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));
+    const a2=document.createElement('a');
+    a2.href=url;a2.download=t.title.replace(/[^a-z0-9]/gi,'_')+'.ics';
+    a2.click();URL.revokeObjectURL(url);
+  } else if(action==='restore'){
     const t=tasks.find(x=>x.id===id);if(!t)return;
     delete t.trashed;delete t.trashedAt;
     await save();render();
@@ -1296,7 +1309,20 @@ document.getElementById('scroll').addEventListener('click',async function(e){
   if(!btn)return;
   const action=btn.dataset.action;
   const id=parseInt(btn.dataset.id);
-  if(action==='restore'){
+  if(action==='cal'){
+    const t=tasks.find(x=>x.id===id);if(!t||!t.due)return;
+    const[y,m,d]=t.due.split('-');
+    const ics=['BEGIN:VCALENDAR','VERSION:2.0','BEGIN:VEVENT',
+      `DTSTART;VALUE=DATE:${y}${m}${d}`,
+      `DTEND;VALUE=DATE:${y}${m}${d}`,
+      `SUMMARY:💍 ${t.title}`,
+      `DESCRIPTION:${t.cat}${t.assignees&&t.assignees.length?' - '+t.assignees.join(', '):''}`,
+      'END:VEVENT','END:VCALENDAR'].join('\r\n');
+    const url=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));
+    const a2=document.createElement('a');
+    a2.href=url;a2.download=t.title.replace(/[^a-z0-9]/gi,'_')+'.ics';
+    a2.click();URL.revokeObjectURL(url);
+  } else if(action==='restore'){
     const t=tasks.find(x=>x.id===id);if(!t)return;
     delete t.trashed;delete t.trashedAt;
     await save();render();
