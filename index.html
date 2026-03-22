@@ -225,6 +225,27 @@
     .ue{font-size:12px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .rsel{font-size:12px;padding:5px 8px;border-radius:8px;border:1px solid var(--brm);background:var(--bg);color:var(--t);font-family:'DM Sans',sans-serif;-webkit-appearance:none}
 
+
+    /* TRASH */
+    .trash-card{background:var(--sur);border-radius:14px;border:1px solid var(--br);padding:12px 14px;margin-bottom:8px;opacity:.7}
+    .trash-card .tt{text-decoration:line-through;color:var(--t3)}
+    .trash-actions{display:flex;gap:8px;margin-top:10px}
+    .btn-restore{flex:1;padding:8px;border-radius:10px;border:1px solid var(--brm);background:var(--bg);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--t2);cursor:pointer}
+    .btn-delete-final{flex:1;padding:8px;border-radius:10px;border:1px solid #fca5a5;background:var(--red-l);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--red);cursor:pointer}
+    /* BUDGET CHART */
+    .b-chart-row{padding:8px 14px;border-top:1px solid var(--br)}
+    .b-chart-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+    .b-chart-label span:first-child{color:var(--t2);font-weight:500}
+    .b-chart-label span:last-child{color:var(--t3);font-size:11px}
+    .b-bar-wrap{position:relative;height:20px;background:var(--bg);border-radius:6px;overflow:hidden}
+    .b-bar-plan{position:absolute;top:4px;height:5px;border-radius:3px;background:var(--brm);transition:width .6s}
+    .b-bar-act{position:absolute;bottom:4px;height:5px;border-radius:3px;background:var(--sage);transition:width .6s}
+    .b-bar-act.over{background:var(--red)}
+    .b-bar-act.warn{background:var(--amber)}
+    .b-legend{display:flex;gap:14px;font-size:11px;color:var(--t3);margin:10px 14px 4px}
+    .b-legend span{display:flex;align-items:center;gap:5px}
+    .b-leg-dot{width:10px;height:4px;border-radius:2px;display:inline-block}
+
     .empty{text-align:center;padding:3rem 1rem;color:var(--t3);font-size:15px}
     .ei{font-size:36px;margin-bottom:8px}
     .srow{background:var(--sur);border:1px solid var(--br);border-radius:12px;padding:13px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -306,6 +327,7 @@
       <div class="nav-tab" id="tab-zeitplan" data-tab="zeitplan" style="display:none">📅 Zeitplan</div>
       <div class="nav-tab" data-tab="vorlagen" id="tab-vorlagen" style="display:none">📋 Vorlagen</div>
       <div class="nav-tab" data-tab="budget" id="tab-budget" style="display:none">💶 Budget</div>
+      <div class="nav-tab" data-tab="papierkorb" id="tab-papierkorb" style="display:none">🗑 Papierkorb</div>
       <div class="nav-tab" data-tab="nutzer" id="tab-nutzer" style="display:none">👥 Nutzer</div>
       <div class="nav-tab" data-tab="info" id="tab-info" style="display:none">⚙️ Info</div>
     </div>
@@ -360,7 +382,7 @@ const ID=doc(db,'wedding','info');
 const BD=doc(db,'wedding','budget');
 const UC=collection(db,'users');
 
-let tasks=[],wDate='',tmpls=[],nid=1,user=null,role='gast',firstName='',flt='alle',tab='home';
+let tasks=[],trash=[],wDate='',tmpls=[],nid=1,user=null,role='gast',firstName='',flt='alle',tab='home';
 let allUsers=[],totalBudget=0,catBudget={};
 let seenMentions=new Set(JSON.parse(localStorage.getItem('seenMentions')||'[]'));
 let addSelectedAssignees=[],editingTaskId=null,budgetView='bvp';
@@ -458,6 +480,7 @@ function updateUI(){
   document.getElementById('tab-zeitplan').style.display=li?'':'none';
   document.getElementById('tab-vorlagen').style.display=li?'':'none';
   document.getElementById('tab-budget').style.display=isA?'':'none';
+  document.getElementById('tab-papierkorb').style.display=isA?'':'none';
   document.getElementById('tab-nutzer').style.display=isA?'':'none';
   document.getElementById('tab-info').style.display=isA?'':'none';
   document.getElementById('stats-bar').style.display=li?'':'none';
@@ -534,7 +557,7 @@ function openTaskPopup(t){
   html+=`<div class="popup-actions">
     ${canChk?`<button class="act-btn primary" onclick="togAndClose(${t.id})">${t.done?'↩ Wiedereröffnen':'✓ Erledigt'}</button>`:''}
     ${t.due?`<button class="act-btn" onclick="cal(${t.id})">📅 Kalender</button>`:''}
-    ${canDel?`<button class="act-btn danger" onclick="delTaskAndClose(${t.id})">✕ Löschen</button>`:''}
+    <button class="act-btn danger" onclick="trashTaskAndClose(${t.id})">🗑 In Papierkorb</button>
   </div>`;
 
   document.getElementById('popup-content').innerHTML=html;
@@ -566,9 +589,12 @@ window.togAndClose=async function(id){
   render();
 };
 
-window.delTaskAndClose=async function(id){
-  if(!confirm('Aufgabe löschen?'))return;
-  tasks=tasks.filter(t=>t.id!==id);await save();
+window.trashTaskAndClose=async function(id){
+  const t=tasks.find(x=>x.id===id);if(!t)return;
+  t.trashedAt=Date.now();
+  trash.push(t);
+  tasks=tasks.filter(x=>x.id!==id);
+  await save();
   document.getElementById('task-popup').classList.remove('open');
   render();
 };
@@ -731,103 +757,146 @@ function renderBudget(){
   const a=document.getElementById('scroll');
   const totalAct=tasks.reduce((s,t)=>s+(t.costActual||0),0);
   const totalPlan=CATS.reduce((s,c)=>s+(catBudget[c]||0),0);
-  const base=totalBudget||totalPlan||1;
+  const budgetBase=totalBudget||totalPlan||1;
+  const maxCatVal=Math.max(...CATS.map(c=>{
+    const plan=catBudget[c]||0;
+    const act=tasks.filter(t=>t.cat===c).reduce((s,t)=>s+(t.costActual||0),0);
+    return Math.max(plan,act);
+  }),1);
 
-  // Budget view tabs
   let h=`<div class="b-tabs">
     <button class="b-tab ${budgetView==='bvp'?'on':''}" onclick="setBView('bvp')">Budget vs. Plan</button>
     <button class="b-tab ${budgetView==='bvi'?'on':''}" onclick="setBView('bvi')">Budget vs. Ist</button>
     <button class="b-tab ${budgetView==='pvi'?'on':''}" onclick="setBView('pvi')">Plan vs. Ist</button>
   </div>`;
 
+  // Summary card
+  let v1,v2,v3,l1,l2,l3,cls1,cls2,cls3,pct,barCls;
   if(budgetView==='bvp'){
-    // Budget vs Plan (Gesamt)
-    const diff=totalBudget-totalPlan;
-    const pct=totalBudget?Math.min(Math.round(totalPlan/totalBudget*100),100):0;
-    const cls=pct>=100?'over':pct>=80?'warn':'ok';
-    h+=`<div class="b-hero"><h3>📊 Budget vs. Plankosten</h3>
-      <div class="b-totals">
-        <div class="b-num"><div class="b-val">${eur(totalBudget)}</div><div class="b-lbl">Gesamtbudget</div></div>
-        <div class="b-num"><div class="b-val ${cls}">${eur(totalPlan)}</div><div class="b-lbl">Geplant</div></div>
-        <div class="b-num"><div class="b-val ${diff<0?'over':'ok'}">${diff>=0?'+'+eur(diff):'-'+eur(Math.abs(diff))}</div><div class="b-lbl">Puffer</div></div>
-      </div>
-      <div class="bpbar"><div class="bpfill ${cls}" style="width:${pct}%"></div></div>
-      <div style="font-size:12px;color:var(--t3);text-align:center">${pct}% des Budgets verplant</div>
+    v1=totalBudget;v2=totalPlan;v3=totalBudget-totalPlan;
+    l1='Gesamtbudget';l2='Gesamt geplant';l3='Puffer';
+    pct=totalBudget?Math.min(Math.round(totalPlan/totalBudget*100),100):0;
+    cls2=pct>=100?'over':pct>=80?'warn':'ok';
+    cls3=v3<0?'over':'ok';barCls=cls2;
+  }else if(budgetView==='bvi'){
+    v1=totalBudget;v2=totalAct;v3=totalBudget-totalAct;
+    l1='Gesamtbudget';l2='Ist-Kosten';l3='Verfügbar';
+    pct=totalBudget?Math.min(Math.round(totalAct/totalBudget*100),100):0;
+    cls2=pct>=100?'over':pct>=80?'warn':'ok';
+    cls3=v3<0?'over':'ok';barCls=cls2;
+  }else{
+    v1=totalPlan;v2=totalAct;v3=totalPlan-totalAct;
+    l1='Gesamt geplant';l2='Ist-Kosten';l3='Abweichung';
+    pct=totalPlan?Math.min(Math.round(totalAct/totalPlan*100),100):0;
+    cls2=totalAct>totalPlan&&totalPlan>0?'over':totalAct>0?'ok':'';
+    cls3=v3<0?'over':'ok';barCls=cls2;
+  }
+
+  h+=`<div class="b-hero"><h3>📊 ${budgetView==='bvp'?'Budget vs. Plan':budgetView==='bvi'?'Budget vs. Ist':'Plan vs. Ist'}</h3>
+    <div class="b-totals">
+      <div class="b-num"><div class="b-val">${eur(v1)}</div><div class="b-lbl">${l1}</div></div>
+      <div class="b-num"><div class="b-val ${cls2||''}">${eur(v2)}</div><div class="b-lbl">${l2}</div></div>
+      <div class="b-num"><div class="b-val ${cls3}">${v3>=0?eur(v3):'-'+eur(Math.abs(v3))}</div><div class="b-lbl">${l3}</div></div>
+    </div>
+    <div class="bpbar"><div class="bpfill ${barCls||'ok'}" style="width:${pct}%"></div></div>
+    <div style="font-size:12px;color:var(--t3);text-align:right;margin-top:4px">${pct}%</div>
+  </div>`;
+
+  // Bar chart per category
+  const activeCats=CATS.filter(c=>{
+    const plan=catBudget[c]||0;
+    const act=tasks.filter(t=>t.cat===c).reduce((s,t)=>s+(t.costActual||0),0);
+    return plan>0||act>0;
+  });
+
+  if(activeCats.length){
+    h+=`<div class="b-hero" style="padding-bottom:8px"><h3>Kategorie-Übersicht</h3>
+    <div class="b-legend">
+      <span><span class="b-leg-dot" style="background:var(--brm)"></span>${budgetView==='bvp'?'Budget':'Plan'}</span>
+      <span><span class="b-leg-dot" style="background:var(--sage)"></span>Ist-Kosten</span>
     </div>`;
-    // Category plan inputs
-    h+=`<div class="b-hero"><h3>Plankosten pro Kategorie</h3>`;
-    CATS.forEach(cat=>{
+    activeCats.forEach(cat=>{
       const plan=catBudget[cat]||0;
-      h+=`<div class="b-cat-row"><div class="b-cat-top"><span class="b-cat-name">${cat}</span></div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <input type="number" class="sinp" placeholder="Plankosten" value="${plan||''}" style="flex:1;font-size:13px;padding:7px 10px" onchange="setCatBudget('${cat}',this.value)"/>
-          <span style="font-size:12px;color:var(--t3);flex-shrink:0">€</span>
+      const act=tasks.filter(t=>t.cat===cat).reduce((s,t)=>s+(t.costActual||0),0);
+      let ref=budgetView==='bvp'?(totalBudget?totalBudget/activeCats.length:plan):plan;
+      const refVal=budgetView==='bvp'?totalBudget/activeCats.length:plan;
+      const planW=maxCatVal>0?Math.min(Math.round((budgetView==='bvp'?refVal:plan)/maxCatVal*100),100):0;
+      const actW=maxCatVal>0?Math.min(Math.round(act/maxCatVal*100),100):0;
+      const over=act>(budgetView==='bvp'?refVal:plan)&&(budgetView==='bvp'?refVal:plan)>0;
+      const actCls=over?'over':actW>80?'warn':'';
+      h+=`<div class="b-chart-row">
+        <div class="b-chart-label">
+          <span>${cat}</span>
+          <span>${act>0?eur(act):'–'}${plan>0?' / '+eur(plan):''}</span>
+        </div>
+        <div class="b-bar-wrap">
+          <div class="b-bar-plan" style="width:${planW}%"></div>
+          <div class="b-bar-act ${actCls}" style="width:${actW}%"></div>
         </div>
       </div>`;
     });
     h+=`</div>`;
   }
-  else if(budgetView==='bvi'){
-    // Budget vs Ist
-    const pct=totalBudget?Math.min(Math.round(totalAct/totalBudget*100),100):0;
-    const cls=pct>=100?'over':pct>=80?'warn':'ok';
-    const diff=totalBudget-totalAct;
-    h+=`<div class="b-hero"><h3>📊 Budget vs. Ist-Kosten</h3>
-      <div class="b-totals">
-        <div class="b-num"><div class="b-val">${eur(totalBudget)}</div><div class="b-lbl">Gesamtbudget</div></div>
-        <div class="b-num"><div class="b-val ${cls}">${eur(totalAct)}</div><div class="b-lbl">Ist-Kosten</div></div>
-        <div class="b-num"><div class="b-val ${diff<0?'over':'ok'}">${eur(Math.max(diff,0))}</div><div class="b-lbl">Verfügbar</div></div>
-      </div>
-      <div class="bpbar"><div class="bpfill ${cls}" style="width:${pct}%"></div></div>
-      <div style="font-size:12px;color:var(--t3);text-align:center">${pct}% des Budgets ausgegeben</div>
-    </div>`;
-    // Per category
-    h+=`<div class="b-hero"><h3>Ist-Kosten nach Kategorie</h3>`;
-    CATS.forEach(cat=>{
-      const act=tasks.filter(t=>t.cat===cat).reduce((s,t)=>s+(t.costActual||0),0);
-      if(!act&&!totalBudget)return;
-      const budget=totalBudget?(totalBudget/CATS.length):0;
-      const pct2=totalBudget?Math.min(Math.round(act/totalBudget*100),100):0;
-      h+=`<div class="b-cat-row"><div class="b-cat-top"><span class="b-cat-name">${cat}</span><div class="b-cat-vals"><span class="b-v2 ${act>0?'ok':''}">${eur(act)}</span></div></div>
-        ${act>0?`<div class="b-minibar"><div class="b-minifill" style="width:${pct2}%"></div></div>`:''}
-      </div>`;
-    });
-    h+=`</div>`;
-  }
-  else{
-    // Plan vs Ist
-    const diff=totalPlan-totalAct;
-    const cls=totalAct>totalPlan&&totalPlan>0?'over':totalAct>0?'ok':'';
-    h+=`<div class="b-hero"><h3>📊 Plan vs. Ist-Kosten</h3>
-      <div class="b-totals">
-        <div class="b-num"><div class="b-val">${eur(totalPlan)}</div><div class="b-lbl">Geplant</div></div>
-        <div class="b-num"><div class="b-val ${cls}">${eur(totalAct)}</div><div class="b-lbl">Ist-Kosten</div></div>
-        <div class="b-num"><div class="b-val ${diff<0?'over':'ok'}">${diff>=0?eur(diff):'-'+eur(Math.abs(diff))}</div><div class="b-lbl">Abweichung</div></div>
-      </div>
-    </div>`;
-    // Per category
-    h+=`<div class="b-hero"><h3>Plan vs. Ist nach Kategorie</h3>`;
+
+  // Category plan input (only in bvp view)
+  if(budgetView==='bvp'){
+    h+=`<div class="b-hero"><h3>Plankosten eingeben</h3>`;
     CATS.forEach(cat=>{
       const plan=catBudget[cat]||0;
-      const act=tasks.filter(t=>t.cat===cat).reduce((s,t)=>s+(t.costActual||0),0);
-      if(!plan&&!act)return;
-      const over=act>plan&&plan>0;
-      const pct2=plan?Math.min(Math.round(act/plan*100),100):act>0?100:0;
-      const diff2=plan-act;
-      h+=`<div class="b-cat-row">
-        <div class="b-cat-top"><span class="b-cat-name">${cat}</span><div class="b-cat-vals"><span class="b-v1">Plan ${eur(plan)}</span><span class="b-v2 ${over?'over':act>0?'ok':''}">${eur(act)}</span></div></div>
-        ${(plan||act)?`<div class="b-minibar"><div class="b-minifill ${over?'over':pct2>80?'warn':'ok'}" style="width:${pct2}%"></div></div>`:''}
-        ${plan>0?`<div style="font-size:11px;color:${diff2<0?'var(--red)':'var(--sage)'};">${diff2>=0?'✓ '+eur(diff2)+' unter Plan':'⚠ '+eur(Math.abs(diff2))+' über Plan'}</div>`:''}
+      h+=`<div class="b-cat-row" style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--br)">
+        <span style="font-size:13px;font-weight:500">${cat}</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="number" class="sinp" placeholder="0" value="${plan||''}" style="width:100px;font-size:13px;padding:6px 8px" onchange="setCatBudget('${cat}',this.value)"/>
+          <span style="font-size:12px;color:var(--t3)">€</span>
+        </div>
       </div>`;
     });
     h+=`</div>`;
   }
 
-  h+=`<div class="srow"><div><div class="slbl">Gesamtbudget</div><div class="ssub">Obergrenze für alle Kosten</div></div><div style="display:flex;align-items:center;gap:8px"><input type="number" class="sinp" value="${totalBudget||''}" placeholder="z.B. 15000" style="width:120px" onchange="setBudget(this.value)"/><span style="font-size:12px;color:var(--t3)">€</span></div></div>`;
+  h+=`<div class="srow"><div><div class="slbl">Gesamtbudget</div><div class="ssub">Obergrenze für alle Kosten</div></div><div style="display:flex;align-items:center;gap:8px"><input type="number" class="sinp" value="${totalBudget||''}" placeholder="z.B. 15000" style="width:110px" onchange="setBudget(this.value)"/><span style="font-size:12px;color:var(--t3)">€</span></div></div>`;
   a.innerHTML=h;
 }
 
 window.setBView=function(v){budgetView=v;renderBudget();};
+
+function renderPapierkorb(){
+  const a=document.getElementById('scroll');
+  if(!trash.length){a.innerHTML=`<div class="empty"><div class="ei">🗑</div>Papierkorb ist leer.</div>`;return;}
+  let h=`<div class="sh">Papierkorb</div><p style="font-size:13px;color:var(--t2);margin-bottom:12px">Aufgaben können wiederhergestellt oder endgültig gelöscht werden.</p>`;
+  h+=`<div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button onclick="emptyTrash()" style="font-size:13px;padding:7px 14px;border-radius:10px;border:1px solid #fca5a5;background:var(--red-l);color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif">Alles löschen</button></div>`;
+  h+=trash.map(t=>{
+    const names=(t.assignees||[]).join(', ');
+    const date=t.trashedAt?new Date(t.trashedAt).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+    return`<div class="trash-card">
+      <div class="tt">${t.title}</div>
+      <div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap">
+        ${names?`<span class="chip per">${names}</span>`:''}
+        <span class="chip cat">${t.cat}</span>
+        ${date?`<span class="chip due">gelöscht ${date}</span>`:''}
+      </div>
+      <div class="trash-actions">
+        <button class="btn-restore" onclick="restoreTask(${t.id})">↩ Wiederherstellen</button>
+        <button class="btn-delete-final" onclick="finalDelete(${t.id})">✕ Endgültig löschen</button>
+      </div>
+    </div>`;
+  }).join('');
+  a.innerHTML=h;
+}
+
+window.restoreTask=async function(id){
+  const t=trash.find(x=>x.id===id);if(!t)return;
+  delete t.trashedAt;tasks.push(t);trash=trash.filter(x=>x.id!==id);
+  await save();renderPapierkorb();
+};
+window.finalDelete=async function(id){
+  if(!confirm('Aufgabe endgültig löschen? Das kann nicht rückgängig gemacht werden.'))return;
+  trash=trash.filter(x=>x.id!==id);await save();renderPapierkorb();
+};
+window.emptyTrash=async function(){
+  if(!confirm('Alle Aufgaben im Papierkorb endgültig löschen?'))return;
+  trash=[];await save();renderPapierkorb();
+};
 
 async function renderNutzer(){
   const a=document.getElementById('scroll');
@@ -859,6 +928,7 @@ function render(){
   else if(tab==='zeitplan')renderZeitplan();
   else if(tab==='vorlagen')renderVorlagen();
   else if(tab==='budget')renderBudget();
+  else if(tab==='papierkorb')renderPapierkorb();
   else if(tab==='nutzer')renderNutzer();
   else renderInfo();
 }
@@ -938,7 +1008,7 @@ onAuthStateChanged(auth,async(u)=>{
       await loadUsers();
       try{const bs=await getDoc(BD);if(bs.exists()){totalBudget=bs.data().total||0;catBudget=bs.data().catBudget||{};}}catch(e){}
       onSnapshot(DD,(snap)=>{
-        if(snap.exists()){const d=snap.data();tasks=d.tasks||DEFS;wDate=d.weddingDate||'';tmpls=d.templates||[];nid=tasks.reduce((m,t)=>Math.max(m,t.id),0)+1;document.getElementById('sync').style.background='#4caf50';checkMentions();render();}
+        if(snap.exists()){const d=snap.data();tasks=d.tasks||DEFS;trash=d.trash||[];wDate=d.weddingDate||'';tmpls=d.templates||[];nid=tasks.reduce((m,t)=>Math.max(m,t.id),0)+1;document.getElementById('sync').style.background='#4caf50';checkMentions();render();}
         else{tasks=DEFS;save();}
       });
       if(tab==='home')tab='aufgaben';
