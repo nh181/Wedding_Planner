@@ -287,30 +287,42 @@
     .tl-ts{font-size:13px;color:var(--t2);line-height:1.6}
 
     /* ── BUDGET ── */
-    .b-tabs{display:flex;background:rgba(120,120,128,.12);border-radius:10px;padding:2px;margin-bottom:14px}
-    .b-tab{flex:1;text-align:center;font-family:inherit;font-size:12px;font-weight:500;padding:7px 4px;border-radius:8px;border:none;background:transparent;color:var(--t3);cursor:pointer;transition:all .2s;white-space:nowrap}
-    .b-tab.on{background:var(--sur);color:var(--t);box-shadow:0 1px 4px rgba(0,0,0,.12)}
-    .b-hero{background:var(--sur);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-    .b-hero h3{font-size:15px;font-weight:700;margin-bottom:14px;letter-spacing:-.1px}
-    .b-totals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-    .b-num{background:var(--bg);border-radius:12px;padding:10px;text-align:center}
-    .b-val{font-size:15px;font-weight:700;letter-spacing:-.3px}
-    .b-val.ok{color:var(--sage)}.b-val.warn{color:var(--amber)}.b-val.over{color:var(--red)}
-    .b-lbl{font-size:10px;color:var(--t3);font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
-    .bpbar{height:8px;background:rgba(120,120,128,.15);border-radius:999px;overflow:hidden;margin-bottom:4px}
-    .bpfill{height:100%;border-radius:999px;transition:width .6s}
-    .bpfill.ok{background:var(--sage)}.bpfill.warn{background:var(--amber)}.bpfill.over{background:var(--red)}
-    .b-chart-row{padding:10px 0;border-top:1px solid var(--br)}
-    .b-chart-label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;font-weight:500}
-    .b-chart-label span:last-child{color:var(--t3);font-size:12px;font-weight:400}
-    .b-bar-wrap{position:relative;height:22px;background:rgba(120,120,128,.1);border-radius:6px;overflow:hidden}
-    .b-bar-plan{position:absolute;top:3px;height:7px;border-radius:4px;background:rgba(120,120,128,.25);transition:width .6s}
-    .b-bar-act{position:absolute;bottom:3px;height:7px;border-radius:4px;background:var(--sage);transition:width .6s}
-    .b-bar-act.over{background:var(--red)}.b-bar-act.warn{background:var(--amber)}
-    .b-legend{display:flex;gap:14px;font-size:11px;color:var(--t3);margin:10px 0 4px;font-weight:500}
-    .b-legend span{display:flex;align-items:center;gap:5px}
-    .b-leg-dot{width:12px;height:4px;border-radius:2px;display:inline-block}
-    .b-cat-row{padding:10px 0;border-top:1px solid var(--br)}
+    .b-card{background:var(--sur);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+    .b-card h3{font-size:15px;font-weight:700;margin-bottom:14px;letter-spacing:-.1px}
+    .b-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+    .b-kpi{background:var(--bg);border-radius:12px;padding:12px 10px;text-align:center}
+    .b-kpi-val{font-size:17px;font-weight:700;letter-spacing:-.3px}
+    .b-kpi-val.neutral{color:var(--t)}.b-kpi-val.amber{color:var(--amber)}.b-kpi-val.ok{color:var(--sage)}.b-kpi-val.over{color:var(--red)}
+    .b-kpi-lbl{font-size:10px;color:var(--t3);font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
+    .b-prog{margin-bottom:14px}
+    .b-prog-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+    .b-prog-title{font-size:13px;font-weight:600;color:var(--t)}
+    .b-prog-nums{font-size:12px;color:var(--t3);font-weight:500}
+    .b-prog-bar{height:10px;background:rgba(120,120,128,.15);border-radius:999px;overflow:hidden;margin-bottom:3px}
+    .b-prog-fill{height:100%;border-radius:999px;transition:width .6s}
+    .b-prog-fill.ok{background:var(--sage)}.b-prog-fill.amber{background:var(--amber)}.b-prog-fill.over{background:var(--red)}
+    .b-prog-rest{font-size:11px;color:var(--t3);text-align:right;font-weight:500}
+    .b-prog-rest.over{color:var(--red)}
+    .b-budget-input{display:flex;align-items:center;justify-content:space-between;background:var(--sur);border-radius:14px;padding:12px 16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+    .b-budget-input label{font-size:14px;font-weight:600;color:var(--t)}
+    .b-budget-input .b-inp-wrap{display:flex;align-items:center;gap:6px}
+    .b-cat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
+    @media(min-width:600px){.b-cat-grid{grid-template-columns:repeat(3,1fr)}}
+    .b-tile{background:var(--sur);border-radius:14px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.06);display:flex;flex-direction:column;gap:8px}
+    .b-tile-head{display:flex;align-items:center;gap:8px}
+    .b-tile-ico{font-size:20px;flex-shrink:0}
+    .b-tile-name{font-size:13px;font-weight:600;color:var(--t);line-height:1.2}
+    .b-tile-vals{display:flex;justify-content:space-between;font-size:12px;font-weight:500}
+    .b-tile-vals .plan{color:var(--amber)}.b-tile-vals .ist{color:var(--sage)}.b-tile-vals .ist.over{color:var(--red)}
+    .b-tile-bar{height:6px;background:rgba(120,120,128,.12);border-radius:999px;overflow:hidden}
+    .b-tile-fill{height:100%;border-radius:999px;transition:width .6s}
+    .b-tile-fill.ok{background:var(--sage)}.b-tile-fill.amber{background:var(--amber)}.b-tile-fill.over{background:var(--red)}
+    .b-tile-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--t3);font-weight:500}
+    .b-tile-meta .over{color:var(--red)}
+    .b-tile-inp{display:flex;align-items:center;gap:4px;border-top:1px solid var(--br);padding-top:8px;margin-top:2px}
+    .b-tile-inp label{font-size:10px;color:var(--t3);font-weight:500;white-space:nowrap}
+    .b-tile-inp input{width:100%;padding:6px 8px;border-radius:8px;border:none;background:rgba(120,120,128,.12);font-family:inherit;font-size:13px;color:var(--t);outline:none;-webkit-appearance:none}
+    .b-tile-inp span{font-size:12px;color:var(--t3)}
 
     /* ── USERS ── */
     .uc{background:var(--sur);border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
@@ -560,7 +572,7 @@ const UC=collection(db,'users');
 let tasks=[],vendors=[],wDate='',tmpls=[],nid=1,vnid=1,user=null,role='gast',firstName='',flt='alle',tab='home';
 let allUsers=[],totalBudget=0,catBudget={};
 let seenMentions=new Set(JSON.parse(localStorage.getItem('seenMentions')||'[]'));
-let addSelectedAssignees=[],editingTaskId=null,budgetView='bvp';
+let addSelectedAssignees=[],editingTaskId=null;
 const today=new Date().toISOString().split('T')[0];
 const CATS=['Location','Catering','Dekoration','Musik','Fotografie','Kleidung','Einladungen','Flitterwochen','Sonstiges'];
 
@@ -1176,84 +1188,84 @@ document.body.addEventListener('click',async function(e){
 
 function renderBudget(){
   const a=document.getElementById('scroll');
+  const CAT_ICONS={Location:'🏰',Catering:'🍽️',Dekoration:'💐',Musik:'🎵',Fotografie:'📸',Kleidung:'👗',Einladungen:'💌',Flitterwochen:'✈️',Sonstiges:'📦'};
   const totalAct=tasks.filter(t=>!t.trashed).reduce((s,t)=>s+(t.costActual||0),0);
   const totalPlan=CATS.reduce((s,cat)=>s+(catBudget[cat]||0),0);
-  const budgetBase=totalBudget||totalPlan||1;
-  const maxCatVal=Math.max(...CATS.map(cat=>{
+  const budget=totalBudget||0;
+  /* — KPI color logic — */
+  const istPct=budget?Math.round(totalAct/budget*100):0;
+  const istCls=istPct>=100?'over':istPct>=80?'amber':'ok';
+  const planPct=budget?Math.round(totalPlan/budget*100):0;
+  const planCls=planPct>=100?'over':planPct>=80?'amber':'ok';
+  const restIst=budget-totalAct;
+  const restPlan=budget-totalPlan;
+  let h='';
+  /* ── 1) KPI-Karten ── */
+  h+=`<div class="b-kpis">
+    <div class="b-kpi"><div class="b-kpi-val neutral">${eur(budget)}</div><div class="b-kpi-lbl">Gesamtbudget</div></div>
+    <div class="b-kpi"><div class="b-kpi-val amber">${eur(totalPlan)}</div><div class="b-kpi-lbl">Geplant</div></div>
+    <div class="b-kpi"><div class="b-kpi-val ${istCls}">${eur(totalAct)}</div><div class="b-kpi-lbl">Ist-Kosten</div></div>
+  </div>`;
+  /* ── 2) Fortschrittsbalken ── */
+  h+=`<div class="b-card">
+    <div class="b-prog">
+      <div class="b-prog-head">
+        <span class="b-prog-title">Budget vs. Ist</span>
+        <span class="b-prog-nums">${eur(totalAct)} / ${eur(budget)}</span>
+      </div>
+      <div class="b-prog-bar"><div class="b-prog-fill ${istCls}" style="width:${Math.min(istPct,100)}%"></div></div>
+      <div class="b-prog-rest ${restIst<0?'over':''}">${restIst>=0?'Noch '+eur(restIst)+' verfügbar':''+eur(Math.abs(restIst))+' über Budget!'}</div>
+    </div>
+    <div class="b-prog">
+      <div class="b-prog-head">
+        <span class="b-prog-title">Budget vs. Plan</span>
+        <span class="b-prog-nums">${eur(totalPlan)} / ${eur(budget)}</span>
+      </div>
+      <div class="b-prog-bar"><div class="b-prog-fill ${planCls}" style="width:${Math.min(planPct,100)}%"></div></div>
+      <div class="b-prog-rest ${restPlan<0?'over':''}">${restPlan>=0?'Puffer: '+eur(restPlan):''+eur(Math.abs(restPlan))+' überplant!'}</div>
+    </div>
+  </div>`;
+  /* ── 3) Gesamtbudget-Eingabe ── */
+  h+=`<div class="b-budget-input">
+    <label>Gesamtbudget</label>
+    <div class="b-inp-wrap">
+      <input type="number" class="sinp" value="${budget||''}" placeholder="z.B. 15000" style="width:110px" onchange="setBudget(this.value)"/>
+      <span style="font-size:13px;color:var(--t3)">€</span>
+    </div>
+  </div>`;
+  /* ── 4) Kategorie-Kacheln ── */
+  h+=`<div class="b-cat-grid">`;
+  CATS.forEach(cat=>{
     const plan=catBudget[cat]||0;
     const act=tasks.filter(t=>t.cat===cat&&!t.trashed).reduce((s,t)=>s+(t.costActual||0),0);
-    return Math.max(plan,act);
-  }),1);
-  let h=`<div class="b-tabs">
-    <button class="b-tab ${budgetView==='bvp'?'on':''}" onclick="setBView('bvp')">Budget vs. Plan</button>
-    <button class="b-tab ${budgetView==='bvi'?'on':''}" onclick="setBView('bvi')">Budget vs. Ist</button>
-    <button class="b-tab ${budgetView==='pvi'?'on':''}" onclick="setBView('pvi')">Plan vs. Ist</button>
-  </div>`;
-  let v1,v2,v3,l1,l2,l3,cls2,cls3,pct,barCls;
-  if(budgetView==='bvp'){
-    v1=totalBudget;v2=totalPlan;v3=totalBudget-totalPlan;l1='Gesamtbudget';l2='Geplant';l3='Puffer';
-    pct=totalBudget?Math.min(Math.round(totalPlan/totalBudget*100),100):0;
-    cls2=pct>=100?'over':pct>=80?'warn':'ok';cls3=v3<0?'over':'ok';barCls=cls2;
-  }else if(budgetView==='bvi'){
-    v1=totalBudget;v2=totalAct;v3=totalBudget-totalAct;l1='Gesamtbudget';l2='Ist-Kosten';l3='Verfügbar';
-    pct=totalBudget?Math.min(Math.round(totalAct/totalBudget*100),100):0;
-    cls2=pct>=100?'over':pct>=80?'warn':'ok';cls3=v3<0?'over':'ok';barCls=cls2;
-  }else{
-    v1=totalPlan;v2=totalAct;v3=totalPlan-totalAct;l1='Geplant';l2='Ist-Kosten';l3='Abweichung';
-    pct=totalPlan?Math.min(Math.round(totalAct/totalPlan*100),100):0;
-    cls2=totalAct>totalPlan&&totalPlan>0?'over':totalAct>0?'ok':'';cls3=v3<0?'over':'ok';barCls=cls2;
-  }
-  h+=`<div class="b-hero"><h3>${budgetView==='bvp'?'Budget vs. Plan':budgetView==='bvi'?'Budget vs. Ist':'Plan vs. Ist'}</h3>
-    <div class="b-totals">
-      <div class="b-num"><div class="b-val">${eur(v1)}</div><div class="b-lbl">${l1}</div></div>
-      <div class="b-num"><div class="b-val ${cls2||''}">${eur(v2)}</div><div class="b-lbl">${l2}</div></div>
-      <div class="b-num"><div class="b-val ${cls3}">${v3>=0?eur(v3):'-'+eur(Math.abs(v3))}</div><div class="b-lbl">${l3}</div></div>
-    </div>
-    <div class="bpbar"><div class="bpfill ${barCls||'ok'}" style="width:${pct}%"></div></div>
-    <div style="font-size:12px;color:var(--t3);text-align:right;margin-top:4px;font-weight:500">${pct}%</div>
-  </div>`;
-  const activeCats=CATS.filter(cat=>(catBudget[cat]||0)>0||tasks.filter(t=>t.cat===cat&&!t.trashed).some(t=>t.costActual>0));
-  if(activeCats.length){
-    h+=`<div class="b-hero"><h3>Kategorie-Übersicht</h3>
-    <div class="b-legend">
-      <span><span class="b-leg-dot" style="background:rgba(120,120,128,.3)"></span>Plan</span>
-      <span><span class="b-leg-dot" style="background:var(--sage)"></span>Ist</span>
+    const base=plan||budget||1;
+    const pct=plan>0?Math.round(act/plan*100):(act>0?100:0);
+    const cls=pct>=100?'over':pct>=70?'amber':'ok';
+    const diff=plan-act;
+    const ico=CAT_ICONS[cat]||'📁';
+    h+=`<div class="b-tile">
+      <div class="b-tile-head"><span class="b-tile-ico">${ico}</span><span class="b-tile-name">${cat}</span></div>
+      <div class="b-tile-vals">
+        <span class="plan">Plan ${eur(plan)}</span>
+        <span class="ist ${act>plan&&plan>0?'over':''}">${eur(act)}</span>
+      </div>
+      <div class="b-tile-bar"><div class="b-tile-fill ${cls}" style="width:${Math.min(pct,100)}%"></div></div>
+      <div class="b-tile-meta">
+        <span>${pct}%</span>
+        <span class="${diff<0?'over':''}">${diff>=0?'Rest '+eur(diff):'+'+eur(Math.abs(diff))}</span>
+      </div>
+      <div class="b-tile-inp">
+        <label>Plan:</label>
+        <input type="number" placeholder="0" value="${plan||''}" onchange="setCatBudget('${cat}',this.value)"/>
+        <span>€</span>
+      </div>
     </div>`;
-    activeCats.forEach(cat=>{
-      const plan=catBudget[cat]||0;
-      const act=tasks.filter(t=>t.cat===cat&&!t.trashed).reduce((s,t)=>s+(t.costActual||0),0);
-      const planW=maxCatVal>0?Math.min(Math.round(plan/maxCatVal*100),100):0;
-      const actW=maxCatVal>0?Math.min(Math.round(act/maxCatVal*100),100):0;
-      const over=act>plan&&plan>0;
-      h+=`<div class="b-chart-row">
-        <div class="b-chart-label"><span>${cat}</span><span>${act>0?eur(act):'–'}${plan>0?' / '+eur(plan):''}</span></div>
-        <div class="b-bar-wrap">
-          <div class="b-bar-plan" style="width:${planW}%"></div>
-          <div class="b-bar-act ${over?'over':actW>80?'warn':''}" style="width:${actW}%"></div>
-        </div>
-      </div>`;
-    });
-    h+=`</div>`;
-  }
-  if(budgetView==='bvp'){
-    h+=`<div class="b-hero"><h3>Plankosten eingeben</h3>`;
-    CATS.forEach(cat=>{
-      h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid var(--br)">
-        <span style="font-size:14px;font-weight:500">${cat}</span>
-        <div style="display:flex;align-items:center;gap:8px">
-          <input type="number" class="sinp" placeholder="0" value="${catBudget[cat]||''}" style="width:100px" onchange="setCatBudget('${cat}',this.value)"/>
-          <span style="font-size:13px;color:var(--t3)">€</span>
-        </div>
-      </div>`;
-    });
-    h+=`</div>`;
-  }
-  h+=`<div class="srow"><div><div class="slbl">Gesamtbudget</div><div class="ssub">Obergrenze</div></div><div style="display:flex;align-items:center;gap:8px"><input type="number" class="sinp" value="${totalBudget||''}" placeholder="z.B. 15000" style="width:110px" onchange="setBudget(this.value)"/><span style="font-size:12px;color:var(--t3)">€</span></div></div>`;
+  });
+  h+=`</div>`;
   a.innerHTML=h;
 }
-window.setBView=function(v){budgetView=v;renderBudget();};
 window.setBudget=async function(v){totalBudget=parseFloat(v)||0;await setDoc(BD,{total:totalBudget,catBudget});renderBudget();};
-window.setCatBudget=async function(cat,v){catBudget[cat]=parseFloat(v)||0;await setDoc(BD,{total:totalBudget,catBudget});};
+window.setCatBudget=async function(cat,v){catBudget[cat]=parseFloat(v)||0;await setDoc(BD,{total:totalBudget,catBudget});renderBudget();};
 
 async function renderNutzer(){
   const a=document.getElementById('scroll');
