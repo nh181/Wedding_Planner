@@ -381,7 +381,7 @@
     #add-modal .sheet{max-width:480px}
   </style>
   <style>
-    /* ── CATEGORY DISTRIBUTION BARS ── */
+    /* ── STACKED BAR CHART ── */
     .b-dist-toggle{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--sur);border-radius:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
     .b-dist-toggle label{font-size:13px;font-weight:600;color:var(--t2)}
     .b-dist-switch{position:relative;width:44px;height:24px;flex-shrink:0}
@@ -390,21 +390,18 @@
     .b-dist-slider:before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
     .b-dist-switch input:checked+.b-dist-slider{background:var(--rose)}
     .b-dist-switch input:checked+.b-dist-slider:before{transform:translateX(20px)}
-    .b-dist-wrap{background:var(--sur);border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-    .b-dist-wrap h3{font-size:14px;font-weight:700;margin-bottom:14px;letter-spacing:-.1px}
-    .b-dist-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:13px}
-    .b-dist-row:last-child{margin-bottom:0}
-    .b-dist-icon{font-size:16px;flex-shrink:0;width:22px;text-align:center}
-    .b-dist-name{width:80px;font-weight:500;color:var(--t2);flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .b-dist-bars{flex:1;display:flex;flex-direction:column;gap:3px}
-    .b-dist-bar{height:10px;border-radius:5px;background:var(--br);overflow:hidden;position:relative}
-    .b-dist-bar-fill{height:100%;border-radius:5px;transition:width .4s ease}
-    .b-dist-bar-fill.plan{background:linear-gradient(90deg,#f0c27f,#e8a849)}
-    .b-dist-bar-fill.ist{background:linear-gradient(90deg,#a8e6cf,#56c596)}
-    .b-dist-vals{display:flex;gap:12px;font-size:11px;color:var(--t3);min-width:120px;flex-shrink:0;justify-content:flex-end}
-    .b-dist-vals span{white-space:nowrap}
-    .b-dist-vals .lbl-plan{color:#d4950a;font-weight:600}
-    .b-dist-vals .lbl-ist{color:#2d9d6a;font-weight:600}
+    .b-stack-wrap{background:var(--sur);border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+    .b-stack-label{font-size:13px;font-weight:600;color:var(--t2);margin-bottom:6px;display:flex;justify-content:space-between}
+    .b-stack-label span{font-weight:700;color:var(--t)}
+    .b-stack-bar{width:100%;height:32px;border-radius:10px;background:var(--br);overflow:hidden;display:flex;margin-bottom:14px;position:relative}
+    .b-stack-seg{height:100%;transition:width .4s ease;position:relative;min-width:0}
+    .b-stack-seg:first-child{border-radius:10px 0 0 10px}
+    .b-stack-seg:last-child{border-radius:0 10px 10px 0}
+    .b-stack-seg:only-child{border-radius:10px}
+    .b-stack-legend{display:flex;flex-wrap:wrap;gap:8px 14px;padding-top:12px;border-top:1px solid var(--br)}
+    .b-stack-leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);font-weight:500;cursor:default}
+    .b-stack-leg-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+    .b-stack-leg-item .leg-val{color:var(--t);font-weight:600;margin-left:2px}
 
     /* ── BUDGET HISTORY ── */
     .bh-card{background:var(--sur);border-radius:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
@@ -1380,43 +1377,22 @@ function renderBudget(){
     <label class="b-dist-switch"><input type="checkbox" ${distChecked} onchange="window._budgetDistOpen=this.checked;renderBudget()"/><span class="b-dist-slider"></span></label>
   </div>`;
   if(window._budgetDistOpen){
-    const maxVal=Math.max(...CATS.map(cat=>Math.max(catBudget[cat]||0,tasks.filter(t=>t.cat===cat&&!t.trashed).reduce((s,t)=>s+(t.costActual||0),0))),1);
-    let distRows='';
-    CATS.forEach(cat=>{
-      const plan=catBudget[cat]||0;
-      const act=tasks.filter(t=>t.cat===cat&&!t.trashed).reduce((s,t)=>s+(t.costActual||0),0);
-      const planW=maxVal>0?Math.round(plan/maxVal*100):0;
-      const actW=maxVal>0?Math.round(act/maxVal*100):0;
-      const ico=CAT_ICONS[cat]||'📁';
-      distRows+=`<div class="b-dist-row">
-        <span class="b-dist-icon">${ico}</span>
-        <span class="b-dist-name">${cat}</span>
-        <div class="b-dist-bars">
-          <div class="b-dist-bar"><div class="b-dist-bar-fill plan" style="width:${planW}%"></div></div>
-          <div class="b-dist-bar"><div class="b-dist-bar-fill ist" style="width:${actW}%"></div></div>
-        </div>
-        <div class="b-dist-vals">
-          <span class="lbl-plan">${eur(plan)}</span>
-          <span class="lbl-ist">${eur(act)}</span>
-        </div>
-      </div>`;
-    });
-    h+=`<div class="b-dist-wrap">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <h3 style="margin:0">Verteilung nach Kategorie</h3>
-        <div style="display:flex;gap:14px;font-size:12px;font-weight:600">
-          <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:linear-gradient(90deg,#f0c27f,#e8a849);display:inline-block"></span><span style="color:#d4950a">Plan</span></span>
-          <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:linear-gradient(90deg,#a8e6cf,#56c596);display:inline-block"></span><span style="color:#2d9d6a">Ist</span></span>
-        </div>
-      </div>
-      ${distRows}
-      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--br);display:flex;justify-content:space-between;font-size:13px;font-weight:700">
-        <span>Gesamt</span>
-        <div style="display:flex;gap:12px">
-          <span style="color:#d4950a">${eur(totalPlan)}</span>
-          <span style="color:#2d9d6a">${eur(totalAct)}</span>
-        </div>
-      </div>
+    const STACK_COLORS={Location:'#FF6B6B',Catering:'#4ECDC4',Dekoration:'#45B7D1',Musik:'#96CEB4',Fotografie:'#FFEAA7',Kleidung:'#DDA0DD',Einladungen:'#98D8C8',Flitterwochen:'#F7DC6F',Sonstiges:'#ADB5BD'};
+    const catData=CATS.map(cat=>({cat,plan:catBudget[cat]||0,act:tasks.filter(t=>t.cat===cat&&!t.trashed).reduce((s,t)=>s+(t.costActual||0),0),color:STACK_COLORS[cat],ico:CAT_ICONS[cat]||'📁'}));
+    /* Plan-Balken: Segmente */
+    let planSegs='';
+    if(totalPlan>0) catData.forEach(d=>{if(d.plan>0){const w=(d.plan/totalPlan*100).toFixed(1);planSegs+=`<div class="b-stack-seg" style="width:${w}%;background:${d.color}" title="${d.cat}: ${eur(d.plan)}"></div>`;}});
+    /* Ist-Balken: Segmente */
+    let istSegs='';
+    if(totalAct>0) catData.forEach(d=>{if(d.act>0){const w=(d.act/totalAct*100).toFixed(1);istSegs+=`<div class="b-stack-seg" style="width:${w}%;background:${d.color}" title="${d.cat}: ${eur(d.act)}"></div>`;}});
+    /* Legende: nur Kategorien mit Plan oder Ist > 0 */
+    const legendItems=catData.filter(d=>d.plan>0||d.act>0).map(d=>`<div class="b-stack-leg-item"><span class="b-stack-leg-dot" style="background:${d.color}"></span>${d.ico} ${d.cat}<span class="leg-val">${eur(d.plan)} / ${eur(d.act)}</span></div>`).join('');
+    h+=`<div class="b-stack-wrap">
+      <div class="b-stack-label"><span>Geplant</span><span>${eur(totalPlan)}</span></div>
+      <div class="b-stack-bar">${planSegs||'<div style="width:100%;height:100%;background:var(--br);border-radius:10px"></div>'}</div>
+      <div class="b-stack-label"><span>Ist-Kosten</span><span>${eur(totalAct)}</span></div>
+      <div class="b-stack-bar">${istSegs||'<div style="width:100%;height:100%;background:var(--br);border-radius:10px"></div>'}</div>
+      <div class="b-stack-legend">${legendItems||'<span style="font-size:12px;color:var(--t3)">Noch keine Kosten eingetragen</span>'}</div>
     </div>`;
   }
   /* ── 2) Fortschrittsbalken ── */
