@@ -1474,6 +1474,7 @@ function renderBudget(){
   }
   a.innerHTML=h;
 }
+window.renderBudget=renderBudget;
 window.setBudget=async function(v){totalBudget=parseFloat(v)||0;await setDoc(BD,{total:totalBudget,catBudget});renderBudget();};
 window.setCatBudget=async function(cat,v){catBudget[cat]=parseFloat(v)||0;await setDoc(BD,{total:totalBudget,catBudget});renderBudget();};
 
