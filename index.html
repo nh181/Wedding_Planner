@@ -1379,12 +1379,14 @@ function renderBudget(){
   if(window._budgetDistOpen){
     const STACK_COLORS={Location:'#FF6B6B',Catering:'#4ECDC4',Dekoration:'#45B7D1',Musik:'#96CEB4',Fotografie:'#FFEAA7',Kleidung:'#DDA0DD',Einladungen:'#98D8C8',Flitterwochen:'#F7DC6F',Sonstiges:'#ADB5BD'};
     const catData=CATS.map(cat=>({cat,plan:catBudget[cat]||0,act:tasks.filter(t=>t.cat===cat&&!t.trashed).reduce((s,t)=>s+(t.costActual||0),0),color:STACK_COLORS[cat],ico:CAT_ICONS[cat]||'📁'}));
-    /* Plan-Balken: Segmente */
+    /* Gemeinsamer Maximalwert: Budget, Plan-Summe oder Ist-Summe – je nachdem was am größten ist */
+    const barMax=Math.max(budget,totalPlan,totalAct)||1;
+    /* Plan-Balken: Segmente relativ zu barMax */
     let planSegs='';
-    if(totalPlan>0) catData.forEach(d=>{if(d.plan>0){const w=(d.plan/totalPlan*100).toFixed(1);planSegs+=`<div class="b-stack-seg" style="width:${w}%;background:${d.color}" title="${d.cat}: ${eur(d.plan)}"></div>`;}});
-    /* Ist-Balken: Segmente */
+    if(totalPlan>0) catData.forEach(d=>{if(d.plan>0){const w=(d.plan/barMax*100).toFixed(1);planSegs+=`<div class="b-stack-seg" style="width:${w}%;background:${d.color}" title="${d.cat}: ${eur(d.plan)}"></div>`;}});
+    /* Ist-Balken: Segmente relativ zu barMax */
     let istSegs='';
-    if(totalAct>0) catData.forEach(d=>{if(d.act>0){const w=(d.act/totalAct*100).toFixed(1);istSegs+=`<div class="b-stack-seg" style="width:${w}%;background:${d.color}" title="${d.cat}: ${eur(d.act)}"></div>`;}});
+    if(totalAct>0) catData.forEach(d=>{if(d.act>0){const w=(d.act/barMax*100).toFixed(1);istSegs+=`<div class="b-stack-seg" style="width:${w}%;background:${d.color}" title="${d.cat}: ${eur(d.act)}"></div>`;}});
     /* Legende: nur Kategorien mit Plan oder Ist > 0 */
     const legendItems=catData.filter(d=>d.plan>0||d.act>0).map(d=>`<div class="b-stack-leg-item"><span class="b-stack-leg-dot" style="background:${d.color}"></span>${d.ico} ${d.cat}<span class="leg-val">${eur(d.plan)} / ${eur(d.act)}</span></div>`).join('');
     h+=`<div class="b-stack-wrap">
