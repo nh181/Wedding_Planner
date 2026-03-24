@@ -393,7 +393,10 @@
     .b-stack-wrap{background:var(--sur);border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
     .b-stack-label{font-size:13px;font-weight:600;color:var(--t2);margin-bottom:6px;display:flex;justify-content:space-between}
     .b-stack-label span{font-weight:700;color:var(--t)}
-    .b-stack-bar{width:100%;height:32px;border-radius:10px;background:var(--br);overflow:hidden;display:flex;margin-bottom:14px;position:relative}
+    .b-stack-bar-wrap{position:relative;margin-bottom:14px}
+    .b-stack-bar{width:100%;height:32px;border-radius:10px;background:var(--br);overflow:hidden;display:flex;position:relative}
+    .b-stack-ref{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--t);border-radius:1px;z-index:2;pointer-events:none}
+    .b-stack-ref::after{content:attr(data-label);position:absolute;bottom:calc(100% + 2px);left:50%;transform:translateX(-50%);font-size:9px;font-weight:700;color:var(--t);white-space:nowrap;background:var(--sur);padding:1px 4px;border-radius:4px;line-height:1.2}
     .b-stack-seg{height:100%;transition:width .4s ease;position:relative;min-width:0}
     .b-stack-seg:first-child{border-radius:10px 0 0 10px}
     .b-stack-seg:last-child{border-radius:0 10px 10px 0}
@@ -1389,11 +1392,14 @@ function renderBudget(){
     if(totalAct>0) catData.forEach(d=>{if(d.act>0){const w=(d.act/barMax*100).toFixed(1);istSegs+=`<div class="b-stack-seg" style="width:${w}%;background:${d.color}" title="${d.cat}: ${eur(d.act)}"></div>`;}});
     /* Legende: nur Kategorien mit Plan oder Ist > 0 */
     const legendItems=catData.filter(d=>d.plan>0||d.act>0).map(d=>`<div class="b-stack-leg-item"><span class="b-stack-leg-dot" style="background:${d.color}"></span>${d.ico} ${d.cat}<span class="leg-val">${eur(d.plan)} / ${eur(d.act)}</span></div>`).join('');
+    const refPct=budget>0?(budget/barMax*100).toFixed(1):0;
+    const showRef=budget>0&&budget<barMax;
+    const refLine=showRef?`<div class="b-stack-ref" style="left:${refPct}%" data-label="Budget ${eur(budget)}"></div>`:'';
     h+=`<div class="b-stack-wrap">
       <div class="b-stack-label"><span>Geplant</span><span>${eur(totalPlan)}</span></div>
-      <div class="b-stack-bar">${planSegs||'<div style="width:100%;height:100%;background:var(--br);border-radius:10px"></div>'}</div>
+      <div class="b-stack-bar-wrap"><div class="b-stack-bar">${planSegs||'<div style="width:100%;height:100%;background:var(--br);border-radius:10px"></div>'}</div>${refLine}</div>
       <div class="b-stack-label"><span>Ist-Kosten</span><span>${eur(totalAct)}</span></div>
-      <div class="b-stack-bar">${istSegs||'<div style="width:100%;height:100%;background:var(--br);border-radius:10px"></div>'}</div>
+      <div class="b-stack-bar-wrap"><div class="b-stack-bar">${istSegs||'<div style="width:100%;height:100%;background:var(--br);border-radius:10px"></div>'}</div>${refLine}</div>
       <div class="b-stack-legend">${legendItems||'<span style="font-size:12px;color:var(--t3)">Noch keine Kosten eingetragen</span>'}</div>
     </div>`;
   }
