@@ -1384,7 +1384,6 @@ function renderBudget(){
     CATS.forEach(cat=>{
       const plan=catBudget[cat]||0;
       const act=tasks.filter(t=>t.cat===cat&&!t.trashed).reduce((s,t)=>s+(t.costActual||0),0);
-      if(plan===0&&act===0) return;
       const planW=maxVal>0?Math.round(plan/maxVal*100):0;
       const actW=maxVal>0?Math.round(act/maxVal*100):0;
       const ico=CAT_ICONS[cat]||'📁';
@@ -1401,12 +1400,23 @@ function renderBudget(){
         </div>
       </div>`;
     });
-    if(distRows){
-      h+=`<div class="b-dist-wrap">
-        <h3>Plan <span style="color:#d4950a">■</span> vs. Ist <span style="color:#2d9d6a">■</span></h3>
-        ${distRows}
-      </div>`;
-    }
+    h+=`<div class="b-dist-wrap">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <h3 style="margin:0">Verteilung nach Kategorie</h3>
+        <div style="display:flex;gap:14px;font-size:12px;font-weight:600">
+          <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:linear-gradient(90deg,#f0c27f,#e8a849);display:inline-block"></span><span style="color:#d4950a">Plan</span></span>
+          <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:linear-gradient(90deg,#a8e6cf,#56c596);display:inline-block"></span><span style="color:#2d9d6a">Ist</span></span>
+        </div>
+      </div>
+      ${distRows}
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--br);display:flex;justify-content:space-between;font-size:13px;font-weight:700">
+        <span>Gesamt</span>
+        <div style="display:flex;gap:12px">
+          <span style="color:#d4950a">${eur(totalPlan)}</span>
+          <span style="color:#2d9d6a">${eur(totalAct)}</span>
+        </div>
+      </div>
+    </div>`;
   }
   /* ── 2) Fortschrittsbalken ── */
   h+=`<div class="b-card">
