@@ -380,17 +380,40 @@
     /* ── ADD TASK MODAL ── */
     #add-modal .sheet{max-width:480px}
 
-    /* ── DONUT CHART ── */
-    .b-donut-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:16px}
-    .b-donut-svg{transform:rotate(-90deg)}
-    .b-donut-center{font-size:16px;font-weight:700;fill:var(--t);text-anchor:middle;dominant-baseline:central}
-    .b-donut-legend{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:center;margin-top:12px}
-    .b-donut-legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--t2);font-weight:500}
-    .b-donut-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    /* ── CATEGORY DISTRIBUTION BARS ── */
+    .b-dist-toggle{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--sur);border-radius:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+    .b-dist-toggle label{font-size:13px;font-weight:600;color:var(--t2)}
+    .b-dist-switch{position:relative;width:44px;height:24px;flex-shrink:0}
+    .b-dist-switch input{opacity:0;width:0;height:0}
+    .b-dist-slider{position:absolute;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:24px;cursor:pointer;transition:.3s}
+    .b-dist-slider:before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+    .b-dist-switch input:checked+.b-dist-slider{background:var(--rose)}
+    .b-dist-switch input:checked+.b-dist-slider:before{transform:translateX(20px)}
+    .b-dist-wrap{background:var(--sur);border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+    .b-dist-wrap h3{font-size:14px;font-weight:700;margin-bottom:14px;letter-spacing:-.1px}
+    .b-dist-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:13px}
+    .b-dist-row:last-child{margin-bottom:0}
+    .b-dist-icon{font-size:16px;flex-shrink:0;width:22px;text-align:center}
+    .b-dist-name{width:80px;font-weight:500;color:var(--t2);flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .b-dist-bars{flex:1;display:flex;flex-direction:column;gap:3px}
+    .b-dist-bar{height:10px;border-radius:5px;background:var(--br);overflow:hidden;position:relative}
+    .b-dist-bar-fill{height:100%;border-radius:5px;transition:width .4s ease}
+    .b-dist-bar-fill.plan{background:linear-gradient(90deg,#f0c27f,#e8a849)}
+    .b-dist-bar-fill.ist{background:linear-gradient(90deg,#a8e6cf,#56c596)}
+    .b-dist-vals{display:flex;gap:12px;font-size:11px;color:var(--t3);min-width:120px;flex-shrink:0;justify-content:flex-end}
+    .b-dist-vals span{white-space:nowrap}
+    .b-dist-vals .lbl-plan{color:#d4950a;font-weight:600}
+    .b-dist-vals .lbl-ist{color:#2d9d6a;font-weight:600}
 
     /* ── BUDGET HISTORY ── */
-    .bh-card{background:var(--sur);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-    .bh-card h3{font-size:15px;font-weight:700;margin-bottom:14px;letter-spacing:-.1px}
+    .bh-card{background:var(--sur);border-radius:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+    .bh-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;user-select:none;-webkit-user-select:none}
+    .bh-header h3{font-size:15px;font-weight:700;margin:0;letter-spacing:-.1px}
+    .bh-chevron{font-size:18px;color:var(--t3);transition:transform .3s ease;display:inline-block}
+    .bh-card.open .bh-chevron{transform:rotate(180deg)}
+    .bh-body{max-height:0;overflow:hidden;transition:max-height .35s ease}
+    .bh-card.open .bh-body{max-height:600px}
+    .bh-body-inner{padding:0 16px 14px}
     .bh-entry{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--br);font-size:13px}
     .bh-entry:last-child{border-bottom:none}
     .bh-date{font-size:11px;color:var(--t3);min-width:70px;flex-shrink:0}
@@ -1349,22 +1372,41 @@ function renderBudget(){
     <div class="b-kpi"><div class="b-kpi-val amber">${eur(totalPlan)}</div><div class="b-kpi-lbl">Geplant</div></div>
     <div class="b-kpi"><div class="b-kpi-val ${istCls}">${eur(totalAct)}</div><div class="b-kpi-lbl">Ist-Kosten</div></div>
   </div>`;
-  /* ── 1b) Donut Chart ── */
-  const DONUT_COLORS={Location:'#FF6B6B',Catering:'#4ECDC4',Dekoration:'#45B7D1',Musik:'#96CEB4',Fotografie:'#FFEAA7',Kleidung:'#DDA0DD',Einladungen:'#98D8C8',Flitterwochen:'#F7DC6F',Sonstiges:'#ADB5BD'};
-  const donutData=CATS.map(cat=>({cat,val:tasks.filter(t=>t.cat===cat&&!t.trashed).reduce((s,t)=>s+(t.costActual||0),0),color:DONUT_COLORS[cat]})).filter(d=>d.val>0);
-  if(donutData.length){
-    const R=70,CX=90,CY=90,CIRC=2*Math.PI*R;
-    let offset=0;
-    let segments='';
-    donutData.forEach(d=>{const pct=totalAct>0?d.val/totalAct:0;const dash=pct*CIRC;segments+=`<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${d.color}" stroke-width="28" stroke-dasharray="${dash} ${CIRC-dash}" stroke-dashoffset="${-offset}" style="transition:stroke-dashoffset .6s"/>`;offset+=dash;});
-    let legend=donutData.map(d=>`<div class="b-donut-legend-item"><span class="b-donut-legend-dot" style="background:${d.color}"></span>${d.cat}: ${eur(d.val)}</div>`).join('');
-    h+=`<div class="b-donut-wrap">
-      <svg class="b-donut-svg" width="180" height="180" viewBox="0 0 180 180">
-        ${segments}
-        <text class="b-donut-center" x="${CX}" y="${CY}" transform="rotate(90 ${CX} ${CY})">${eur(totalAct)}</text>
-      </svg>
-      <div class="b-donut-legend">${legend}</div>
-    </div>`;
+  /* ── 1b) Kategorie-Verteilung (Toggle) ── */
+  const distChecked=window._budgetDistOpen?'checked':'';
+  h+=`<div class="b-dist-toggle">
+    <label>📊 Verteilung nach Kategorie</label>
+    <label class="b-dist-switch"><input type="checkbox" ${distChecked} onchange="window._budgetDistOpen=this.checked;renderBudget()"/><span class="b-dist-slider"></span></label>
+  </div>`;
+  if(window._budgetDistOpen){
+    const maxVal=Math.max(...CATS.map(cat=>Math.max(catBudget[cat]||0,tasks.filter(t=>t.cat===cat&&!t.trashed).reduce((s,t)=>s+(t.costActual||0),0))),1);
+    let distRows='';
+    CATS.forEach(cat=>{
+      const plan=catBudget[cat]||0;
+      const act=tasks.filter(t=>t.cat===cat&&!t.trashed).reduce((s,t)=>s+(t.costActual||0),0);
+      if(plan===0&&act===0) return;
+      const planW=maxVal>0?Math.round(plan/maxVal*100):0;
+      const actW=maxVal>0?Math.round(act/maxVal*100):0;
+      const ico=CAT_ICONS[cat]||'📁';
+      distRows+=`<div class="b-dist-row">
+        <span class="b-dist-icon">${ico}</span>
+        <span class="b-dist-name">${cat}</span>
+        <div class="b-dist-bars">
+          <div class="b-dist-bar"><div class="b-dist-bar-fill plan" style="width:${planW}%"></div></div>
+          <div class="b-dist-bar"><div class="b-dist-bar-fill ist" style="width:${actW}%"></div></div>
+        </div>
+        <div class="b-dist-vals">
+          <span class="lbl-plan">${eur(plan)}</span>
+          <span class="lbl-ist">${eur(act)}</span>
+        </div>
+      </div>`;
+    });
+    if(distRows){
+      h+=`<div class="b-dist-wrap">
+        <h3>Plan <span style="color:#d4950a">■</span> vs. Ist <span style="color:#2d9d6a">■</span></h3>
+        ${distRows}
+      </div>`;
+    }
   }
   /* ── 2) Fortschrittsbalken ── */
   h+=`<div class="b-card">
@@ -1422,20 +1464,26 @@ function renderBudget(){
     </div>`;
   });
   h+=`</div>`;
-  /* ── 5) Letzte Buchungen ── */
+  /* ── 5) Letzte Buchungen (aufklappbar) ── */
   if(budgetHistory&&budgetHistory.length){
     const bhIcons={Location:'🏰',Catering:'🍽️',Dekoration:'💐',Musik:'🎵',Fotografie:'📸',Kleidung:'👗',Einladungen:'💌',Flitterwochen:'✈️',Sonstiges:'📦'};
     const last10=budgetHistory.slice(-10).reverse();
-    h+=`<div class="bh-card"><h3>Letzte Buchungen</h3>`;
+    let bhEntries='';
     last10.forEach(e=>{
       const d=new Date(e.date);
       const ds=d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
       const diff=e.newCost-e.oldCost;
       const cls=diff>=0?'green':'red';
       const sign=diff>=0?'+':'';
-      h+=`<div class="bh-entry"><span class="bh-date">${ds}</span><span class="bh-ico">${bhIcons[e.cat]||'📁'}</span><span class="bh-title">${e.title}</span><span class="bh-amount ${cls}">${sign}${eur(diff)}</span></div>`;
+      bhEntries+=`<div class="bh-entry"><span class="bh-date">${ds}</span><span class="bh-ico">${bhIcons[e.cat]||'📁'}</span><span class="bh-title">${e.title}</span><span class="bh-amount ${cls}">${sign}${eur(diff)}</span></div>`;
     });
-    h+=`</div>`;
+    h+=`<div class="bh-card" id="bh-dropdown">
+      <div class="bh-header" onclick="document.getElementById('bh-dropdown').classList.toggle('open')">
+        <h3>📒 Letzte Buchungen (${last10.length})</h3>
+        <span class="bh-chevron">▼</span>
+      </div>
+      <div class="bh-body"><div class="bh-body-inner">${bhEntries}</div></div>
+    </div>`;
   }
   a.innerHTML=h;
 }
