@@ -601,7 +601,7 @@
   </div>
   <div id="fbar" style="display:none">
     <button class="fb" data-f="alle">Alle</button>
-    <button class="fb on" data-f="offen">Offen</button>
+    <button class="fb" data-f="offen">Offen</button>
     <button class="fb" data-f="erledigt">Erledigt</button>
     <button class="fb" data-f="hoch">🔴 Hoch</button>
     <button class="fb" data-f="woche">Diese Woche</button>
@@ -675,7 +675,7 @@ const ID=doc(db,'wedding','info');
 const BD=doc(db,'wedding','budget');
 const UC=collection(db,'users');
 
-let tasks=[],vendors=[],wDate='',tmpls=[],nid=1,vnid=1,user=null,role='gast',firstName='',flt='offen',tab='home';
+let tasks=[],vendors=[],wDate='',tmpls=[],nid=1,vnid=1,user=null,role='gast',firstName='',flt='alle',tab='home';
 let allUsers=[],totalBudget=0,catBudget={};
 let taskSort='none',taskView='liste',budgetHistory=[];
 let vendorCriteria={
@@ -819,7 +819,8 @@ function buildNav(){
   document.querySelectorAll('[data-tab]').forEach(el=>{
     el.addEventListener('click',()=>{
       tab=el.dataset.tab;
-      if(tab!=='papierkorb'){flt='alle';document.querySelectorAll('.fb').forEach(b=>b.classList.toggle('on',b.dataset.f==='alle'));}
+      if(tab==='aufgaben'){flt='offen';document.querySelectorAll('.fb').forEach(b=>b.classList.toggle('on',b.dataset.f==='offen'));}
+      else if(tab!=='papierkorb'){flt='alle';document.querySelectorAll('.fb').forEach(b=>b.classList.toggle('on',b.dataset.f==='alle'));}
       closeDrawer();
       buildNav();render();
     });
