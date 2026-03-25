@@ -407,6 +407,20 @@
     .b-stack-leg-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
     .b-stack-leg-item .leg-val{color:var(--t);font-weight:600;margin-left:2px}
 
+    /* ── DOCUMENT LINKS ── */
+    .doc-section{margin-top:4px;margin-bottom:8px}
+    .doc-list{display:flex;flex-direction:column;gap:6px}
+    .doc-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:10px;font-size:13px}
+    .doc-item .doc-ico{font-size:16px;flex-shrink:0}
+    .doc-item .doc-name{flex:1;font-weight:500;color:var(--t);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .doc-item a{color:var(--blue,#007AFF);text-decoration:none;font-size:12px;font-weight:600;flex-shrink:0}
+    .doc-item .doc-del{background:none;border:none;color:var(--t3);font-size:16px;cursor:pointer;padding:0 2px;flex-shrink:0}
+    .doc-item .doc-del:hover{color:#ef4444}
+    .doc-add{display:flex;gap:6px;margin-top:6px}
+    .doc-add input{flex:1;padding:7px 10px;border:1px solid var(--br);border-radius:8px;font-size:12px;font-family:inherit;background:var(--sur);color:var(--t)}
+    .doc-add input::placeholder{color:var(--t3)}
+    .doc-add button{padding:6px 12px;border:none;border-radius:8px;background:var(--rose);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+
     /* ── BUDGET HISTORY ── */
     .bh-card{background:var(--sur);border-radius:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
     .bh-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;user-select:none;-webkit-user-select:none}
@@ -896,6 +910,28 @@ function openTaskPopup(t){
     html+=`<div class="subtask-add"><input type="text" id="subtask-inp-${t.id}" placeholder="Neue Teilaufgabe..." onkeydown="if(event.key==='Enter')addSubtask(${t.id})"/><button onclick="addSubtask(${t.id})">+</button></div>`;
   }
 
+  // Document links
+  html+=`<div class="popup-section">Dokumente</div>`;
+  const docs=t.docs||[];
+  if(docs.length){
+    html+=`<div class="doc-list">`;
+    docs.forEach((dc,di)=>{
+      const ico=dc.name.match(/\.(pdf)$/i)?'📄':dc.name.match(/\.(xlsx?|csv)$/i)?'📊':dc.name.match(/\.(docx?|txt)$/i)?'📝':dc.name.match(/\.(jpe?g|png|gif|webp)$/i)?'🖼️':'📎';
+      html+=`<div class="doc-item"><span class="doc-ico">${ico}</span><span class="doc-name">${dc.name}</span><a href="${dc.url}" target="_blank" rel="noopener">Öffnen</a>${(isA||assigned)?`<button class="doc-del" onclick="removeTaskDoc(${t.id},${di})" title="Entfernen">×</button>`:''}
+      </div>`;
+    });
+    html+=`</div>`;
+  } else {
+    html+=`<div style="font-size:13px;color:var(--t3);margin-bottom:4px">Keine Dokumente</div>`;
+  }
+  if(isA||assigned){
+    html+=`<div class="doc-add">
+      <input type="text" id="doc-name-${t.id}" placeholder="Name (z.B. Angebot.pdf)"/>
+      <input type="text" id="doc-url-${t.id}" placeholder="Link (iCloud, Drive…)" style="flex:2"/>
+      <button onclick="addTaskDoc(${t.id})">+ Link</button>
+    </div>`;
+  }
+
   // Comments
   html+=`<div class="popup-section">Kommentare</div>
   <div class="comment-list" id="popup-comments">
@@ -1200,6 +1236,46 @@ window.removeSubtask=async function(taskId,subtaskId){
   const t=tasks.find(x=>x.id===taskId);if(!t||!t.subtasks)return;
   t.subtasks=t.subtasks.filter(s=>s.id!==subtaskId);
   await save();openTaskPopup(t);
+};
+
+/* ── DOCUMENT LINK FUNCTIONS (Tasks) ── */
+window.addTaskDoc=async function(taskId){
+  const t=tasks.find(x=>x.id===taskId);if(!t)return;
+  const nameInp=document.getElementById('doc-name-'+taskId);
+  const urlInp=document.getElementById('doc-url-'+taskId);
+  if(!nameInp||!urlInp)return;
+  const name=nameInp.value.trim();
+  let url=urlInp.value.trim();
+  if(!name||!url){alert('Bitte Name und Link angeben.');return;}
+  if(!url.match(/^https?:\/\//))url='https://'+url;
+  if(!t.docs)t.docs=[];
+  t.docs.push({name:name,url:url,addedAt:Date.now()});
+  await save();openTaskPopup(t);
+};
+window.removeTaskDoc=async function(taskId,idx){
+  const t=tasks.find(x=>x.id===taskId);if(!t||!t.docs)return;
+  t.docs.splice(idx,1);
+  await save();openTaskPopup(t);
+};
+
+/* ── DOCUMENT LINK FUNCTIONS (Vendors) ── */
+window.addVendorDoc=async function(vendorId){
+  const v=vendors.find(x=>x.id===vendorId);if(!v)return;
+  const nameInp=document.getElementById('vdoc-name-'+vendorId);
+  const urlInp=document.getElementById('vdoc-url-'+vendorId);
+  if(!nameInp||!urlInp)return;
+  const name=nameInp.value.trim();
+  let url=urlInp.value.trim();
+  if(!name||!url){alert('Bitte Name und Link angeben.');return;}
+  if(!url.match(/^https?:\/\//))url='https://'+url;
+  if(!v.docs)v.docs=[];
+  v.docs.push({name:name,url:url,addedAt:Date.now()});
+  await save();renderAnbieter();
+};
+window.removeVendorDoc=async function(vendorId,idx){
+  const v=vendors.find(x=>x.id===vendorId);if(!v||!v.docs)return;
+  v.docs.splice(idx,1);
+  await save();renderAnbieter();
 };
 
 window.restoreTask=async function(id){
@@ -1781,6 +1857,13 @@ function renderAnbieter(){
       if(v.notes) h += '<div style="font-size:13px;color:var(--t2);margin-top:6px">' + v.notes + '</div>';
       var linkedTasks=tasks.filter(function(t){return t.vendorId===v.id&&!t.trashed;});
       if(linkedTasks.length){h+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--br)"><div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:4px">Verknüpfte Aufgaben</div>';linkedTasks.forEach(function(lt){h+='<div style="font-size:13px;color:var(--t2);padding:2px 0">• '+lt.title+'</div>';});h+='</div>';}
+      var vDocs=v.docs||[];
+      if(vDocs.length||isA){
+        h+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--br)"><div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:4px">Dokumente</div>';
+        if(vDocs.length){h+='<div class="doc-list">';for(var di=0;di<vDocs.length;di++){var dc=vDocs[di];var dico=dc.name.match(/\.(pdf)$/i)?'📄':dc.name.match(/\.(xlsx?|csv)$/i)?'📊':dc.name.match(/\.(docx?|txt)$/i)?'📝':dc.name.match(/\.(jpe?g|png|gif|webp)$/i)?'🖼️':'📎';h+='<div class="doc-item"><span class="doc-ico">'+dico+'</span><span class="doc-name">'+dc.name+'</span><a href="'+dc.url+'" target="_blank" rel="noopener">Öffnen</a>'+(isA?'<button class="doc-del" onclick="removeVendorDoc('+v.id+','+di+')" title="Entfernen">×</button>':'')+'</div>';}h+='</div>';}
+        if(isA){h+='<div class="doc-add"><input type="text" id="vdoc-name-'+v.id+'" placeholder="Name (z.B. Angebot.pdf)"/><input type="text" id="vdoc-url-'+v.id+'" placeholder="Link (iCloud, Drive…)" style="flex:2"/><button onclick="addVendorDoc('+v.id+')">+ Link</button></div>';}
+        h+='</div>';
+      }
       h += '<div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--br)">';
       if(v.website) h += '<button id="vopen-'+v.id+'" class="v-btn">Website</button>';
       h += '<button id="vedit-'+v.id+'" class="v-btn primary">Bearbeiten</button>';
