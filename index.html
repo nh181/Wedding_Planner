@@ -8,6 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
   <meta name="apple-mobile-web-app-title" content="Luisa & Nico"/>
   <title>Hochzeit Luisa & Nico</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <link rel="manifest" href="manifest.json"/>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;600&display=swap');
@@ -1519,11 +1520,13 @@ async function renderInfo(){
   h+=`<div style="background:var(--sur);border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
     <div style="font-size:13px;color:var(--t2);margin-bottom:12px">Erstelle ein vollständiges Backup aller Daten (Aufgaben, Anbieter, Budget, Einstellungen) als JSON-Datei oder stelle ein früheres Backup wieder her.</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <button onclick="window._exportBackup()" style="flex:1;min-width:140px;padding:12px 16px;border-radius:12px;border:none;background:var(--rose);color:#fff;font-family:inherit;font-weight:600;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">📥 Backup erstellen</button>
-      <label style="flex:1;min-width:140px;padding:12px 16px;border-radius:12px;border:2px dashed var(--br);background:var(--bg);color:var(--t);font-family:inherit;font-weight:600;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center">📤 Backup laden
+      <button onclick="window._exportBackup()" style="flex:1;min-width:130px;padding:12px 16px;border-radius:12px;border:none;background:var(--rose);color:#fff;font-family:inherit;font-weight:600;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">📥 JSON Backup</button>
+      <button onclick="window._exportExcel()" style="flex:1;min-width:130px;padding:12px 16px;border-radius:12px;border:none;background:#217346;color:#fff;font-family:inherit;font-weight:600;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">📊 Excel Export</button>
+      <label style="flex:1;min-width:130px;padding:12px 16px;border-radius:12px;border:2px dashed var(--br);background:var(--bg);color:var(--t);font-family:inherit;font-weight:600;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center">📤 Backup laden
         <input type="file" accept=".json" onchange="window._importBackup(this)" style="display:none"/>
       </label>
     </div>
+    <div style="font-size:11px;color:var(--t3);margin-top:8px">JSON = vollständiges Backup (wiederherstellbar) · Excel = Übersicht zum Drucken/Teilen</div>
   </div>`;
   h+=`<button class="dbtn" onclick="doLogout()">Abmelden</button>`;
   a.innerHTML=h;
@@ -1615,6 +1618,105 @@ window._importBackup=async function(input){
     render();
     alert('✅ Backup erfolgreich wiederhergestellt!\n\n'+tasks.length+' Aufgaben\n'+vendors.length+' Anbieter');
   }catch(e){alert('❌ Fehler beim Import: '+e.message);input.value='';}
+};
+
+/* ── BACKUP: Excel Export ── */
+window._exportExcel=async function(){
+  try{
+    if(typeof XLSX==='undefined'){alert('❌ Excel-Bibliothek wird geladen, bitte nochmal versuchen.');return;}
+    const wb=XLSX.utils.book_new();
+
+    /* --- Blatt 1: Aufgaben --- */
+    const taskRows=tasks.filter(t=>!t.trashed).map(t=>{
+      const v=t.vendorId?vendors.find(x=>x.id===t.vendorId):null;
+      const subDone=(t.subtasks||[]).filter(s=>s.done).length;
+      const subTotal=(t.subtasks||[]).length;
+      return {
+        'Aufgabe':t.title,
+        'Kategorie':t.cat||'',
+        'Priorität':t.prio==='hoch'?'Hoch':t.prio==='mittel'?'Mittel':'Niedrig',
+        'Status':t.done?'Erledigt':'Offen',
+        'Fällig am':t.due||'',
+        'Zugewiesen':(t.assignees||[]).join(', '),
+        'Ist-Kosten (€)':t.costActual||0,
+        'Anbieter':v?v.name:'',
+        'Teilaufgaben':subTotal>0?(subDone+'/'+subTotal):'',
+        'Kommentare':(t.comments||[]).length
+      };
+    });
+    const ws1=XLSX.utils.json_to_sheet(taskRows);
+    ws1['!cols']=[{wch:30},{wch:14},{wch:10},{wch:10},{wch:12},{wch:20},{wch:14},{wch:20},{wch:12},{wch:10}];
+    XLSX.utils.book_append_sheet(wb,ws1,'Aufgaben');
+
+    /* --- Blatt 2: Anbieter --- */
+    const vendorRows=vendors.map(v=>{
+      const linked=tasks.filter(t=>t.vendorId===v.id&&!t.trashed).map(t=>t.title).join(', ');
+      return {
+        'Name':v.name,
+        'Kategorie':v.cat||'',
+        'Status':v.status||'',
+        'Preis (€)':v.price||0,
+        'Bewertung':v.rating?('★'.repeat(v.rating)+'☆'.repeat(5-v.rating)):'–',
+        'Website':v.website||'',
+        'Kontakt':v.contact_name||'',
+        'E-Mail':v.contact_email||'',
+        'Telefon':v.contact_phone||'',
+        'Notizen':v.notes||'',
+        'Verknüpfte Aufgaben':linked
+      };
+    });
+    const ws2=XLSX.utils.json_to_sheet(vendorRows);
+    ws2['!cols']=[{wch:24},{wch:14},{wch:12},{wch:12},{wch:12},{wch:24},{wch:18},{wch:24},{wch:16},{wch:24},{wch:30}];
+    XLSX.utils.book_append_sheet(wb,ws2,'Anbieter');
+
+    /* --- Blatt 3: Budget-Übersicht --- */
+    const budgetRows=CATS.map(cat=>{
+      const plan=catBudget[cat]||0;
+      const act=tasks.filter(t=>t.cat===cat&&!t.trashed).reduce((s,t)=>s+(t.costActual||0),0);
+      const diff=plan-act;
+      return {
+        'Kategorie':cat,
+        'Plankosten (€)':plan,
+        'Ist-Kosten (€)':act,
+        'Differenz (€)':diff,
+        'Auslastung (%)':plan>0?Math.round(act/plan*100):act>0?'∞':0
+      };
+    });
+    const totalPlan=CATS.reduce((s,c)=>s+(catBudget[c]||0),0);
+    const totalAct=tasks.filter(t=>!t.trashed).reduce((s,t)=>s+(t.costActual||0),0);
+    budgetRows.push({
+      'Kategorie':'GESAMT',
+      'Plankosten (€)':totalPlan,
+      'Ist-Kosten (€)':totalAct,
+      'Differenz (€)':totalPlan-totalAct,
+      'Auslastung (%)':totalPlan>0?Math.round(totalAct/totalPlan*100):0
+    });
+    budgetRows.unshift({'Kategorie':'Gesamtbudget','Plankosten (€)':totalBudget,'Ist-Kosten (€)':'','Differenz (€)':'','Auslastung (%)':''});
+    const ws3=XLSX.utils.json_to_sheet(budgetRows);
+    ws3['!cols']=[{wch:16},{wch:16},{wch:14},{wch:14},{wch:14}];
+    XLSX.utils.book_append_sheet(wb,ws3,'Budget');
+
+    /* --- Blatt 4: Budget-History --- */
+    if(budgetHistory&&budgetHistory.length){
+      const histRows=budgetHistory.slice().reverse().map(e=>({
+        'Datum':new Date(e.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}),
+        'Kategorie':e.cat||'',
+        'Aufgabe':e.title||'',
+        'Alter Betrag (€)':e.oldCost||0,
+        'Neuer Betrag (€)':e.newCost||0,
+        'Änderung (€)':(e.newCost||0)-(e.oldCost||0)
+      }));
+      const ws4=XLSX.utils.json_to_sheet(histRows);
+      ws4['!cols']=[{wch:12},{wch:14},{wch:26},{wch:16},{wch:16},{wch:14}];
+      XLSX.utils.book_append_sheet(wb,ws4,'Buchungen');
+    }
+
+    /* --- Download --- */
+    const d=new Date();
+    const dateStr=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    XLSX.writeFile(wb,'hochzeit_export_'+dateStr+'.xlsx');
+    alert('✅ Excel-Export erstellt!\n\nBlätter: Aufgaben, Anbieter, Budget'+(budgetHistory?.length?', Buchungen':''));
+  }catch(e){alert('❌ Fehler beim Excel-Export: '+e.message);}
 };
 
 // ── ANBIETER / VENDOR FUNCTIONS ──
