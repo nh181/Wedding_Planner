@@ -1514,6 +1514,17 @@ async function renderInfo(){
   h+=`<div class="srow"><div><div class="slbl">Uhrzeit</div></div><input type="text" class="sinp" id="si-time" placeholder="z.B. 14:00 Uhr" onchange="saveInfo()"/></div>`;
   h+=`<div class="srow"><div><div class="slbl">Dresscode</div></div><input type="text" class="sinp" id="si-dress" placeholder="z.B. Festlich" onchange="saveInfo()"/></div>`;
   h+=`<div class="srow"><div><div class="slbl">Angemeldet als</div><div class="ssub">${user?.email||''}</div></div><div style="font-size:13px;color:var(--rose);font-weight:600">${role==='admin'?'Admin':'Mithelfer'}</div></div>`;
+  /* ── Backup-Bereich ── */
+  h+=`<div class="sh" style="margin-top:24px">Backup</div>`;
+  h+=`<div style="background:var(--sur);border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
+    <div style="font-size:13px;color:var(--t2);margin-bottom:12px">Erstelle ein vollständiges Backup aller Daten (Aufgaben, Anbieter, Budget, Einstellungen) als JSON-Datei oder stelle ein früheres Backup wieder her.</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button onclick="window._exportBackup()" style="flex:1;min-width:140px;padding:12px 16px;border-radius:12px;border:none;background:var(--rose);color:#fff;font-family:inherit;font-weight:600;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">📥 Backup erstellen</button>
+      <label style="flex:1;min-width:140px;padding:12px 16px;border-radius:12px;border:2px dashed var(--br);background:var(--bg);color:var(--t);font-family:inherit;font-weight:600;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center">📤 Backup laden
+        <input type="file" accept=".json" onchange="window._importBackup(this)" style="display:none"/>
+      </label>
+    </div>
+  </div>`;
   h+=`<button class="dbtn" onclick="doLogout()">Abmelden</button>`;
   a.innerHTML=h;
   try{
@@ -1529,6 +1540,82 @@ window.saveInfo=async function(){
   await setDoc(ID,{location:g('si-loc'),time:g('si-time'),dresscode:g('si-dress')});
 };
 
+/* ── BACKUP: JSON Export ── */
+window._exportBackup=async function(){
+  try{
+    /* Hochzeitsinfos laden */
+    let info={};
+    try{const s=await getDoc(ID);if(s.exists())info=s.data();}catch(e){}
+    /* Budget-Daten laden */
+    let budgetData={};
+    try{const bs=await getDoc(BD);if(bs.exists())budgetData=bs.data();}catch(e){}
+    const backup={
+      _meta:{version:1,app:'Hochzeitsplaner Luisa & Nico',exportDate:new Date().toISOString(),taskCount:tasks.length,vendorCount:vendors.length},
+      tasks:tasks,
+      vendors:vendors,
+      weddingDate:wDate,
+      templates:tmpls,
+      budgetHistory:budgetHistory||[],
+      budget:{total:totalBudget,catBudget:catBudget},
+      info:info
+    };
+    const json=JSON.stringify(backup,null,2);
+    const blob=new Blob([json],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    const d=new Date();
+    const dateStr=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    a.href=url;
+    a.download='hochzeit_backup_'+dateStr+'.json';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    alert('✅ Backup erstellt!\n\nDatei: hochzeit_backup_'+dateStr+'.json\n\nAufgaben: '+tasks.length+'\nAnbieter: '+vendors.length);
+  }catch(e){alert('❌ Fehler beim Export: '+e.message);}
+};
+
+/* ── BACKUP: JSON Import ── */
+window._importBackup=async function(input){
+  const file=input.files[0];
+  if(!file)return;
+  try{
+    const text=await file.text();
+    const data=JSON.parse(text);
+    /* Validierung */
+    if(!data._meta||!data._meta.app){alert('❌ Ungültige Backup-Datei.');input.value='';return;}
+    /* Vorschau */
+    const meta=data._meta;
+    const preview='📋 Backup vom: '+(new Date(meta.exportDate)).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})+
+      '\n\n📝 Aufgaben: '+(data.tasks||[]).length+
+      '\n🏪 Anbieter: '+(data.vendors||[]).length+
+      '\n💶 Budget: '+((data.budget?.total||0).toLocaleString('de-DE'))+' €'+
+      '\n📅 Hochzeitsdatum: '+(data.weddingDate||'–')+
+      '\n📊 Budget-History: '+(data.budgetHistory||[]).length+' Einträge'+
+      '\n\n⚠️ ACHTUNG: Alle aktuellen Daten werden überschrieben!\n\nWirklich wiederherstellen?';
+    if(!confirm(preview)){input.value='';return;}
+    /* Daten wiederherstellen */
+    tasks=data.tasks||[];
+    vendors=data.vendors||[];
+    wDate=data.weddingDate||'';
+    tmpls=data.templates||[];
+    budgetHistory=data.budgetHistory||[];
+    nid=tasks.reduce((m,t)=>Math.max(m,t.id||0),0)+1;
+    vnid=vendors.reduce((m,v)=>Math.max(m,v.id||0),0)+1;
+    await save();
+    /* Budget separat speichern */
+    if(data.budget){
+      totalBudget=data.budget.total||0;
+      catBudget=data.budget.catBudget||{};
+      try{await setDoc(BD,{total:totalBudget,catBudget:catBudget});}catch(e){}
+    }
+    /* Info separat speichern */
+    if(data.info&&Object.keys(data.info).length){
+      try{await setDoc(ID,data.info);}catch(e){}
+    }
+    input.value='';
+    render();
+    alert('✅ Backup erfolgreich wiederhergestellt!\n\n'+tasks.length+' Aufgaben\n'+vendors.length+' Anbieter');
+  }catch(e){alert('❌ Fehler beim Import: '+e.message);input.value='';}
+};
 
 // ── ANBIETER / VENDOR FUNCTIONS ──
 const V_CATS=['Location','Catering','Fotografie','Musik','Dekoration','Kleidung','Sonstiges'];
