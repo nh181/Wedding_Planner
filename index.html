@@ -471,6 +471,14 @@
 
     /* ── VENDOR CHIP ON TASK ── */
     .chip.vendor{background:var(--blue-l);color:var(--blue);font-size:11px}
+
+    /* ── TASK/VENDOR POPUP FORM FIELDS ── */
+    .tp-field{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+    .tp-field label{font-size:12px;font-weight:600;color:var(--t3);min-width:80px;flex-shrink:0}
+    .tp-field .inp{flex:1;margin-bottom:0}
+    .tp-section{font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.3px;margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--br)}
+    .tp-section:first-of-type{border-top:none;margin-top:8px}
+    #vendor-popup .sheet{max-width:520px}
   </style>
 </head>
 <body>
@@ -510,6 +518,11 @@
 <!-- TASK POPUP -->
 <div id="task-popup" class="overlay" style="z-index:8000">
   <div class="sheet" id="task-popup-inner"><div class="sh-handle"></div><div id="popup-content"></div></div>
+</div>
+
+<!-- VENDOR POPUP -->
+<div id="vendor-popup" class="overlay" style="z-index:8001">
+  <div class="sheet" style="max-width:520px"><div class="sh-handle"></div><div id="vendor-popup-content"></div></div>
 </div>
 
 <!-- NOTIFICATIONS -->
@@ -860,49 +873,63 @@ window.openTaskById=function(id){const t=tasks.find(x=>x.id===id);if(t)openTaskP
 function openTaskPopup(t){
   const isA=role==='admin';
   const isH=role==='mithelfer';
-  const canEdit=isA;
-  const canDel=isA;
-  const canChk=isA||isAssigned(t);
   const assigned=isAssigned(t);
-  const showCost=isA||(assigned&&t.costActual);
-  const late=!t.done&&t.due&&t.due<today;
-  const d=t.due?dl(t.due):null;
-  const soon=!late&&d!==null&&d<=7&&d>=0;
-  const dueLabel=t.due?(late?`⚠ ${fmt(t.due)}`:(soon?`in ${d}d`:fmt(t.due))):'';
-  const names=(t.assignees||[]).join(', ');
+  const canChk=isA||assigned;
+  const canEditFields=isA;
+  const canEditCost=isA||assigned;
 
-  let html=`
-    <div class="popup-title">${t.title}</div>
-    <div class="popup-meta">
-      ${names?`<span class="chip per">${names}</span>`:''}
-      <span class="chip cat">${t.cat}</span>
-      <span class="chip prio-${t.prio}">${t.prio==='hoch'?'🔴 Hoch':t.prio==='mittel'?'🟡 Mittel':'🟢 Niedrig'}</span>
-      ${t.due?`<span class="chip due ${late?'late':soon?'soon':''}">${dueLabel}</span>`:''}
-      ${showCost&&t.costActual?`<span class="chip cost">${eur(t.costActual)}</span>`:''}
+  // Build vendor options for select
+  var vendorOpts='<option value="">– Kein Anbieter –</option>';
+  vendors.forEach(function(v){vendorOpts+='<option value="'+v.id+'"'+(t.vendorId===v.id?' selected':'')+'>'+v.name+' ('+v.cat+')</option>';});
+
+  let html='';
+
+  // Title - editable input for admin, read-only for others
+  if(canEditFields){
+    html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <input type="text" id="tp-title" class="inp" value="${(t.title||'').replace(/"/g,'&quot;')}" style="font-size:18px;font-weight:700;margin-bottom:0;flex:1"/>
     </div>`;
+  } else {
+    html+=`<div class="popup-title">${t.title}</div>`;
+  }
 
-  // Assignees (edit mode for admin)
+  // Assignees
+  html+=`<div class="tp-section" style="border-top:none;margin-top:4px">Zugewiesen an</div>`;
   if(isA){
-    html+=`<div class="popup-section">Zugewiesen an</div>
-    <div class="assignee-grid" id="popup-assignees">
+    html+=`<div class="assignee-grid" id="popup-assignees">
       ${allUsers.filter(u=>u.firstName).map(u=>`<button class="aschip ${(t.assignees||[]).includes(u.firstName)?'on':''}" onclick="togglePopupAssignee(${t.id},'${u.firstName}')">${u.firstName}</button>`).join('')}
     </div>`;
+  } else {
+    const names=(t.assignees||[]).join(', ');
+    html+=`<div style="margin-bottom:8px">${names?`<span class="chip per">${names}</span>`:'<span style="font-size:13px;color:var(--t3)">Niemand zugewiesen</span>'}</div>`;
   }
 
-  // Cost (edit for admin)
-  if(isA){
-    html+=`<div class="popup-section">Tatsächliche Kosten</div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-      <input type="number" class="sinp" id="popup-cost" value="${t.costActual||''}" placeholder="0" style="width:120px" onchange="updateTaskCost(${t.id},this.value)"/>
-      <span style="font-size:13px;color:var(--t3)">€</span>
-    </div>`;
+  // Form fields
+  if(canEditFields){
+    html+=`<div class="tp-field"><label>Kategorie</label><select id="tp-cat" class="inp">${CATS.map(c=>'<option'+(t.cat===c?' selected':'')+'>'+c+'</option>').join('')}</select></div>`;
+    html+=`<div class="tp-field"><label>Anbieter</label><select id="tp-vendor" class="inp">${vendorOpts}</select></div>`;
+    html+=`<div class="tp-field"><label>Priorität</label><select id="tp-pri" class="inp"><option value="hoch"${t.prio==='hoch'?' selected':''}>🔴 Hoch</option><option value="mittel"${t.prio==='mittel'?' selected':''}>🟡 Mittel</option><option value="niedrig"${t.prio==='niedrig'?' selected':''}>🟢 Niedrig</option></select></div>`;
+    html+=`<div class="tp-field"><label>Fällig am</label><input type="date" id="tp-due" class="inp" value="${t.due||''}"/></div>`;
+  } else {
+    const late=!t.done&&t.due&&t.due<today;
+    const d=t.due?dl(t.due):null;
+    const soon=!late&&d!==null&&d<=7&&d>=0;
+    const dueLabel=t.due?(late?'⚠ '+fmt(t.due):(soon?'in '+d+'d':fmt(t.due))):'–';
+    html+=`<div class="tp-field"><label>Kategorie</label><span class="chip cat">${t.cat}</span></div>`;
+    if(t.vendorId){const vnd=vendors.find(v=>v.id===t.vendorId);if(vnd)html+=`<div class="tp-field"><label>Anbieter</label><span class="chip vendor">${vnd.name}</span></div>`;}
+    html+=`<div class="tp-field"><label>Priorität</label><span class="chip prio-${t.prio}">${t.prio==='hoch'?'🔴 Hoch':t.prio==='mittel'?'🟡 Mittel':'🟢 Niedrig'}</span></div>`;
+    html+=`<div class="tp-field"><label>Fällig am</label><span class="chip due ${late?'late':soon?'soon':''}">${dueLabel}</span></div>`;
   }
 
-  // Vendor link display
-  if(t.vendorId){const vnd=vendors.find(v=>v.id===t.vendorId);if(vnd)html+=`<div class="popup-section">Anbieter</div><div style="margin-bottom:4px"><span class="chip vendor">${vnd.name}</span> <span style="font-size:12px;color:var(--t3)">${vnd.cat}</span></div>`;}
+  // Cost - editable for admin and assigned
+  if(canEditCost){
+    html+=`<div class="tp-field"><label>Kosten</label><input type="number" id="tp-cost" class="inp" value="${t.costActual||''}" placeholder="0" style="max-width:140px"/><span style="font-size:13px;color:var(--t3)">€</span></div>`;
+  } else if(t.costActual){
+    html+=`<div class="tp-field"><label>Kosten</label><span class="chip cost">${eur(t.costActual)}</span></div>`;
+  }
 
   // Subtasks
-  html+=`<div class="popup-section">Teilaufgaben</div>`;
+  html+=`<div class="tp-section">Teilaufgaben</div>`;
   const subs=t.subtasks||[];
   if(subs.length){
     const stDone=subs.filter(s=>s.done).length;
@@ -920,7 +947,7 @@ function openTaskPopup(t){
   }
 
   // Document links
-  html+=`<div class="popup-section">Dokumente</div>`;
+  html+=`<div class="tp-section">Dokumente</div>`;
   const docs=t.docs||[];
   if(docs.length){
     html+=`<div class="doc-list">`;
@@ -942,7 +969,7 @@ function openTaskPopup(t){
   }
 
   // Comments
-  html+=`<div class="popup-section">Kommentare</div>
+  html+=`<div class="tp-section">Kommentare</div>
   <div class="comment-list" id="popup-comments">
     ${(t.comments||[]).map(c=>`<div class="comment"><span class="c-author">${c.author}</span>${parseMentions(c.text)}<span class="c-time">${c.ts?new Date(c.ts).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}):''}  </span></div>`).join('')}
   </div>
@@ -955,35 +982,51 @@ function openTaskPopup(t){
 
   // Actions
   html+=`<div class="popup-actions">
-    ${canChk?`<button class="act-btn primary" onclick="togAndClose(${t.id})">${t.done?'↩ Wiedereröffnen':'✓ Erledigt'}</button>`:''}
+    ${canChk?`<button class="act-btn" onclick="togAndClose(${t.id})">${t.done?'↩ Wiedereröffnen':'✓ Erledigt'}</button>`:''}
     ${t.due&&!t.trashed?`<button class="act-btn" data-action="cal" data-id="${t.id}">📅 Kalender</button>`:''}
-    ${!t.trashed&&isA?`<button class="act-btn primary" data-popup-edit="${t.id}">✏️ Bearbeiten</button>`:''}
-    ${t.trashed?`<button class="act-btn" data-popup-restore="${t.id}">↩ Wiederherstellen</button>`:`<button class="act-btn danger" data-popup-trash="${t.id}">In Papierkorb</button>`}
+    ${t.trashed?`<button class="act-btn" data-popup-restore="${t.id}">↩ Wiederherstellen</button>`:(isA?`<button class="act-btn danger" data-popup-trash="${t.id}">🗑 Papierkorb</button>`:'')}
+    ${(canEditFields||canEditCost)?`<button class="act-btn primary" id="tp-save-btn" data-tid="${t.id}">Speichern & Schließen</button>`:''}
   </div>`;
 
   document.getElementById('popup-content').innerHTML=html;
   document.getElementById('task-popup').classList.add('open');
+
   // Attach popup button events
   const pc=document.getElementById('popup-content');
-  // Edit button
-  const editBtn=pc.querySelector('[data-popup-edit]');
-  if(editBtn){editBtn.addEventListener('click',()=>{
-    const id=parseInt(editBtn.dataset.popupEdit);
+
+  // Save & Close button
+  const saveBtn=pc.querySelector('#tp-save-btn');
+  if(saveBtn){saveBtn.addEventListener('click',async()=>{
+    const id=parseInt(saveBtn.dataset.tid);
     const tt=tasks.find(x=>x.id===id);if(!tt)return;
-    editingTaskId=id;
-    document.getElementById('add-modal-title').textContent='Aufgabe bearbeiten';
-    document.getElementById('f-ttl').value=tt.title||'';
-    document.getElementById('f-cat').value=tt.cat||'Location';
-    document.getElementById('f-pri').value=tt.prio||'mittel';
-    document.getElementById('f-due').value=tt.due||'';
-    document.getElementById('f-act').value=tt.costActual||'';
-    addSelectedAssignees=[...(tt.assignees||[])];
-    buildAddAssigneeGrid();
-    populateVendorDropdown(tt.vendorId||null);
+    // Save editable fields
+    if(canEditFields){
+      const titleEl=document.getElementById('tp-title');
+      if(titleEl) tt.title=titleEl.value.trim()||tt.title;
+      const catEl=document.getElementById('tp-cat');
+      if(catEl) tt.cat=catEl.value;
+      const priEl=document.getElementById('tp-pri');
+      if(priEl) tt.prio=priEl.value;
+      const dueEl=document.getElementById('tp-due');
+      if(dueEl) tt.due=dueEl.value;
+      const vendorEl=document.getElementById('tp-vendor');
+      if(vendorEl){var vv=vendorEl.value;tt.vendorId=vv?parseInt(vv):null;}
+    }
+    // Cost (admin or assigned)
+    if(canEditCost){
+      const costEl=document.getElementById('tp-cost');
+      if(costEl){
+        const oldVal=tt.costActual||0;
+        const newVal=parseFloat(costEl.value)||0;
+        if(oldVal!==newVal){budgetHistory.push({date:Date.now(),cat:tt.cat,title:tt.title,oldCost:oldVal,newCost:newVal});}
+        tt.costActual=newVal;
+      }
+    }
+    await save();
     document.getElementById('task-popup').classList.remove('open');
-    document.getElementById('add-modal').classList.add('open');
-    setTimeout(()=>document.getElementById('f-ttl').focus(),300);
+    render();
   });}
+
   // Trash button
   const trashBtn=pc.querySelector('[data-popup-trash]');
   if(trashBtn){trashBtn.addEventListener('click',async()=>{
@@ -1279,12 +1322,16 @@ window.addVendorDoc=async function(vendorId){
   if(!url.match(/^https?:\/\//))url='https://'+url;
   if(!v.docs)v.docs=[];
   v.docs.push({name:name,url:url,addedAt:Date.now()});
-  await save();renderAnbieter();
+  await save();
+  if(document.getElementById('vendor-popup').classList.contains('open'))openVendorPopup(vendorId);
+  else renderAnbieter();
 };
 window.removeVendorDoc=async function(vendorId,idx){
   const v=vendors.find(x=>x.id===vendorId);if(!v||!v.docs)return;
   v.docs.splice(idx,1);
-  await save();renderAnbieter();
+  await save();
+  if(document.getElementById('vendor-popup').classList.contains('open'))openVendorPopup(vendorId);
+  else renderAnbieter();
 };
 
 window.restoreTask=async function(id){
@@ -1417,7 +1464,7 @@ document.body.addEventListener('click',async function(e){
     if(v?.website)window.open(v.website.startsWith('http')?v.website:'https://'+v.website,'_blank');
   } else if(action==='vedit'){
     const vid=parseInt(btn.dataset.vid);
-    window.openVendorModal(vid);
+    openVendorPopup(vid);
   } else if(action==='vdelete'){
     const vid=parseInt(btn.dataset.vid);
     if(!confirm('Anbieter löschen?'))return;
@@ -1877,7 +1924,7 @@ window.removeCriterion=async function(cat,idx){
 // ── ANBIETER / VENDOR FUNCTIONS ──
 const V_CATS=['Location','Catering','Fotografie','Musik','Dekoration','Kleidung','Sonstiges'];
 const V_STATUS=['In Prüfung','Favorit','Abgelehnt'];
-let vFilter='Alle';let vView='karten';
+let vFilter='Alle';let vView='karten';let vOpenCriteria=new Set();
 
 let editingVendorId = null;
 
@@ -1922,11 +1969,7 @@ function renderAnbieter(){
     for(var vi=0; vi<filtered.length; vi++){
       var v = filtered[vi];
       var sc = v.status==='Favorit'?'favorit':v.status==='Abgelehnt'?'abgelehnt':'pruefung';
-      h += '<div class="v-card ' + sc + '">';
-      h += '<div class="v-status ' + sc + '">' + (v.status||'In Prüfung') + '</div>';
-      h += '<div class="v-name">' + v.name + '</div>';
-      h += '<div class="v-cat">' + v.cat + '</div>';
-      // Calculate average from individual ratings
+      // Calculate average rating for summary
       var vRatings = v.ratings || {};
       var vCriteria = vendorCriteria[v.cat] || vendorCriteria['Sonstiges'];
       var ratedCount = 0, ratedSum = 0;
@@ -1935,53 +1978,16 @@ function renderAnbieter(){
       var displayRating = v.ratingOverride != null ? v.ratingOverride : (ratedCount > 0 ? Math.round(avgRating * 10) / 10 : (v.rating || 0));
       var dispStars = '';
       for(var si=1;si<=5;si++) dispStars += (si <= Math.round(displayRating) ? '★' : '☆');
-      h += '<div style="margin-bottom:4px">';
-      h += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">';
+      h += '<div class="v-card ' + sc + '" data-vid="' + v.id + '">';
+      h += '<div class="v-status ' + sc + '">' + (v.status||'In Prüfung') + '</div>';
+      h += '<div class="v-name">' + v.name + '</div>';
+      h += '<div class="v-cat">' + v.cat + '</div>';
+      h += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">';
       h += '<span style="font-size:16px;color:#f5a623;letter-spacing:1px">' + dispStars + '</span>';
       h += '<span style="font-size:14px;font-weight:700;color:var(--t)">' + (displayRating > 0 ? displayRating.toFixed(1) : '–') + '</span>';
-      if(v.ratingOverride != null) h += '<span style="font-size:10px;color:var(--t3);font-style:italic">manuell</span>';
-      else if(ratedCount > 0) h += '<span style="font-size:10px;color:var(--t3)">⌀ ' + ratedCount + ' Kriterien</span>';
       h += '</div>';
-      h += '<button id="vtoggle-criteria-'+v.id+'" style="font-size:11px;color:var(--rose);background:none;border:none;cursor:pointer;font-family:inherit;padding:0;font-weight:600">Bewertung Details ▾</button>';
-      h += '<div id="vcriteria-'+v.id+'" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--br)">';
-      // Individual criteria stars
-      vCriteria.forEach(function(c){
-        var val = vRatings[c] || 0;
-        var cStars = '';
-        for(var cs=1;cs<=5;cs++) cStars += '<span class="vc-star" data-vid="'+v.id+'" data-criterion="'+c+'" data-val="'+cs+'" style="font-size:14px;cursor:pointer;color:'+(cs<=val?'#f5a623':'#ccc')+'">'+(cs<=val?'★':'☆')+'</span>';
-        h += '<div style="display:flex;align-items:center;justify-content:space-between;padding:3px 0"><span style="font-size:12px;color:var(--t2)">' + c + '</span><span>' + cStars + '</span></div>';
-      });
-      // Manual override row
-      h += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;margin-top:4px;border-top:1px dashed var(--br)">';
-      h += '<span style="font-size:12px;font-weight:600;color:var(--t)">Gesamt überschreiben</span>';
-      h += '<div style="display:flex;align-items:center;gap:4px">';
-      var ovStars = '';
-      for(var os=1;os<=5;os++) ovStars += '<span class="vco-star" data-vid="'+v.id+'" data-val="'+os+'" style="font-size:14px;cursor:pointer;color:'+(v.ratingOverride!=null&&os<=v.ratingOverride?'var(--rose)':'#ccc')+'">'+(v.ratingOverride!=null&&os<=v.ratingOverride?'★':'☆')+'</span>';
-      h += ovStars;
-      if(v.ratingOverride != null) h += '<button class="vclear-override" data-vid="'+v.id+'" style="font-size:10px;color:var(--t3);background:none;border:1px solid var(--br);border-radius:4px;cursor:pointer;padding:1px 6px;margin-left:4px">✕ Auto</button>';
-      h += '</div></div>';
-      // Manage criteria link
-      h += '<button class="vmanage-criteria" data-cat="'+v.cat+'" style="font-size:11px;color:var(--blue,#007AFF);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0;font-weight:500;margin-top:4px">⚙ Kriterien bearbeiten</button>';
-      h += '</div></div>';
-      if(v.price) h += '<div style="font-size:17px;font-weight:700;margin-bottom:6px">' + eur(v.price) + '</div>';
-      if(v.contact_name) h += '<div style="font-size:13px;color:var(--t3)">' + v.contact_name + '</div>';
-      if(v.contact_email) h += '<div style="font-size:13px"><a href="mailto:'+v.contact_email+'" style="color:var(--blue);text-decoration:none">'+v.contact_email+'</a></div>';
-      if(v.contact_phone) h += '<div style="font-size:13px"><a href="tel:'+v.contact_phone+'" style="color:var(--blue);text-decoration:none">'+v.contact_phone+'</a></div>';
-      if(v.notes) h += '<div style="font-size:13px;color:var(--t2);margin-top:6px">' + v.notes + '</div>';
-      var linkedTasks=tasks.filter(function(t){return t.vendorId===v.id&&!t.trashed;});
-      if(linkedTasks.length){h+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--br)"><div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:4px">Verknüpfte Aufgaben</div>';linkedTasks.forEach(function(lt){h+='<div style="font-size:13px;color:var(--t2);padding:2px 0">• '+lt.title+'</div>';});h+='</div>';}
-      var vDocs=v.docs||[];
-      if(vDocs.length||isA){
-        h+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--br)"><div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:4px">Dokumente</div>';
-        if(vDocs.length){h+='<div class="doc-list">';for(var di=0;di<vDocs.length;di++){var dc=vDocs[di];var dico=dc.name.match(/\.(pdf)$/i)?'📄':dc.name.match(/\.(xlsx?|csv)$/i)?'📊':dc.name.match(/\.(docx?|txt)$/i)?'📝':dc.name.match(/\.(jpe?g|png|gif|webp)$/i)?'🖼️':'📎';h+='<div class="doc-item"><span class="doc-ico">'+dico+'</span><span class="doc-name">'+dc.name+'</span><a href="'+dc.url+'" target="_blank" rel="noopener">Öffnen</a>'+(isA?'<button class="doc-del" onclick="removeVendorDoc('+v.id+','+di+')" title="Entfernen">×</button>':'')+'</div>';}h+='</div>';}
-        if(isA){h+='<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px"><input type="text" id="vdoc-name-'+v.id+'" placeholder="Name (z.B. Angebot.pdf)" style="width:100%;padding:7px 10px;border:1px solid var(--br);border-radius:8px;font-size:12px;font-family:inherit;background:var(--sur);color:var(--t)"/><div style="display:flex;gap:6px"><input type="text" id="vdoc-url-'+v.id+'" placeholder="Link (iCloud, Drive…)" style="flex:1;padding:7px 10px;border:1px solid var(--br);border-radius:8px;font-size:12px;font-family:inherit;background:var(--sur);color:var(--t)"/><button onclick="addVendorDoc('+v.id+')" style="padding:6px 12px;border:none;border-radius:8px;background:var(--rose);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">+ Link</button></div></div>';}
-        h+='</div>';
-      }
-      h += '<div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--br)">';
-      if(v.website) h += '<button id="vopen-'+v.id+'" class="v-btn">Website</button>';
-      h += '<button id="vedit-'+v.id+'" class="v-btn primary">Bearbeiten</button>';
-      if(isA) h += '<button id="vdel-'+v.id+'" class="v-btn danger">Löschen</button>';
-      h += '</div></div>';
+      if(v.price) h += '<div class="v-price">' + eur(v.price) + '</div>';
+      h += '</div>';
     }
     h += '</div>';
   } else {
@@ -2061,62 +2067,218 @@ function attachAnbieterListeners(cats){
   var impBtn = document.getElementById('btn-csv-import');
   if(impBtn) impBtn.addEventListener('click', function(){ document.getElementById('csv-file-input').click(); });
 
-  // Per-vendor buttons
-  vendors.filter(function(v){ return vFilter==='Alle'||v.cat===vFilter; }).forEach(function(v){
-    var openBtn = document.getElementById('vopen-'+v.id);
-    if(openBtn) openBtn.addEventListener('click', function(){ window.open(v.website.startsWith('http')?v.website:'https://'+v.website,'_blank'); });
-    var editBtn = document.getElementById('vedit-'+v.id);
-    if(editBtn) editBtn.addEventListener('click', function(){ openVendorModal(v.id); });
-    var delBtn = document.getElementById('vdel-'+v.id);
-    if(delBtn) delBtn.addEventListener('click', async function(){
-      if(!confirm('Anbieter löschen?'))return;
-      vendors = vendors.filter(function(x){ return x.id!==v.id; });
-      await save(); renderAnbieter();
-    });
-    // Toggle criteria expand
-    var togCrit = document.getElementById('vtoggle-criteria-'+v.id);
-    if(togCrit) togCrit.addEventListener('click', function(){
-      var panel = document.getElementById('vcriteria-'+v.id);
-      if(panel){
-        var open = panel.style.display !== 'none';
-        panel.style.display = open ? 'none' : 'block';
-        togCrit.textContent = open ? 'Bewertung Details ▾' : 'Bewertung Details ▴';
-      }
+  // Make vendor cards clickable to open vendor popup
+  a.querySelectorAll('.v-card').forEach(function(card){
+    card.addEventListener('click', function(e){
+      if(e.target.closest('.v-btn')) return;
+      var vid = parseInt(card.dataset.vid);
+      if(vid) openVendorPopup(vid);
     });
   });
+}
 
-  // Delegated criteria star clicks
-  a.addEventListener('click', async function(e){
-    var star = e.target.closest('.vc-star');
+// ── VENDOR POPUP ──
+function openVendorPopup(id){
+  var v=vendors.find(function(x){return x.id===id;});
+  if(!v)return;
+  var isA=role==='admin';
+  var isH=role==='mithelfer';
+  var canEdit=isA||isH;
+
+  // Criteria data
+  var vRatings=v.ratings||{};
+  var vCrit=vendorCriteria[v.cat]||vendorCriteria['Sonstiges'];
+  var ratedCount=0,ratedSum=0;
+  vCrit.forEach(function(c){if(vRatings[c]){ratedCount++;ratedSum+=vRatings[c];}});
+  var avgRating=ratedCount>0?(ratedSum/ratedCount):0;
+  var displayRating=v.ratingOverride!=null?v.ratingOverride:(ratedCount>0?Math.round(avgRating*10)/10:(v.rating||0));
+
+  var html='';
+
+  // Name + Status
+  if(canEdit){
+    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">';
+    html+='<input type="text" id="vp-name" class="inp" value="'+(v.name||'').replace(/"/g,'&quot;')+'" style="font-size:18px;font-weight:700;margin-bottom:0;flex:1"/>';
+    html+='<select id="vp-status" class="inp" style="width:auto;min-width:100px;margin-bottom:0">';
+    html+='<option'+(v.status==='In Prüfung'?' selected':'')+'>In Prüfung</option>';
+    html+='<option'+(v.status==='Favorit'?' selected':'')+'>Favorit</option>';
+    html+='<option'+(v.status==='Abgelehnt'?' selected':'')+'>Abgelehnt</option>';
+    html+='</select></div>';
+  } else {
+    html+='<div class="popup-title">'+v.name+'</div>';
+    html+='<div style="margin-bottom:12px"><span class="chip">'+(v.status||'In Prüfung')+'</span></div>';
+  }
+
+  // Form fields
+  if(canEdit){
+    html+='<div class="tp-field"><label>Kategorie</label><select id="vp-cat" class="inp">';
+    V_CATS.forEach(function(c){html+='<option'+(v.cat===c?' selected':'')+'>'+c+'</option>';});
+    html+='</select></div>';
+    html+='<div class="tp-field"><label>Preis</label><input type="number" id="vp-price" class="inp" value="'+(v.price||'')+'" placeholder="0" style="max-width:140px"/><span style="font-size:13px;color:var(--t3)">€</span></div>';
+    html+='<div class="tp-field"><label>Website</label><input type="url" id="vp-web" class="inp" value="'+(v.website||'').replace(/"/g,'&quot;')+'" placeholder="https://..."/></div>';
+  } else {
+    html+='<div class="tp-field"><label>Kategorie</label><span>'+v.cat+'</span></div>';
+    if(v.price) html+='<div class="tp-field"><label>Preis</label><span style="font-weight:700">'+eur(v.price)+'</span></div>';
+    if(v.website) html+='<div class="tp-field"><label>Website</label><a href="'+(v.website.startsWith('http')?v.website:'https://'+v.website)+'" target="_blank" style="color:var(--blue)">'+v.website+'</a></div>';
+  }
+
+  // Contact
+  html+='<div class="tp-section">Kontakt</div>';
+  if(canEdit){
+    html+='<div class="tp-field"><label>Ansprechp.</label><input type="text" id="vp-cname" class="inp" value="'+(v.contact_name||'').replace(/"/g,'&quot;')+'" placeholder="Vor- und Nachname"/></div>';
+    html+='<div class="tp-field"><label>E-Mail</label><input type="email" id="vp-cemail" class="inp" value="'+(v.contact_email||'').replace(/"/g,'&quot;')+'" placeholder="name@anbieter.de"/></div>';
+    html+='<div class="tp-field"><label>Telefon</label><input type="tel" id="vp-cphone" class="inp" value="'+(v.contact_phone||'').replace(/"/g,'&quot;')+'" placeholder="+49 123 456789"/></div>';
+  } else {
+    if(v.contact_name) html+='<div class="tp-field"><label>Ansprechp.</label><span>'+v.contact_name+'</span></div>';
+    if(v.contact_email) html+='<div class="tp-field"><label>E-Mail</label><a href="mailto:'+v.contact_email+'" style="color:var(--blue)">'+v.contact_email+'</a></div>';
+    if(v.contact_phone) html+='<div class="tp-field"><label>Telefon</label><a href="tel:'+v.contact_phone+'" style="color:var(--blue)">'+v.contact_phone+'</a></div>';
+  }
+
+  // Notes
+  if(canEdit){
+    html+='<div class="tp-field"><label>Notizen</label><textarea id="vp-notes" class="inp" rows="3" style="margin-bottom:0" placeholder="Besonderheiten, Eindrücke...">'+(v.notes||'')+'</textarea></div>';
+  } else if(v.notes){
+    html+='<div class="tp-field"><label>Notizen</label><span style="font-size:13px;color:var(--t2)">'+v.notes+'</span></div>';
+  }
+
+  // Ratings section
+  html+='<div class="tp-section">Bewertung</div>';
+  var dispStars='';for(var si=1;si<=5;si++)dispStars+=(si<=Math.round(displayRating)?'★':'☆');
+  html+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">';
+  html+='<span style="font-size:12px;font-weight:600;color:var(--t3)">⌀ Gesamt:</span>';
+  html+='<span style="font-size:18px;color:#f5a623;letter-spacing:1px">'+dispStars+'</span>';
+  html+='<span style="font-size:15px;font-weight:700">'+(displayRating>0?displayRating.toFixed(1):'–')+'</span>';
+  if(v.ratingOverride!=null)html+='<span style="font-size:10px;color:var(--t3);font-style:italic">manuell</span>';
+  html+='</div>';
+
+  // Individual criteria
+  vCrit.forEach(function(c){
+    var val=vRatings[c]||0;
+    var cStars='';
+    for(var cs=1;cs<=5;cs++) cStars+='<span class="vc-star" data-vid="'+v.id+'" data-criterion="'+c+'" data-val="'+cs+'" style="font-size:15px;cursor:pointer;color:'+(cs<=val?'#f5a623':'#ccc')+'">'+(cs<=val?'★':'☆')+'</span>';
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0"><span style="font-size:13px;color:var(--t2)">'+c+'</span><span>'+cStars+'</span></div>';
+  });
+
+  // Override row
+  html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;margin-top:4px;border-top:1px dashed var(--br)">';
+  html+='<span style="font-size:12px;font-weight:600;color:var(--t)">Gesamt überschreiben</span>';
+  html+='<div style="display:flex;align-items:center;gap:4px">';
+  for(var os=1;os<=5;os++) html+='<span class="vco-star" data-vid="'+v.id+'" data-val="'+os+'" style="font-size:15px;cursor:pointer;color:'+(v.ratingOverride!=null&&os<=v.ratingOverride?'var(--rose)':'#ccc')+'">'+(v.ratingOverride!=null&&os<=v.ratingOverride?'★':'☆')+'</span>';
+  if(v.ratingOverride!=null)html+='<button class="vclear-override" data-vid="'+v.id+'" style="font-size:10px;color:var(--t3);background:none;border:1px solid var(--br);border-radius:4px;cursor:pointer;padding:1px 6px;margin-left:4px">✕ Auto</button>';
+  html+='</div></div>';
+  html+='<button class="vmanage-criteria" data-cat="'+v.cat+'" style="font-size:11px;color:var(--blue,#007AFF);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0;font-weight:500;margin-top:4px">⚙ Kriterien bearbeiten</button>';
+
+  // Linked tasks
+  var linkedTasks=tasks.filter(function(t2){return t2.vendorId===v.id&&!t2.trashed;});
+  if(linkedTasks.length){
+    html+='<div class="tp-section">Verknüpfte Aufgaben</div>';
+    linkedTasks.forEach(function(lt){
+      var dueStr=lt.due?' (fällig '+fmt(lt.due)+')':'';
+      html+='<div style="font-size:13px;color:var(--t2);padding:3px 0;cursor:pointer" onclick="openTaskById('+lt.id+');document.getElementById(\'vendor-popup\').classList.remove(\'open\')">• '+lt.title+dueStr+'</div>';
+    });
+  }
+
+  // Documents
+  html+='<div class="tp-section">Dokumente</div>';
+  var vDocs=v.docs||[];
+  if(vDocs.length){
+    html+='<div class="doc-list">';
+    for(var di=0;di<vDocs.length;di++){
+      var dc=vDocs[di];
+      var dico=dc.name.match(/\.(pdf)$/i)?'📄':dc.name.match(/\.(xlsx?|csv)$/i)?'📊':dc.name.match(/\.(docx?|txt)$/i)?'📝':dc.name.match(/\.(jpe?g|png|gif|webp)$/i)?'🖼️':'📎';
+      html+='<div class="doc-item"><span class="doc-ico">'+dico+'</span><span class="doc-name">'+dc.name+'</span><a href="'+dc.url+'" target="_blank" rel="noopener">Öffnen</a>'+(canEdit?'<button class="doc-del" onclick="removeVendorDoc('+v.id+','+di+')" title="Entfernen">×</button>':'')+'</div>';
+    }
+    html+='</div>';
+  } else {
+    html+='<div style="font-size:13px;color:var(--t3);margin-bottom:4px">Keine Dokumente</div>';
+  }
+  if(canEdit){
+    html+='<div class="doc-add">';
+    html+='<input type="text" id="vdoc-name-'+v.id+'" placeholder="Name (z.B. Angebot.pdf)"/>';
+    html+='<input type="text" id="vdoc-url-'+v.id+'" placeholder="Link (iCloud, Drive…)" style="flex:2"/>';
+    html+='<button onclick="addVendorDoc('+v.id+')">+ Link</button>';
+    html+='</div>';
+  }
+
+  // Actions
+  html+='<div class="popup-actions">';
+  if(canEdit) html+='<button class="act-btn primary" id="vp-save-btn" data-vid="'+v.id+'">Speichern & Schließen</button>';
+  if(isA) html+='<button class="act-btn danger" id="vp-del-btn" data-vid="'+v.id+'">Löschen</button>';
+  html+='</div>';
+
+  document.getElementById('vendor-popup-content').innerHTML=html;
+  document.getElementById('vendor-popup').classList.add('open');
+
+  // Attach event listeners
+  var vpc=document.getElementById('vendor-popup-content');
+
+  // Save button
+  var saveBtn=document.getElementById('vp-save-btn');
+  if(saveBtn){saveBtn.addEventListener('click',async function(){
+    var vid=parseInt(saveBtn.dataset.vid);
+    var vv=vendors.find(function(x){return x.id===vid;});if(!vv)return;
+    var nameEl=document.getElementById('vp-name');if(nameEl)vv.name=nameEl.value.trim()||vv.name;
+    var catEl=document.getElementById('vp-cat');if(catEl)vv.cat=catEl.value;
+    var statusEl=document.getElementById('vp-status');if(statusEl)vv.status=statusEl.value;
+    var priceEl=document.getElementById('vp-price');if(priceEl)vv.price=parseFloat(priceEl.value)||0;
+    var webEl=document.getElementById('vp-web');if(webEl)vv.website=webEl.value.trim();
+    var cnameEl=document.getElementById('vp-cname');if(cnameEl)vv.contact_name=cnameEl.value.trim();
+    var cemailEl=document.getElementById('vp-cemail');if(cemailEl)vv.contact_email=cemailEl.value.trim();
+    var cphoneEl=document.getElementById('vp-cphone');if(cphoneEl)vv.contact_phone=cphoneEl.value.trim();
+    var notesEl=document.getElementById('vp-notes');if(notesEl)vv.notes=notesEl.value.trim();
+    await save();
+    document.getElementById('vendor-popup').classList.remove('open');
+    renderAnbieter();
+  });}
+
+  // Delete button
+  var delBtn=document.getElementById('vp-del-btn');
+  if(delBtn){delBtn.addEventListener('click',async function(){
+    if(!confirm('Anbieter löschen?'))return;
+    var vid=parseInt(delBtn.dataset.vid);
+    vendors=vendors.filter(function(x){return x.id!==vid;});
+    await save();
+    document.getElementById('vendor-popup').classList.remove('open');
+    renderAnbieter();
+  });}
+
+  // Criteria star clicks (delegated)
+  vpc.addEventListener('click',async function(e){
+    var star=e.target.closest('.vc-star');
     if(star){
-      var vid = parseInt(star.dataset.vid);
-      var criterion = star.dataset.criterion;
-      var val = parseInt(star.dataset.val);
-      await window.rateVendorCriterion(vid, criterion, val);
+      var svid=parseInt(star.dataset.vid);
+      var criterion=star.dataset.criterion;
+      var sval=parseInt(star.dataset.val);
+      await window.rateVendorCriterion(svid,criterion,sval);
+      openVendorPopup(svid);
       return;
     }
-    var ostar = e.target.closest('.vco-star');
+    var ostar=e.target.closest('.vco-star');
     if(ostar){
-      var vid2 = parseInt(ostar.dataset.vid);
-      var val2 = parseInt(ostar.dataset.val);
-      await window.setVendorOverride(vid2, val2);
+      var ovid=parseInt(ostar.dataset.vid);
+      var oval=parseInt(ostar.dataset.val);
+      await window.setVendorOverride(ovid,oval);
+      openVendorPopup(ovid);
       return;
     }
-    var clearBtn = e.target.closest('.vclear-override');
-    if(clearBtn){
-      var vid3 = parseInt(clearBtn.dataset.vid);
-      await window.clearVendorOverride(vid3);
+    var clearBtn2=e.target.closest('.vclear-override');
+    if(clearBtn2){
+      var cvid=parseInt(clearBtn2.dataset.vid);
+      await window.clearVendorOverride(cvid);
+      openVendorPopup(cvid);
       return;
     }
-    var mgBtn = e.target.closest('.vmanage-criteria');
+    var mgBtn=e.target.closest('.vmanage-criteria');
     if(mgBtn){
       window.openCriteriaManager(mgBtn.dataset.cat);
       return;
     }
   });
 }
+window.openVendorPopup=openVendorPopup;
 
-
+// Close vendor popup on overlay click
+document.getElementById('vendor-popup').addEventListener('click',function(e){if(e.target===document.getElementById('vendor-popup'))document.getElementById('vendor-popup').classList.remove('open');});
 
 // ── CSV ──
 
