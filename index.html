@@ -665,6 +665,15 @@ const UC=collection(db,'users');
 let tasks=[],vendors=[],wDate='',tmpls=[],nid=1,vnid=1,user=null,role='gast',firstName='',flt='alle',tab='home';
 let allUsers=[],totalBudget=0,catBudget={};
 let taskSort='none',taskView='liste',budgetHistory=[];
+let vendorCriteria={
+  Location:['Preis-Leistung','Erreichbarkeit','Sympathie','Flexibilität','Lage','Kapazität','Ambiente','Parkmöglichkeiten'],
+  Catering:['Preis-Leistung','Erreichbarkeit','Sympathie','Flexibilität','Geschmack','Menüauswahl','Allergiker-Optionen','Präsentation'],
+  Fotografie:['Preis-Leistung','Erreichbarkeit','Sympathie','Flexibilität','Portfolio-Qualität','Stil-Match','Erfahrung','Lieferzeit'],
+  Musik:['Preis-Leistung','Erreichbarkeit','Sympathie','Flexibilität','Repertoire','Equipment','Moderation','Referenzen'],
+  Dekoration:['Preis-Leistung','Erreichbarkeit','Sympathie','Flexibilität','Kreativität','Stil-Match','Materialqualität','Referenzen'],
+  Kleidung:['Preis-Leistung','Erreichbarkeit','Sympathie','Flexibilität','Auswahl','Beratung','Änderungen inkl.','Termin-Verfügbarkeit'],
+  Sonstiges:['Preis-Leistung','Erreichbarkeit','Sympathie','Flexibilität','Erfahrung','Referenzen','Zuverlässigkeit']
+};
 let seenMentions=new Set(JSON.parse(localStorage.getItem('seenMentions')||'[]'));
 let addSelectedAssignees=[],editingTaskId=null;
 const today=new Date().toISOString().split('T')[0];
@@ -696,7 +705,7 @@ const isAssigned=t=>t.assignees&&t.assignees.includes(firstName);
 
 async function save(){
   if(role==='gast')return;
-  try{await setDoc(DD,{tasks,vendors,weddingDate:wDate,templates:tmpls,budgetHistory:budgetHistory||[],updatedAt:Date.now()});
+  try{await setDoc(DD,{tasks,vendors,weddingDate:wDate,templates:tmpls,budgetHistory:budgetHistory||[],vendorCriteria:vendorCriteria,updatedAt:Date.now()});
   document.getElementById('sync').style.background='#4caf50';}
   catch(e){document.getElementById('sync').style.background='#ef4444';}
 }
@@ -1635,6 +1644,7 @@ window._exportBackup=async function(){
       weddingDate:wDate,
       templates:tmpls,
       budgetHistory:budgetHistory||[],
+      vendorCriteria:vendorCriteria,
       budget:{total:totalBudget,catBudget:catBudget},
       info:info
     };
@@ -1677,6 +1687,7 @@ window._importBackup=async function(input){
     wDate=data.weddingDate||'';
     tmpls=data.templates||[];
     budgetHistory=data.budgetHistory||[];
+    vendorCriteria=data.vendorCriteria||vendorCriteria;
     nid=tasks.reduce((m,t)=>Math.max(m,t.id||0),0)+1;
     vnid=vendors.reduce((m,v)=>Math.max(m,v.id||0),0)+1;
     await save();
@@ -1795,6 +1806,74 @@ window._exportExcel=async function(){
   }catch(e){alert('❌ Fehler beim Excel-Export: '+e.message);}
 };
 
+/* ── VENDOR CRITERIA RATING ── */
+window.rateVendorCriterion=async function(vendorId,criterion,val){
+  var v=vendors.find(function(x){return x.id===vendorId;});if(!v)return;
+  if(!v.ratings)v.ratings={};
+  v.ratings[criterion]=val;
+  var vCrit=vendorCriteria[v.cat]||vendorCriteria['Sonstiges'];
+  var sum=0,cnt=0;
+  vCrit.forEach(function(c){if(v.ratings[c]){sum+=v.ratings[c];cnt++;}});
+  v.rating=cnt>0?Math.round(sum/cnt*10)/10:0;
+  await save();renderAnbieter();
+};
+window.setVendorOverride=async function(vendorId,val){
+  var v=vendors.find(function(x){return x.id===vendorId;});if(!v)return;
+  v.ratingOverride=val;
+  v.rating=val;
+  await save();renderAnbieter();
+};
+window.clearVendorOverride=async function(vendorId){
+  var v=vendors.find(function(x){return x.id===vendorId;});if(!v)return;
+  v.ratingOverride=null;
+  var vCrit=vendorCriteria[v.cat]||vendorCriteria['Sonstiges'];
+  var sum=0,cnt=0;
+  vCrit.forEach(function(c){if(v.ratings&&v.ratings[c]){sum+=v.ratings[c];cnt++;}});
+  v.rating=cnt>0?Math.round(sum/cnt*10)/10:0;
+  await save();renderAnbieter();
+};
+window.openCriteriaManager=function(cat){
+  var criteria=vendorCriteria[cat]||[];
+  var html='<div style="padding:16px"><h3 style="margin-bottom:12px">Kriterien: '+cat+'</h3>';
+  html+='<div id="cm-list" style="margin-bottom:12px">';
+  criteria.forEach(function(c,i){
+    html+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--br)">';
+    html+='<span style="flex:1;font-size:13px">'+c+'</span>';
+    html+='<button onclick="removeCriterion(\''+cat+'\','+i+')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px">×</button>';
+    html+='</div>';
+  });
+  html+='</div>';
+  html+='<div style="display:flex;gap:6px"><input type="text" id="cm-new-inp" placeholder="Neues Kriterium..." style="flex:1;padding:8px 10px;border:1px solid var(--br);border-radius:8px;font-size:13px;font-family:inherit"/>';
+  html+='<button onclick="addCriterion(\''+cat+'\')" style="padding:8px 14px;border:none;border-radius:8px;background:var(--rose);color:#fff;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit">+</button></div>';
+  html+='<button onclick="document.getElementById(\'criteria-mgr\').classList.remove(\'open\')" style="margin-top:16px;width:100%;padding:12px;border:none;border-radius:10px;background:var(--bg);font-weight:600;font-size:14px;cursor:pointer;font-family:inherit;color:var(--t)">Fertig</button>';
+  html+='</div>';
+  var mgr=document.getElementById('criteria-mgr');
+  if(!mgr){
+    mgr=document.createElement('div');mgr.id='criteria-mgr';mgr.className='overlay';mgr.style.zIndex='502';
+    mgr.innerHTML='<div class="sheet" style="max-width:400px" id="cm-content"></div>';
+    document.body.appendChild(mgr);
+    mgr.addEventListener('click',function(e){if(e.target===mgr)mgr.classList.remove('open');});
+  }
+  document.getElementById('cm-content').innerHTML=html;
+  mgr.classList.add('open');
+};
+window.addCriterion=async function(cat){
+  var inp=document.getElementById('cm-new-inp');if(!inp)return;
+  var val=inp.value.trim();if(!val)return;
+  if(!vendorCriteria[cat])vendorCriteria[cat]=[];
+  if(vendorCriteria[cat].includes(val)){alert('Kriterium existiert bereits.');return;}
+  vendorCriteria[cat].push(val);
+  await save();
+  openCriteriaManager(cat);
+};
+window.removeCriterion=async function(cat,idx){
+  if(!vendorCriteria[cat])return;
+  var removed=vendorCriteria[cat].splice(idx,1)[0];
+  vendors.forEach(function(v){if(v.cat===cat&&v.ratings&&v.ratings[removed])delete v.ratings[removed];});
+  await save();
+  openCriteriaManager(cat);
+};
+
 // ── ANBIETER / VENDOR FUNCTIONS ──
 const V_CATS=['Location','Catering','Fotografie','Musik','Dekoration','Kleidung','Sonstiges'];
 const V_STATUS=['In Prüfung','Favorit','Abgelehnt'];
@@ -1847,9 +1926,43 @@ function renderAnbieter(){
       h += '<div class="v-status ' + sc + '">' + (v.status||'In Prüfung') + '</div>';
       h += '<div class="v-name">' + v.name + '</div>';
       h += '<div class="v-cat">' + v.cat + '</div>';
-      var stars = '';
-      for(var si=1;si<=5;si++) stars += '<span id="star-'+v.id+'-'+si+'" style="font-size:16px;cursor:pointer">'+(si<=(v.rating||0)?'★':'☆')+'</span>';
-      h += '<div style="margin-bottom:8px">' + stars + '</div>';
+      // Calculate average from individual ratings
+      var vRatings = v.ratings || {};
+      var vCriteria = vendorCriteria[v.cat] || vendorCriteria['Sonstiges'];
+      var ratedCount = 0, ratedSum = 0;
+      vCriteria.forEach(function(c){ if(vRatings[c]) { ratedCount++; ratedSum += vRatings[c]; } });
+      var avgRating = ratedCount > 0 ? (ratedSum / ratedCount) : 0;
+      var displayRating = v.ratingOverride != null ? v.ratingOverride : (ratedCount > 0 ? Math.round(avgRating * 10) / 10 : (v.rating || 0));
+      var dispStars = '';
+      for(var si=1;si<=5;si++) dispStars += (si <= Math.round(displayRating) ? '★' : '☆');
+      h += '<div style="margin-bottom:4px">';
+      h += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">';
+      h += '<span style="font-size:16px;color:#f5a623;letter-spacing:1px">' + dispStars + '</span>';
+      h += '<span style="font-size:14px;font-weight:700;color:var(--t)">' + (displayRating > 0 ? displayRating.toFixed(1) : '–') + '</span>';
+      if(v.ratingOverride != null) h += '<span style="font-size:10px;color:var(--t3);font-style:italic">manuell</span>';
+      else if(ratedCount > 0) h += '<span style="font-size:10px;color:var(--t3)">⌀ ' + ratedCount + ' Kriterien</span>';
+      h += '</div>';
+      h += '<button id="vtoggle-criteria-'+v.id+'" style="font-size:11px;color:var(--rose);background:none;border:none;cursor:pointer;font-family:inherit;padding:0;font-weight:600">Bewertung Details ▾</button>';
+      h += '<div id="vcriteria-'+v.id+'" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--br)">';
+      // Individual criteria stars
+      vCriteria.forEach(function(c){
+        var val = vRatings[c] || 0;
+        var cStars = '';
+        for(var cs=1;cs<=5;cs++) cStars += '<span class="vc-star" data-vid="'+v.id+'" data-criterion="'+c+'" data-val="'+cs+'" style="font-size:14px;cursor:pointer;color:'+(cs<=val?'#f5a623':'#ccc')+'">'+(cs<=val?'★':'☆')+'</span>';
+        h += '<div style="display:flex;align-items:center;justify-content:space-between;padding:3px 0"><span style="font-size:12px;color:var(--t2)">' + c + '</span><span>' + cStars + '</span></div>';
+      });
+      // Manual override row
+      h += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;margin-top:4px;border-top:1px dashed var(--br)">';
+      h += '<span style="font-size:12px;font-weight:600;color:var(--t)">Gesamt überschreiben</span>';
+      h += '<div style="display:flex;align-items:center;gap:4px">';
+      var ovStars = '';
+      for(var os=1;os<=5;os++) ovStars += '<span class="vco-star" data-vid="'+v.id+'" data-val="'+os+'" style="font-size:14px;cursor:pointer;color:'+(v.ratingOverride!=null&&os<=v.ratingOverride?'var(--rose)':'#ccc')+'">'+(v.ratingOverride!=null&&os<=v.ratingOverride?'★':'☆')+'</span>';
+      h += ovStars;
+      if(v.ratingOverride != null) h += '<button class="vclear-override" data-vid="'+v.id+'" style="font-size:10px;color:var(--t3);background:none;border:1px solid var(--br);border-radius:4px;cursor:pointer;padding:1px 6px;margin-left:4px">✕ Auto</button>';
+      h += '</div></div>';
+      // Manage criteria link
+      h += '<button class="vmanage-criteria" data-cat="'+v.cat+'" style="font-size:11px;color:var(--blue,#007AFF);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0;font-weight:500;margin-top:4px">⚙ Kriterien bearbeiten</button>';
+      h += '</div></div>';
       if(v.price) h += '<div style="font-size:17px;font-weight:700;margin-bottom:6px">' + eur(v.price) + '</div>';
       if(v.contact_name) h += '<div style="font-size:13px;color:var(--t3)">' + v.contact_name + '</div>';
       if(v.contact_email) h += '<div style="font-size:13px"><a href="mailto:'+v.contact_email+'" style="color:var(--blue);text-decoration:none">'+v.contact_email+'</a></div>';
@@ -1861,7 +1974,7 @@ function renderAnbieter(){
       if(vDocs.length||isA){
         h+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--br)"><div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;margin-bottom:4px">Dokumente</div>';
         if(vDocs.length){h+='<div class="doc-list">';for(var di=0;di<vDocs.length;di++){var dc=vDocs[di];var dico=dc.name.match(/\.(pdf)$/i)?'📄':dc.name.match(/\.(xlsx?|csv)$/i)?'📊':dc.name.match(/\.(docx?|txt)$/i)?'📝':dc.name.match(/\.(jpe?g|png|gif|webp)$/i)?'🖼️':'📎';h+='<div class="doc-item"><span class="doc-ico">'+dico+'</span><span class="doc-name">'+dc.name+'</span><a href="'+dc.url+'" target="_blank" rel="noopener">Öffnen</a>'+(isA?'<button class="doc-del" onclick="removeVendorDoc('+v.id+','+di+')" title="Entfernen">×</button>':'')+'</div>';}h+='</div>';}
-        if(isA){h+='<div class="doc-add"><input type="text" id="vdoc-name-'+v.id+'" placeholder="Name (z.B. Angebot.pdf)"/><input type="text" id="vdoc-url-'+v.id+'" placeholder="Link (iCloud, Drive…)" style="flex:2"/><button onclick="addVendorDoc('+v.id+')">+ Link</button></div>';}
+        if(isA){h+='<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px"><input type="text" id="vdoc-name-'+v.id+'" placeholder="Name (z.B. Angebot.pdf)" style="width:100%;padding:7px 10px;border:1px solid var(--br);border-radius:8px;font-size:12px;font-family:inherit;background:var(--sur);color:var(--t)"/><div style="display:flex;gap:6px"><input type="text" id="vdoc-url-'+v.id+'" placeholder="Link (iCloud, Drive…)" style="flex:1;padding:7px 10px;border:1px solid var(--br);border-radius:8px;font-size:12px;font-family:inherit;background:var(--sur);color:var(--t)"/><button onclick="addVendorDoc('+v.id+')" style="padding:6px 12px;border:none;border-radius:8px;background:var(--rose);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">+ Link</button></div></div>';}
         h+='</div>';
       }
       h += '<div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--br)">';
@@ -1877,16 +1990,36 @@ function renderAnbieter(){
     h += '<tr><th style="padding:12px;font-size:12px;color:var(--t3);text-align:left;background:var(--bg);border-bottom:1px solid var(--br)">Kriterium</th>';
     for(var ti=0;ti<shown.length;ti++) h += '<th style="padding:12px;font-size:14px;font-weight:700;text-align:center;border-bottom:1px solid var(--br);border-left:1px solid var(--br)">' + shown[ti].name + '</th>';
     h += '</tr>';
-    var tableRows = [
+    var tableRowsBase = [
       ['Status', function(v){ return v.status||'In Prüfung'; }],
-      ['Bewertung', function(v){ var s=''; for(var i=1;i<=5;i++) s+=(i<=(v.rating||0)?'★':'☆'); return s; }],
+      ['⌀ Bewertung', function(v){
+        var vR=v.ratings||{};var vC=vendorCriteria[v.cat]||vendorCriteria['Sonstiges'];
+        var s=0,c=0;vC.forEach(function(cr){if(vR[cr]){s+=vR[cr];c++;}});
+        var avg=c>0?(s/c):0;var disp=v.ratingOverride!=null?v.ratingOverride:(avg||v.rating||0);
+        var st='';for(var i=1;i<=5;i++)st+=(i<=Math.round(disp)?'★':'☆');
+        return '<span style="color:#f5a623">'+st+'</span> '+(disp>0?disp.toFixed(1):'–');
+      }]
+    ];
+    // Add criteria rows dynamically based on shown vendors
+    var allCritSets=shown.map(function(v){return vendorCriteria[v.cat]||vendorCriteria['Sonstiges'];});
+    var allCritUnique=[];
+    allCritSets.forEach(function(cs){cs.forEach(function(c){if(allCritUnique.indexOf(c)===-1)allCritUnique.push(c);});});
+    allCritUnique.forEach(function(crit){
+      tableRowsBase.push(['  '+crit, function(v){
+        var val=(v.ratings||{})[crit];
+        if(!val)return '<span style="color:#ccc">–</span>';
+        var s='';for(var i=1;i<=5;i++)s+=(i<=val?'★':'☆');
+        return '<span style="color:#f5a623;font-size:12px">'+s+'</span>';
+      }]);
+    });
+    var tableRows = tableRowsBase.concat([
       ['Preis', function(v){ return v.price?eur(v.price):'–'; }],
       ['Kontakt', function(v){ return v.contact_name||'–'; }],
       ['E-Mail', function(v){ return v.contact_email||'–'; }],
       ['Telefon', function(v){ return v.contact_phone||'–'; }],
       ['Notizen', function(v){ return v.notes||'–'; }],
       ['Aufgaben', function(v){ return tasks.filter(function(t){return t.vendorId===v.id&&!t.trashed;}).length||'–'; }]
-    ];
+    ]);
     for(var ri=0;ri<tableRows.length;ri++){
       h += '<tr><td style="padding:10px 12px;font-size:12px;font-weight:600;color:var(--t3);background:var(--bg);border-top:1px solid var(--br)">' + tableRows[ri][0] + '</td>';
       for(var ti2=0;ti2<shown.length;ti2++) h += '<td style="padding:10px 12px;font-size:13px;text-align:center;border-top:1px solid var(--br);border-left:1px solid var(--br)">' + tableRows[ri][1](shown[ti2]) + '</td>';
@@ -1940,18 +2073,48 @@ function attachAnbieterListeners(cats){
       vendors = vendors.filter(function(x){ return x.id!==v.id; });
       await save(); renderAnbieter();
     });
-    for(var si=1;si<=5;si++){
-      (function(starVal){
-        var starEl = document.getElementById('star-'+v.id+'-'+starVal);
-        if(starEl) starEl.addEventListener('click', async function(){
-          v.rating = starVal; await save(); renderAnbieter();
-        });
-      })(si);
+    // Toggle criteria expand
+    var togCrit = document.getElementById('vtoggle-criteria-'+v.id);
+    if(togCrit) togCrit.addEventListener('click', function(){
+      var panel = document.getElementById('vcriteria-'+v.id);
+      if(panel){
+        var open = panel.style.display !== 'none';
+        panel.style.display = open ? 'none' : 'block';
+        togCrit.textContent = open ? 'Bewertung Details ▾' : 'Bewertung Details ▴';
+      }
+    });
+  });
+
+  // Delegated criteria star clicks
+  a.addEventListener('click', async function(e){
+    var star = e.target.closest('.vc-star');
+    if(star){
+      var vid = parseInt(star.dataset.vid);
+      var criterion = star.dataset.criterion;
+      var val = parseInt(star.dataset.val);
+      await window.rateVendorCriterion(vid, criterion, val);
+      return;
+    }
+    var ostar = e.target.closest('.vco-star');
+    if(ostar){
+      var vid2 = parseInt(ostar.dataset.vid);
+      var val2 = parseInt(ostar.dataset.val);
+      await window.setVendorOverride(vid2, val2);
+      return;
+    }
+    var clearBtn = e.target.closest('.vclear-override');
+    if(clearBtn){
+      var vid3 = parseInt(clearBtn.dataset.vid);
+      await window.clearVendorOverride(vid3);
+      return;
+    }
+    var mgBtn = e.target.closest('.vmanage-criteria');
+    if(mgBtn){
+      window.openCriteriaManager(mgBtn.dataset.cat);
+      return;
     }
   });
 }
-
-
 
 
 
@@ -2085,7 +2248,7 @@ onAuthStateChanged(auth,async(u)=>{
       await loadUsers();
       try{const bs=await getDoc(BD);if(bs.exists()){totalBudget=bs.data().total||0;catBudget=bs.data().catBudget||{};}}catch(e){}
       onSnapshot(DD,(snap)=>{
-        if(snap.exists()){const d=snap.data();tasks=d.tasks||DEFS;vendors=d.vendors||[];vnid=vendors.reduce((m,v)=>Math.max(m,v.id),0)+1;wDate=d.weddingDate||'';tmpls=d.templates||[];budgetHistory=d.budgetHistory||[];nid=tasks.reduce((m,t)=>Math.max(m,t.id),0)+1;document.getElementById('sync').style.background='#34c759';checkMentions();render();}
+        if(snap.exists()){const d=snap.data();tasks=d.tasks||DEFS;vendors=d.vendors||[];vnid=vendors.reduce((m,v)=>Math.max(m,v.id),0)+1;wDate=d.weddingDate||'';tmpls=d.templates||[];budgetHistory=d.budgetHistory||[];vendorCriteria=d.vendorCriteria||vendorCriteria;nid=tasks.reduce((m,t)=>Math.max(m,t.id),0)+1;document.getElementById('sync').style.background='#34c759';checkMentions();render();}
         else{tasks=DEFS;save();}
       });
       if(tab==='home')tab='aufgaben';
