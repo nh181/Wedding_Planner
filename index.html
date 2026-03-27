@@ -276,6 +276,21 @@
     .tpl-cnt{font-size:12px;color:var(--t3);margin-top:2px}
     .tpl-card.added{background:var(--sage-l)}
     .tpl-card.added .tpl-name{color:#1b5e20}
+    .tpl-detail-back{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--rose-d);font-weight:600;cursor:pointer;border:none;background:none;padding:4px 0;margin-bottom:12px;font-family:inherit}
+    .tpl-detail-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+    .tpl-detail-header .tpl-ico{font-size:28px;margin-bottom:0}
+    .tpl-detail-header .tpl-name{font-size:18px}
+    .tpl-task-list{display:flex;flex-direction:column;gap:2px;margin-bottom:14px}
+    .tpl-task-item{display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:10px;cursor:pointer;transition:background .1s}
+    .tpl-task-item:active{background:rgba(0,0,0,.03)}
+    .tpl-task-item input[type=checkbox]{width:20px;height:20px;accent-color:var(--rose);cursor:pointer;flex-shrink:0}
+    .tpl-task-item label{font-size:14px;color:var(--t);cursor:pointer;flex:1}
+    .tpl-task-item.already-added label{color:var(--t3);text-decoration:line-through}
+    .tpl-select-bar{display:flex;gap:8px;margin-bottom:12px}
+    .tpl-select-bar button{font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid var(--br);background:var(--bg);color:var(--t2);cursor:pointer;font-family:inherit;font-weight:500}
+    .tpl-select-bar button:active{background:var(--rose-l)}
+    .tpl-add-selected{width:100%;padding:12px;border-radius:12px;background:var(--rose);color:#fff;font-size:15px;font-weight:700;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s}
+    .tpl-add-selected:disabled{opacity:.4;cursor:default}
 
     /* ── TIMELINE ── */
     .tl-item{display:flex;gap:14px;margin-bottom:16px}
@@ -829,14 +844,17 @@ const DEFS=[
   {id:5,title:'Catering vergleichen',assignees:['Nico'],cat:'Catering',prio:'hoch',due:'2026-03-18',done:false,comments:[],costActual:0},
 ];
 const TPLS=[
-  {id:'loc',ico:'🏰',name:'Location',ts:['Locations besichtigen','Vertrag unterschreiben','Raumplan erstellen','Parkplätze klären']},
-  {id:'cat',ico:'🍽️',name:'Catering',ts:['Angebote einholen','Menü auswählen','Torte bestellen','Allergien erfassen']},
-  {id:'foto',ico:'📸',name:'Fotografie',ts:['Fotografen anfragen','Portfolio prüfen','Vertrag abschließen','Wunschliste erstellen']},
-  {id:'deko',ico:'💐',name:'Dekoration',ts:['Stil festlegen','Florist anfragen','Tischdeko planen','Sitzordnung erstellen']},
-  {id:'mus',ico:'🎵',name:'Musik',ts:['DJ anfragen','Playlist erstellen','Einzugslied wählen','Tanzkurs buchen']},
-  {id:'kld',ico:'👗',name:'Kleidung',ts:['Brautkleid kaufen','Anzug kaufen','Accessoires wählen','Schneiderin buchen']},
-  {id:'inv',ico:'✉️',name:'Einladungen',ts:['Gästeliste erstellen','Design wählen','Druckerei beauftragen','Versenden']},
-  {id:'flh',ico:'✈️',name:'Flitterwochen',ts:['Reiseziel festlegen','Flüge buchen','Hotel buchen','Reiseversicherung']},
+  {id:'loc',ico:'🏰',name:'Location',ts:['Locations recherchieren','Besichtigungstermine vereinbaren','Locations besichtigen','Angebote vergleichen','Vertrag unterschreiben','Raumplan erstellen','Parkplätze klären','Übernachtungsmöglichkeiten prüfen','Bestuhlung planen','Auf-/Abbauzeiten klären']},
+  {id:'cat',ico:'🍽️',name:'Catering',ts:['Caterer recherchieren','Angebote einholen','Probeessen vereinbaren','Menü auswählen','Getränkepauschale klären','Torte bestellen','Allergien & Unverträglichkeiten erfassen','Kinderteller planen','Mitternachtssnack planen','Service-Personal besprechen']},
+  {id:'foto',ico:'📸',name:'Fotografie',ts:['Fotografen anfragen','Portfolio prüfen','Angebote vergleichen','Vorgespräch führen','Vertrag abschließen','Wunschliste für Motive erstellen','Engagement-Shooting planen','Foto-Locations festlegen','Shotliste erstellen','Lieferzeit & Format klären']},
+  {id:'deko',ico:'💐',name:'Dekoration',ts:['Stil & Farbkonzept festlegen','Moodboard erstellen','Florist anfragen','Blumenauswahl treffen','Tischdeko planen','Stuhlhussen/Deko mieten','Kirchen-/Traudeko planen','Sitzordnung erstellen','Tischkarten gestalten','Lichtkonzept planen','Candy Bar / Sweet Table planen']},
+  {id:'mus',ico:'🎵',name:'Musik',ts:['DJ oder Band anfragen','Referenzen/Proben anhören','Angebote vergleichen','Vertrag abschließen','Playlist erstellen (Wünsche & No-Gos)','Einzugslied wählen','Eröffnungstanz-Lied wählen','Tanzkurs buchen','Technik & Equipment klären','Zeitplan mit DJ/Band abstimmen']},
+  {id:'kld',ico:'👗',name:'Kleidung',ts:['Brautkleid-Stil recherchieren','Brautmodengeschäfte besuchen','Brautkleid kaufen','Änderungstermine einplanen','Letzte Anprobe','Anzug/Hochzeitsoutfit kaufen','Accessoires wählen (Schleier, Schmuck)','Brautschuhe kaufen','Schneiderin/Schneider buchen','Outfits für Trauzeugen abstimmen']},
+  {id:'inv',ico:'✉️',name:'Einladungen',ts:['Gästeliste erstellen','Save-the-Date versenden','Einladungsdesign wählen','Text formulieren','Druckerei beauftragen','Einladungen adressieren','Einladungen versenden','Rückmeldungen tracken','Nachfassen bei ausstehenden Zusagen','Menükarten & Kirchenhefte gestalten']},
+  {id:'flh',ico:'✈️',name:'Flitterwochen',ts:['Reiseziel festlegen','Budget planen','Reiseanbieter vergleichen','Flüge buchen','Hotel/Unterkunft buchen','Ausflüge & Aktivitäten planen','Reiseversicherung abschließen','Reisedokumente prüfen (Visum, Reisepass)','Koffer packen','Haustier-/Wohnungsbetreuung organisieren']},
+  {id:'org',ico:'📋',name:'Organisation',ts:['Trauzeug:innen wählen','Hochzeitsplaner:in anfragen','Ablaufplan Hochzeitstag erstellen','Trauredner:in buchen','Ringträger:in bestimmen','Hochzeitsspiele planen','Gastgeschenke besorgen','Hochzeitsauto mieten','Notfallkit zusammenstellen','Dankeskarten vorbereiten']},
+  {id:'bty',ico:'💄',name:'Beauty & Gesundheit',ts:['Friseur:in für Hochzeitstag buchen','Probe-Frisur','Make-up Artist buchen','Probe-Make-up','Hautpflege-Routine starten','Zahnarzt-Check','Maniküre/Pediküre planen','Wellness-Tag vor Hochzeit','Bräutigam-Grooming planen']},
+  {id:'std',ico:'🏛️',name:'Standesamt & Kirche',ts:['Standesamt kontaktieren','Unterlagen zusammenstellen','Termin beim Standesamt buchen','Traugespräch (kirchlich)','Kirchliche Trauung anmelden','Ehevertrag prüfen/erstellen','Namensänderung planen','Trauzeugen offiziell benennen']},
 ];
 
 const fmt=d=>{if(!d)return'';const[y,m,day]=d.split('-');return`${day}.${m}.${y}`};
@@ -1723,7 +1741,7 @@ function renderMeilensteine(){
 window.addTpl=async function(tplId){
   const tpl=TPLS.find(t=>t.id===tplId);if(!tpl)return;
   if(tmpls.includes(tplId))return;
-  const catMap={loc:'Location',cat:'Catering',foto:'Fotografie',deko:'Dekoration',mus:'Musik',kld:'Kleidung',inv:'Einladungen',flh:'Flitterwochen'};
+  const catMap={loc:'Location',cat:'Catering',foto:'Fotografie',deko:'Dekoration',mus:'Musik',kld:'Kleidung',inv:'Einladungen',flh:'Flitterwochen',org:'Sonstiges',bty:'Sonstiges',std:'Sonstiges'};
   const cat=catMap[tplId]||'Sonstiges';
   // Spread due dates within a relevant timeframe based on wedding date
   const wd2=wDate?new Date(wDate):null;
@@ -1744,35 +1762,112 @@ window.addTpl=async function(tplId){
 };
 
 // Vorlagen overlay for Aufgaben tab
-window.openVorlagenOverlay=function(){
+window._vorlagenView='grid'; // 'grid' or 'detail'
+window._vorlagenTplId=null;
+window.openVorlagenOverlay=function(tplId){
   let ol=document.getElementById('vorlagen-overlay');
   if(!ol){
     ol=document.createElement('div');ol.id='vorlagen-overlay';ol.className='overlay';ol.style.zIndex='503';
-    ol.innerHTML=`<div class="sheet" style="max-width:480px"><div class="sh-handle"></div><h2 style="font-size:20px;font-weight:700;margin-bottom:6px">📋 Vorlagen</h2><p style="font-size:13px;color:var(--t2);margin-bottom:14px">Alle typischen Aufgaben einer Kategorie auf einmal hinzufügen.</p><div class="tpl-grid" id="vorlagen-grid"></div><button class="btn-ghost" style="width:100%;margin-top:8px" onclick="document.getElementById('vorlagen-overlay').classList.remove('open')">Schließen</button></div>`;
+    ol.innerHTML=`<div class="sheet" style="max-width:500px"><div class="sh-handle"></div><div id="vorlagen-content"></div></div>`;
     document.body.appendChild(ol);
     ol.addEventListener('click',e=>{if(e.target===ol)ol.classList.remove('open');});
   }
-  const grid=document.getElementById('vorlagen-grid');
-  grid.innerHTML=TPLS.map(tpl=>{const add=tmpls.includes(tpl.id);return`<button class="tpl-card ${add?'added':''}" onclick="addTpl('${tpl.id}');window.openVorlagenOverlay()"><div class="tpl-ico">${tpl.ico}</div><div class="tpl-name">${tpl.name}</div><div class="tpl-cnt">${add?'✓ Hinzugefügt':tpl.ts.length+' Aufgaben'}</div></button>`;}).join('');
+  if(tplId){window._vorlagenView='detail';window._vorlagenTplId=tplId;}
+  else{window._vorlagenView='grid';window._vorlagenTplId=null;}
+  renderVorlagenContent();
   ol.classList.add('open');
 };
 
-// Template overlay for milestone phases
-window.openTplForPhase=function(phaseIdx){
-  const phaseTPLMap={0:['loc'],1:['cat','foto'],2:['inv','flh','mus'],3:['deko','kld'],4:['kld'],5:[]};
-  const tplIds=phaseTPLMap[phaseIdx]||[];
-  const relevantTpls=tplIds.map(id=>TPLS.find(t=>t.id===id)).filter(Boolean);
-  if(!relevantTpls.length)return;
-  let ol=document.getElementById('phase-tpl-overlay');
-  if(!ol){
-    ol=document.createElement('div');ol.id='phase-tpl-overlay';ol.className='overlay';ol.style.zIndex='503';
-    ol.innerHTML=`<div class="sheet" style="max-width:400px"><div class="sh-handle"></div><h2 style="font-size:18px;font-weight:700;margin-bottom:12px">Vorlagen für Phase</h2><div class="tpl-grid" id="phase-tpl-grid"></div><button class="btn-ghost" style="width:100%;margin-top:8px" onclick="document.getElementById('phase-tpl-overlay').classList.remove('open')">Schließen</button></div>`;
-    document.body.appendChild(ol);
-    ol.addEventListener('click',e=>{if(e.target===ol)ol.classList.remove('open');});
+function renderVorlagenContent(){
+  const cont=document.getElementById('vorlagen-content');if(!cont)return;
+  if(window._vorlagenView==='detail'&&window._vorlagenTplId){
+    const tpl=TPLS.find(t=>t.id===window._vorlagenTplId);if(!tpl){window._vorlagenView='grid';renderVorlagenContent();return;}
+    // Find which tasks already exist
+    const existingTitles=new Set(tasks.filter(t=>!t.trashed).map(t=>t.title.toLowerCase()));
+    let h=`<button class="tpl-detail-back" onclick="window._vorlagenView='grid';renderVorlagenContent()">← Zurück</button>`;
+    h+=`<div class="tpl-detail-header"><div class="tpl-ico">${tpl.ico}</div><div><div class="tpl-name">${tpl.name}</div><div class="tpl-cnt">${tpl.ts.length} Aufgaben verfügbar</div></div></div>`;
+    h+=`<div class="tpl-select-bar"><button onclick="toggleAllTpl(true)">Alle auswählen</button><button onclick="toggleAllTpl(false)">Keine auswählen</button></div>`;
+    h+=`<div class="tpl-task-list">`;
+    tpl.ts.forEach((title,i)=>{
+      const exists=existingTitles.has(title.toLowerCase());
+      h+=`<div class="tpl-task-item ${exists?'already-added':''}">
+        <input type="checkbox" id="tpl-cb-${i}" data-tpl-idx="${i}" ${exists?'disabled':'checked'} class="tpl-task-cb"/>
+        <label for="tpl-cb-${i}">${title}${exists?' (bereits vorhanden)':''}</label>
+      </div>`;
+    });
+    h+=`</div>`;
+    h+=`<button class="tpl-add-selected" onclick="addSelectedTplTasks('${tpl.id}')">Ausgewählte hinzufügen</button>`;
+    h+=`<button class="btn-ghost" style="width:100%;margin-top:8px" onclick="document.getElementById('vorlagen-overlay').classList.remove('open')">Schließen</button>`;
+    cont.innerHTML=h;
+    updateTplAddBtn();
+  } else {
+    let h=`<h2 style="font-size:20px;font-weight:700;margin-bottom:6px">📋 Vorlagen</h2>`;
+    h+=`<p style="font-size:13px;color:var(--t2);margin-bottom:14px">Wähle eine Kategorie und dann die einzelnen Aufgaben, die du übernehmen möchtest.</p>`;
+    h+=`<div class="tpl-grid">`;
+    TPLS.forEach(tpl=>{
+      const addedCount=tpl.ts.filter(t=>tasks.some(x=>!x.trashed&&x.title.toLowerCase()===t.toLowerCase())).length;
+      const allAdded=addedCount===tpl.ts.length;
+      h+=`<button class="tpl-card ${allAdded?'added':''}" onclick="window._vorlagenView='detail';window._vorlagenTplId='${tpl.id}';renderVorlagenContent()">
+        <div class="tpl-ico">${tpl.ico}</div>
+        <div class="tpl-name">${tpl.name}</div>
+        <div class="tpl-cnt">${allAdded?'✓ Alle übernommen':addedCount>0?addedCount+'/'+tpl.ts.length+' übernommen':tpl.ts.length+' Aufgaben'}</div>
+      </button>`;
+    });
+    h+=`</div>`;
+    h+=`<button class="btn-ghost" style="width:100%;margin-top:8px" onclick="document.getElementById('vorlagen-overlay').classList.remove('open')">Schließen</button>`;
+    cont.innerHTML=h;
   }
-  const grid=document.getElementById('phase-tpl-grid');
-  grid.innerHTML=relevantTpls.map(tpl=>{const add=tmpls.includes(tpl.id);return`<button class="tpl-card ${add?'added':''}" onclick="addTpl('${tpl.id}');document.getElementById('phase-tpl-overlay').classList.remove('open')"><div class="tpl-ico">${tpl.ico}</div><div class="tpl-name">${tpl.name}</div><div class="tpl-cnt">${add?'✓ Hinzugefügt':tpl.ts.length+' Aufgaben'}</div></button>`;}).join('');
-  ol.classList.add('open');
+}
+
+window.toggleAllTpl=function(state){
+  document.querySelectorAll('.tpl-task-cb:not(:disabled)').forEach(cb=>{cb.checked=state;});
+  updateTplAddBtn();
+};
+
+function updateTplAddBtn(){
+  const btn=document.querySelector('.tpl-add-selected');if(!btn)return;
+  const checked=document.querySelectorAll('.tpl-task-cb:checked:not(:disabled)').length;
+  btn.disabled=checked===0;
+  btn.textContent=checked===0?'Keine Aufgaben ausgewählt':checked+' Aufgabe'+(checked>1?'n':'')+' hinzufügen';
+}
+
+// Listen for checkbox changes to update button
+document.addEventListener('change',function(e){
+  if(e.target.classList.contains('tpl-task-cb'))updateTplAddBtn();
+});
+
+window.addSelectedTplTasks=async function(tplId){
+  const tpl=TPLS.find(t=>t.id===tplId);if(!tpl)return;
+  const catMap={loc:'Location',cat:'Catering',foto:'Fotografie',deko:'Dekoration',mus:'Musik',kld:'Kleidung',inv:'Einladungen',flh:'Flitterwochen',org:'Sonstiges',bty:'Sonstiges',std:'Sonstiges'};
+  const cat=catMap[tplId]||'Sonstiges';
+  const cbs=document.querySelectorAll('.tpl-task-cb:checked:not(:disabled)');
+  if(!cbs.length)return;
+  const wd2=wDate?new Date(wDate):null;
+  const indices=Array.from(cbs).map(cb=>parseInt(cb.dataset.tplIdx));
+  indices.forEach((idx,i)=>{
+    const title=tpl.ts[idx];if(!title)return;
+    let due='';
+    if(wd2){
+      const offset=new Date(wd2);
+      const monthsBefore=Math.max(1,Math.floor((tpl.ts.length-idx)/tpl.ts.length*10));
+      offset.setMonth(offset.getMonth()-monthsBefore);
+      offset.setDate(offset.getDate()+i*3);
+      due=offset.toISOString().split('T')[0];
+    }
+    tasks.push({id:nid++,title,assignees:[],cat,prio:'mittel',due,done:false,comments:[],costActual:0,trashed:false});
+  });
+  if(!tmpls.includes(tplId))tmpls.push(tplId);
+  await save();render();
+  renderVorlagenContent();
+};
+
+// Template overlay for milestone phases – reuses the main overlay
+window.openTplForPhase=function(phaseIdx){
+  const phaseTPLMap={0:['loc','std'],1:['cat','foto','bty'],2:['inv','flh','mus'],3:['deko','kld','org'],4:['kld','bty'],5:['org']};
+  const tplIds=phaseTPLMap[phaseIdx]||[];
+  if(!tplIds.length){window.openVorlagenOverlay();return;}
+  // Open main overlay filtered to show only relevant templates, then user can pick
+  window.openVorlagenOverlay();
 };
 
 // openAddModalWithDate: open add modal with pre-filled date
