@@ -424,7 +424,7 @@
     .sheet2-chip-dropdown-item:hover{background:var(--rose-l);color:var(--rose-d)}
     .sheet2-chip-dropdown-item.selected{background:var(--rose-l);color:var(--rose-d);font-weight:600}
     .sheet2-avatar-row{display:flex;flex-wrap:wrap;gap:8px}
-    .sheet2-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;border:2px solid transparent;background:rgba(120,120,128,.1);color:var(--t3)}
+    .sheet2-avatar{padding:6px 14px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;border:2px solid transparent;background:rgba(120,120,128,.1);color:var(--t3);white-space:nowrap}
     .sheet2-avatar.on{background:var(--rose-l);color:var(--rose-d);border-color:var(--rose)}
     .sheet2-subtask-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(120,120,128,.08)}
     .sheet2-subtask-row input[type=checkbox]{width:20px;height:20px;accent-color:var(--rose);cursor:pointer;flex-shrink:0}
@@ -1059,7 +1059,7 @@ function openTaskPopup(t){
   html+=`<div class="sheet2-section"><div class="sheet2-section-label">Zugewiesen</div>`;
   if(isA){
     html+=`<div class="sheet2-avatar-row" id="popup-assignees">
-      ${allUsers.filter(u=>u.firstName).map(u=>`<button class="sheet2-avatar ${(t.assignees||[]).includes(u.firstName)?'on':''}" onclick="togglePopupAssignee(${t.id},'${u.firstName}')" title="${u.firstName}">${ini(u.firstName)}</button>`).join('')}
+      ${allUsers.filter(u=>u.firstName).map(u=>`<button class="sheet2-avatar ${(t.assignees||[]).includes(u.firstName)?'on':''}" onclick="togglePopupAssignee(${t.id},'${u.firstName}')" title="${u.firstName}">${u.firstName}</button>`).join('')}
     </div>`;
   } else {
     const names=(t.assignees||[]).join(', ');
@@ -1815,7 +1815,10 @@ async function renderNutzer(){
     if(snap.empty){ul.innerHTML=`<div class="empty"><div class="ei">👥</div>Noch keine Nutzer.</div>`;return;}
     ul.innerHTML=snap.docs.map(d=>{const u=d.data();return`<div class="uc">
       <div class="uav">${(u.firstName||u.email||'?')[0].toUpperCase()}</div>
-      <div style="flex:1;min-width:0"><div class="un">${u.firstName||'–'}</div><div class="ue">${u.email}</div></div>
+      <div style="flex:1;min-width:0">
+        <input type="text" class="un-edit" value="${(u.firstName||'').replace(/"/g,'&quot;')}" placeholder="Name eingeben..." onchange="setUserName('${d.id}',this.value)" style="font-size:15px;font-weight:600;border:none;border-bottom:1px dashed var(--br);background:transparent;padding:2px 0;width:100%;font-family:inherit;color:var(--t);outline:none"/>
+        <div class="ue">${u.email}</div>
+      </div>
       <select class="rsel" onchange="setRole('${d.id}',this.value)">
         <option value="gast" ${(!u.role||u.role==='gast')?'selected':''}>Gast</option>
         <option value="mithelfer" ${u.role==='mithelfer'?'selected':''}>Mithelfer</option>
@@ -1825,6 +1828,13 @@ async function renderNutzer(){
   }catch(e){const ul=document.getElementById('ulist');if(ul)ul.innerHTML=`<div class="empty">Fehler beim Laden.</div>`;}
 }
 window.setRole=async function(uid,r){await updateDoc(doc(db,'users',uid),{role:r});await loadUsers();renderNutzer();};
+window.setUserName=async function(uid,name){
+  const n=name.trim();if(!n)return;
+  await updateDoc(doc(db,'users',uid),{firstName:n});
+  await loadUsers();
+  // Update own name if editing self
+  if(user&&uid===user.uid)firstName=n;
+};
 
 async function renderInfo(){
   const a=document.getElementById('scroll');
