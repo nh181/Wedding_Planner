@@ -559,6 +559,44 @@
     .tp-section{font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.3px;margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--br)}
     .tp-section:first-of-type{border-top:none;margin-top:8px}
     #vendor-popup .sheet{max-width:520px}
+
+    /* ── MEILENSTEINE / MILESTONES ── */
+    .ms-card{position:relative;padding-left:32px;margin-bottom:4px}
+    .ms-card:last-child .ms-content::after{display:none}
+    .ms-timeline-dot{position:absolute;left:0;top:18px;width:16px;height:16px;border-radius:50%;border:3px solid var(--rose);background:var(--sur);z-index:2;flex-shrink:0}
+    .ms-timeline-dot.done{background:var(--sage);border-color:var(--sage)}
+    .ms-timeline-dot.past{background:var(--rose);border-color:var(--rose)}
+    .ms-timeline-dot.future{background:var(--sur);border-color:rgba(120,120,128,.3)}
+    .ms-card::before{content:'';position:absolute;left:7px;top:34px;bottom:0;width:2px;background:var(--br);z-index:1}
+    .ms-card:last-child::before{display:none}
+    .ms-content{background:var(--sur);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+    .ms-header{margin-bottom:12px}
+    .ms-label{font-size:16px;font-weight:700;color:var(--t);letter-spacing:-.2px}
+    .ms-date-range{font-size:12px;color:var(--t3);margin-top:2px;font-weight:500}
+    .ms-progress{margin-bottom:10px}
+    .ms-progress-bar{height:6px;background:rgba(120,120,128,.15);border-radius:999px;overflow:hidden;margin-bottom:4px}
+    .ms-progress-fill{height:100%;border-radius:999px;background:var(--rose);transition:width .6s cubic-bezier(.4,0,.2,1)}
+    .ms-progress-text{font-size:12px;color:var(--t3);font-weight:500}
+    .ms-cost{font-size:13px;font-weight:600;color:var(--sage);margin-bottom:10px}
+    .ms-tasks{margin-bottom:10px}
+    .ms-task{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid rgba(120,120,128,.08);cursor:pointer;transition:background .1s}
+    .ms-task:last-child{border-bottom:none}
+    .ms-task.done{opacity:.45}
+    .ms-task .chk{width:22px;height:22px;margin-top:2px;flex-shrink:0}
+    .ms-task-info{flex:1;min-width:0}
+    .ms-task-title{font-size:14px;font-weight:600;color:var(--t);line-height:1.3}
+    .ms-task.done .ms-task-title{text-decoration:line-through}
+    .ms-task-meta{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;align-items:center}
+    .ms-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .ms-add-btn{font-size:12px;font-weight:600;padding:7px 14px;border-radius:10px;border:none;background:rgba(120,120,128,.1);color:var(--t2);cursor:pointer;font-family:inherit;transition:all .15s}
+    .ms-add-btn:hover{background:rgba(120,120,128,.18)}
+    .ms-add-btn.ms-tpl-btn{background:var(--rose-l);color:var(--rose-d)}
+    .ms-unplanned .ms-timeline-dot{border-color:var(--amber);border-style:dashed}
+    @media(max-width:400px){
+      .ms-card{padding-left:24px}
+      .ms-timeline-dot{width:12px;height:12px;left:0;top:20px}
+      .ms-card::before{left:5px}
+    }
   </style>
 </head>
 <body>
@@ -866,8 +904,7 @@ window.closeNotif=function(){
 const TAB_DEFS=[
   {id:'home',ico:'🏠',lbl:'Home',always:true},
   {id:'aufgaben',ico:'✅',lbl:'Aufgaben',roles:['admin','mithelfer']},
-  {id:'zeitplan',ico:'📅',lbl:'Zeitplan',roles:['admin','mithelfer']},
-  {id:'vorlagen',ico:'📋',lbl:'Vorlagen',roles:['admin','mithelfer']},
+  {id:'meilensteine',ico:'📍',lbl:'Meilensteine',roles:['admin','mithelfer']},
   {id:'budget',ico:'💶',lbl:'Budget',roles:['admin']},
   {id:'nutzer',ico:'👥',lbl:'Nutzer',roles:['admin']},
   {id:'anbieter',ico:'🏪',lbl:'Anbieter',roles:['admin','mithelfer']},
@@ -1329,8 +1366,7 @@ function render(){
     if(flt==='papierkorb')renderPapierkorb();
     else renderAufgaben();
   }
-  else if(tab==='zeitplan')renderZeitplan();
-  else if(tab==='vorlagen')renderVorlagen();
+  else if(tab==='meilensteine')renderMeilensteine();
   else if(tab==='anbieter')renderAnbieter();
   else if(tab==='budget')renderBudget();
   else if(tab==='papierkorb')renderPapierkorb();
@@ -1374,7 +1410,7 @@ function renderAufgaben(){
   if(late.length)h+=`<div class="alert warn"><div class="aico">⚠️</div><div class="atxt"><strong>${late.length} Aufgabe${late.length>1?'n':''} überfällig!</strong>${late.map(t=>t.title).join(', ')}</div></div>`;
   else if(week.length)h+=`<div class="alert info"><div class="aico">📌</div><div class="atxt"><strong>${week.length} diese Woche fällig</strong>${week.slice(0,3).map(t=>t.title).join(', ')}</div></div>`;
 
-  h+=`<div class="view-toggle"><button class="${taskView==='liste'?'on':''}" onclick="setTaskView('liste')">Liste</button><button class="${taskView==='kanban'?'on':''}" onclick="setTaskView('kanban')">Kanban</button></div>`;
+  h+=`<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap"><div class="view-toggle" style="margin-bottom:0;flex:1"><button class="${taskView==='liste'?'on':''}" onclick="setTaskView('liste')">Liste</button><button class="${taskView==='kanban'?'on':''}" onclick="setTaskView('kanban')">Kanban</button></div><button onclick="window.openVorlagenOverlay()" style="font-size:13px;padding:7px 14px;border-radius:10px;border:none;background:var(--sur);color:var(--t2);cursor:pointer;font-family:inherit;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,.08);white-space:nowrap">📋 Vorlagen</button></div>`;
   h+=`<div class="sort-bar"><select class="sort-select" onchange="setTaskSort(this.value)"><option value="none"${taskSort==='none'?' selected':''}>Sortierung</option><option value="title"${taskSort==='title'?' selected':''}>Name A-Z</option><option value="title-desc"${taskSort==='title-desc'?' selected':''}>Name Z-A</option><option value="prio"${taskSort==='prio'?' selected':''}>Priorität ↑</option><option value="prio-desc"${taskSort==='prio-desc'?' selected':''}>Priorität ↓</option><option value="due"${taskSort==='due'?' selected':''}>Fällig bald → spät</option><option value="due-desc"${taskSort==='due-desc'?' selected':''}>Fällig spät → bald</option><option value="assignee"${taskSort==='assignee'?' selected':''}>Zugewiesen A-Z</option></select></div>`;
 
   let vis=tasks.filter(t=>!t.trashed);
@@ -1543,29 +1579,215 @@ window.togOnly=async function(id){
   t.done=!t.done;await save();render();
 };
 
-function renderZeitplan(){
+function renderMeilensteine(){
   const a=document.getElementById('scroll');
-  if(!wDate){a.innerHTML=`<div class="alert info"><div class="aico">📅</div><div class="atxt"><strong>Kein Hochzeitsdatum</strong></div></div>`;return;}
+  if(!wDate){a.innerHTML=`<div class="alert info"><div class="aico">📅</div><div class="atxt"><strong>Kein Hochzeitsdatum gesetzt</strong><br>Bitte unter ⚙️ Info das Hochzeitsdatum eintragen, um die Meilensteine zu sehen.</div></div>`;return;}
   const wd=new Date(wDate),now=new Date();
   const phases=[
-    {l:'12+ Monate vorher',m:12,ts:['Location buchen','Budget festlegen','Gästeliste erstellen','Standesamt reservieren']},
-    {l:'9–12 Monate vorher',m:9,ts:['Catering anfragen','Fotografen buchen','Kleid anprobieren','Einladungsdesign wählen']},
-    {l:'6–9 Monate vorher',m:6,ts:['Einladungen versenden','Flitterwochen planen','Ringe auswählen','DJ/Band buchen']},
-    {l:'3–6 Monate vorher',m:3,ts:['Menü finalisieren','Sitzordnung planen','Torte bestellen','Accessoires kaufen']},
-    {l:'1–3 Monate vorher',m:1,ts:['Letzte Anprobe','Ablaufplan erstellen','Trauringe abholen','Beauty-Termin']},
-    {l:'Letzte Woche',m:0,ts:['Koffer packen','Final-Check','Dankeskarten vorbereiten']},
+    {label:'12+ Monate vorher',monthsBefore:12,monthsBeforeEnd:Infinity},
+    {label:'9–12 Monate vorher',monthsBefore:9,monthsBeforeEnd:12},
+    {label:'6–9 Monate vorher',monthsBefore:6,monthsBeforeEnd:9},
+    {label:'3–6 Monate vorher',monthsBefore:3,monthsBeforeEnd:6},
+    {label:'1–3 Monate vorher',monthsBefore:1,monthsBeforeEnd:3},
+    {label:'Letzter Monat',monthsBefore:0,monthsBeforeEnd:1},
   ];
-  let h=`<div class="sh">Euer Hochzeits-Zeitplan</div>`;
-  phases.forEach((p,i)=>{const pd=new Date(wd);pd.setMonth(pd.getMonth()-p.m);const past=now>pd;h+=`<div class="tl-item"><div class="tl-l"><div class="tl-dot ${past?'done':'fut'}"></div>${i<phases.length-1?'<div class="tl-line"></div>':''}</div><div class="tl-c"><div class="tl-ph">${p.l}</div><div class="tl-ts">${p.ts.map(t=>`• ${t}`).join('<br>')}</div></div></div>`;});
+  // Calculate phase date ranges
+  const phaseRanges=phases.map(p=>{
+    const endDate=new Date(wd);endDate.setMonth(endDate.getMonth()-p.monthsBefore);
+    const startDate=p.monthsBeforeEnd===Infinity?null:new Date(wd);
+    if(startDate)startDate.setMonth(startDate.getMonth()-p.monthsBeforeEnd);
+    return{...p,startDate,endDate};
+  });
+  // Assign tasks to phases
+  const activeTasks=tasks.filter(t=>!t.trashed);
+  const phaseTaskMap=phases.map(()=>[]);
+  const unplanned=[];
+  const monthNames=['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  activeTasks.forEach(t=>{
+    if(!t.due){unplanned.push(t);return;}
+    const td=new Date(t.due);
+    const diffMs=wd.getTime()-td.getTime();
+    const diffMonths=diffMs/(1000*60*60*24*30.44);
+    let placed=false;
+    for(let i=0;i<phases.length;i++){
+      const p=phases[i];
+      if(diffMonths>=p.monthsBefore&&(p.monthsBeforeEnd===Infinity||diffMonths<p.monthsBeforeEnd)){
+        phaseTaskMap[i].push(t);placed=true;break;
+      }
+    }
+    if(!placed){
+      if(diffMonths<0)phaseTaskMap[phases.length-1].push(t);
+      else phaseTaskMap[0].push(t);
+    }
+  });
+  const fmtMonth=(d)=>d?monthNames[d.getMonth()]+' '+d.getFullYear():'';
+  let h=`<div class="sh">Meilensteine</div>`;
+  // Render each phase
+  phaseRanges.forEach((p,i)=>{
+    const pts=phaseTaskMap[i];
+    const done=pts.filter(t=>t.done).length;
+    const total=pts.length;
+    const pct=total?Math.round(done/total*100):0;
+    const cost=pts.reduce((s,t)=>s+(t.costActual||0),0);
+    const phaseDate=p.startDate?`${fmtMonth(p.startDate)} – ${fmtMonth(p.endDate)}`:`vor ${fmtMonth(p.endDate)}`;
+    const isPast=now>p.endDate;
+    // Calculate a default due date for this phase (midpoint)
+    const midDate=new Date(p.endDate);
+    if(p.startDate){const mid=new Date((p.startDate.getTime()+p.endDate.getTime())/2);midDate.setTime(mid.getTime());}
+    else{midDate.setMonth(midDate.getMonth()-1);}
+    const midDateStr=midDate.toISOString().split('T')[0];
+    // Relevant template IDs for this phase
+    const phaseTPLMap={0:['loc'],1:['cat','foto'],2:['inv','flh','mus'],3:['deko','kld'],4:['kld'],5:[]};
+    const relevantTpls=(phaseTPLMap[i]||[]).map(id=>TPLS.find(t=>t.id===id)).filter(Boolean);
+    h+=`<div class="ms-card">
+      <div class="ms-timeline-dot ${isPast?(pct===100?'done':'past'):'future'}"></div>
+      <div class="ms-content">
+        <div class="ms-header">
+          <div class="ms-label">${p.label}</div>
+          <div class="ms-date-range">${phaseDate}</div>
+        </div>
+        <div class="ms-progress">
+          <div class="ms-progress-bar"><div class="ms-progress-fill" style="width:${pct}%"></div></div>
+          <div class="ms-progress-text">${done}/${total} Aufgaben erledigt (${pct}%)</div>
+        </div>
+        ${cost>0?`<div class="ms-cost">Kosten: ${eur(cost)}</div>`:''}
+        <div class="ms-tasks">`;
+    if(pts.length){
+      pts.forEach(t=>{
+        const names=(t.assignees||[]).join(', ');
+        const vnd=t.vendorId?vendors.find(v=>v.id===t.vendorId):null;
+        const late=!t.done&&t.due&&t.due<today;
+        const dv=t.due?dl(t.due):null;
+        const soon=!late&&dv!==null&&dv<=7&&dv>=0;
+        h+=`<div class="ms-task ${t.done?'done':''}" data-action="open-task" data-id="${t.id}">
+          <button class="chk ${t.done?'done':''}" data-action="tog-task" data-id="${t.id}">
+            <span class="chk-ico"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </button>
+          <div class="ms-task-info">
+            <div class="ms-task-title">${t.title}</div>
+            <div class="ms-task-meta">
+              ${names?`<span class="chip per" style="font-size:11px;padding:2px 7px">${names}</span>`:''}
+              <span class="pdot ${t.prio}" style="width:7px;height:7px;display:inline-block;border-radius:50%;vertical-align:middle"></span>
+              ${vnd?`<span class="chip vendor" style="font-size:11px;padding:2px 7px">${vnd.name}</span>`:''}
+              ${t.costActual?`<span class="chip cost" style="font-size:11px;padding:2px 7px">${eur(t.costActual)}</span>`:''}
+              ${t.due?`<span class="chip due ${late?'late':soon?'soon':''}" style="font-size:11px;padding:2px 4px">${fmt(t.due)}</span>`:''}
+            </div>
+          </div>
+        </div>`;
+      });
+    } else {
+      h+=`<div style="font-size:13px;color:var(--t3);padding:8px 0;font-style:italic">Keine Aufgaben in dieser Phase</div>`;
+    }
+    h+=`</div>
+        <div class="ms-actions">
+          <button class="ms-add-btn" onclick="window.openAddModalWithDate('${midDateStr}')">+ Aufgabe</button>
+          ${relevantTpls.length?`<button class="ms-add-btn ms-tpl-btn" onclick="window.openTplForPhase(${i})">+ Aus Vorlage</button>`:''}
+        </div>
+      </div>
+    </div>`;
+  });
+  // Unplanned section
+  if(unplanned.length){
+    h+=`<div class="ms-card ms-unplanned">
+      <div class="ms-timeline-dot future"></div>
+      <div class="ms-content">
+        <div class="ms-header">
+          <div class="ms-label">Ungeplant</div>
+          <div class="ms-date-range">Diese Aufgaben haben kein Fälligkeitsdatum</div>
+        </div>
+        <div class="ms-tasks">`;
+    unplanned.forEach(t=>{
+      const names=(t.assignees||[]).join(', ');
+      const vnd=t.vendorId?vendors.find(v=>v.id===t.vendorId):null;
+      h+=`<div class="ms-task ${t.done?'done':''}" data-action="open-task" data-id="${t.id}">
+        <button class="chk ${t.done?'done':''}" data-action="tog-task" data-id="${t.id}">
+          <span class="chk-ico"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </button>
+        <div class="ms-task-info">
+          <div class="ms-task-title">${t.title}</div>
+          <div class="ms-task-meta">
+            ${names?`<span class="chip per" style="font-size:11px;padding:2px 7px">${names}</span>`:''}
+            <span class="pdot ${t.prio}" style="width:7px;height:7px;display:inline-block;border-radius:50%;vertical-align:middle"></span>
+            ${vnd?`<span class="chip vendor" style="font-size:11px;padding:2px 7px">${vnd.name}</span>`:''}
+            ${t.costActual?`<span class="chip cost" style="font-size:11px;padding:2px 7px">${eur(t.costActual)}</span>`:''}
+          </div>
+        </div>
+      </div>`;
+    });
+    h+=`</div></div></div>`;
+  }
   a.innerHTML=h;
 }
 
-function renderVorlagen(){
-  const a=document.getElementById('scroll');
-  let h=`<div class="sh">Aufgaben-Vorlagen</div><p style="font-size:13px;color:var(--t2);margin-bottom:12px">Alle typischen Aufgaben einer Kategorie auf einmal hinzufügen.</p><div class="tpl-grid">`;
-  TPLS.forEach(tpl=>{const add=tmpls.includes(tpl.id);h+=`<button class="tpl-card ${add?'added':''}" onclick="addTpl('${tpl.id}')"><div class="tpl-ico">${tpl.ico}</div><div class="tpl-name">${tpl.name}</div><div class="tpl-cnt">${add?'✓ Hinzugefügt':tpl.ts.length+' Aufgaben'}</div></button>`;});
-  h+='</div>';a.innerHTML=h;
-}
+// addTpl: add tasks from a template
+window.addTpl=async function(tplId){
+  const tpl=TPLS.find(t=>t.id===tplId);if(!tpl)return;
+  if(tmpls.includes(tplId))return;
+  const catMap={loc:'Location',cat:'Catering',foto:'Fotografie',deko:'Dekoration',mus:'Musik',kld:'Kleidung',inv:'Einladungen',flh:'Flitterwochen'};
+  const cat=catMap[tplId]||'Sonstiges';
+  // Spread due dates within a relevant timeframe based on wedding date
+  const wd2=wDate?new Date(wDate):null;
+  tpl.ts.forEach((title,idx)=>{
+    let due='';
+    if(wd2){
+      const offset=new Date(wd2);
+      // Spread tasks over several months before wedding
+      const monthsBefore=Math.max(1,Math.floor((tpl.ts.length-idx)/tpl.ts.length*10));
+      offset.setMonth(offset.getMonth()-monthsBefore);
+      offset.setDate(offset.getDate()+idx*3);
+      due=offset.toISOString().split('T')[0];
+    }
+    tasks.push({id:nid++,title,assignees:[],cat,prio:'mittel',due,done:false,comments:[],costActual:0,trashed:false});
+  });
+  tmpls.push(tplId);
+  await save();render();
+};
+
+// Vorlagen overlay for Aufgaben tab
+window.openVorlagenOverlay=function(){
+  let ol=document.getElementById('vorlagen-overlay');
+  if(!ol){
+    ol=document.createElement('div');ol.id='vorlagen-overlay';ol.className='overlay';ol.style.zIndex='503';
+    ol.innerHTML=`<div class="sheet" style="max-width:480px"><div class="sh-handle"></div><h2 style="font-size:20px;font-weight:700;margin-bottom:6px">📋 Vorlagen</h2><p style="font-size:13px;color:var(--t2);margin-bottom:14px">Alle typischen Aufgaben einer Kategorie auf einmal hinzufügen.</p><div class="tpl-grid" id="vorlagen-grid"></div><button class="btn-ghost" style="width:100%;margin-top:8px" onclick="document.getElementById('vorlagen-overlay').classList.remove('open')">Schließen</button></div>`;
+    document.body.appendChild(ol);
+    ol.addEventListener('click',e=>{if(e.target===ol)ol.classList.remove('open');});
+  }
+  const grid=document.getElementById('vorlagen-grid');
+  grid.innerHTML=TPLS.map(tpl=>{const add=tmpls.includes(tpl.id);return`<button class="tpl-card ${add?'added':''}" onclick="addTpl('${tpl.id}');window.openVorlagenOverlay()"><div class="tpl-ico">${tpl.ico}</div><div class="tpl-name">${tpl.name}</div><div class="tpl-cnt">${add?'✓ Hinzugefügt':tpl.ts.length+' Aufgaben'}</div></button>`;}).join('');
+  ol.classList.add('open');
+};
+
+// Template overlay for milestone phases
+window.openTplForPhase=function(phaseIdx){
+  const phaseTPLMap={0:['loc'],1:['cat','foto'],2:['inv','flh','mus'],3:['deko','kld'],4:['kld'],5:[]};
+  const tplIds=phaseTPLMap[phaseIdx]||[];
+  const relevantTpls=tplIds.map(id=>TPLS.find(t=>t.id===id)).filter(Boolean);
+  if(!relevantTpls.length)return;
+  let ol=document.getElementById('phase-tpl-overlay');
+  if(!ol){
+    ol=document.createElement('div');ol.id='phase-tpl-overlay';ol.className='overlay';ol.style.zIndex='503';
+    ol.innerHTML=`<div class="sheet" style="max-width:400px"><div class="sh-handle"></div><h2 style="font-size:18px;font-weight:700;margin-bottom:12px">Vorlagen für Phase</h2><div class="tpl-grid" id="phase-tpl-grid"></div><button class="btn-ghost" style="width:100%;margin-top:8px" onclick="document.getElementById('phase-tpl-overlay').classList.remove('open')">Schließen</button></div>`;
+    document.body.appendChild(ol);
+    ol.addEventListener('click',e=>{if(e.target===ol)ol.classList.remove('open');});
+  }
+  const grid=document.getElementById('phase-tpl-grid');
+  grid.innerHTML=relevantTpls.map(tpl=>{const add=tmpls.includes(tpl.id);return`<button class="tpl-card ${add?'added':''}" onclick="addTpl('${tpl.id}');document.getElementById('phase-tpl-overlay').classList.remove('open')"><div class="tpl-ico">${tpl.ico}</div><div class="tpl-name">${tpl.name}</div><div class="tpl-cnt">${add?'✓ Hinzugefügt':tpl.ts.length+' Aufgaben'}</div></button>`;}).join('');
+  ol.classList.add('open');
+};
+
+// openAddModalWithDate: open add modal with pre-filled date
+window.openAddModalWithDate=function(dateStr){
+  editingTaskId=null;
+  document.getElementById('add-modal-title').textContent='Neue Aufgabe';
+  ['f-ttl','f-act'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const fc=document.getElementById('f-cat');if(fc)fc.value='Location';
+  const fp=document.getElementById('f-pri');if(fp)fp.value='mittel';
+  const fd=document.getElementById('f-due');if(fd)fd.value=dateStr||'';
+  addSelectedAssignees=[];buildAddAssigneeGrid();
+  populateVendorDropdown(null);
+  document.getElementById('add-modal').classList.add('open');
+  setTimeout(()=>{const t=document.getElementById('f-ttl');if(t)t.focus();},300);
+};
 
 function renderPapierkorb(){
   const a=document.getElementById('scroll');
