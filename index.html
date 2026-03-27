@@ -1778,7 +1778,7 @@ window.openVorlagenOverlay=function(tplId){
   ol.classList.add('open');
 };
 
-function renderVorlagenContent(){
+window.renderVorlagenContent=function(){
   const cont=document.getElementById('vorlagen-content');if(!cont)return;
   if(window._vorlagenView==='detail'&&window._vorlagenTplId){
     const tpl=TPLS.find(t=>t.id===window._vorlagenTplId);if(!tpl){window._vorlagenView='grid';renderVorlagenContent();return;}
