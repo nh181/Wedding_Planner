@@ -401,7 +401,7 @@
     .sheet2-title-input:focus{border-bottom-color:var(--rose)}
     .sheet2-title-input::placeholder{color:var(--t3)}
     .sheet2-title-static{font-size:22px;font-weight:700;letter-spacing:-.3px;color:var(--t);padding:8px 0}
-    .sheet2-section{margin-top:18px;max-width:100%;overflow:hidden}
+    .sheet2-section{margin-top:18px;max-width:100%}
     .sheet2-section-label{font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
     .sheet2-chips{display:flex;flex-wrap:wrap;gap:8px}
     .sheet2-chip{font-size:13px;font-weight:500;padding:7px 14px;border-radius:12px;border:none;background:rgba(120,120,128,.1);color:var(--t2);cursor:pointer;font-family:inherit;transition:all .15s;position:relative;display:inline-flex;align-items:center;gap:5px}
@@ -416,7 +416,8 @@
     .sheet2-chip.chip-due.soon{color:var(--amber);font-weight:600}
     .sheet2-chip.chip-vendor{background:var(--blue-l);color:var(--blue)}
     .sheet2-chip.chip-cost{background:var(--sage-l);color:#1b5e20}
-    .sheet2-chip-dropdown{position:absolute;top:calc(100% + 6px);left:0;min-width:180px;background:var(--sur);border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,.16);z-index:10;overflow:hidden;display:none;max-height:220px;overflow-y:auto}
+    .sheet2-chip-wrap{position:relative;display:inline-block;vertical-align:top}
+    .sheet2-chip-dropdown{position:absolute;top:100%;left:0;min-width:180px;max-width:260px;background:var(--sur);border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,.2),0 0 0 1px rgba(0,0,0,.06);z-index:9999;overflow:hidden;display:none;max-height:220px;overflow-y:auto;margin-top:4px}
     .sheet2-chip-dropdown.open{display:block}
     .sheet2-chip-dropdown-item{padding:10px 14px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--br);font-family:inherit;transition:background .1s}
     .sheet2-chip-dropdown-item:last-child{border-bottom:none}
@@ -998,9 +999,13 @@ function openTaskPopup(t){
 
   // Priority chip
   const prioLabels={hoch:'🔴 Hoch',mittel:'🟡 Mittel',niedrig:'🟢 Niedrig'};
+  function ddToggle(ddId){
+    return `onclick="(function(e){e.stopPropagation();var all=document.querySelectorAll('.sheet2-chip-dropdown.open');all.forEach(function(d){if(d.id!=='${ddId}')d.classList.remove('open')});document.getElementById('${ddId}').classList.toggle('open')})(event)"`;
+  }
+
   if(canEditFields){
-    html+=`<div style="position:relative;display:inline-block" id="tp-prio-wrap">
-      <button class="sheet2-chip prio-${t.prio}" onclick="document.getElementById('tp-prio-dd').classList.toggle('open')">${prioLabels[t.prio]||'🟡 Mittel'}</button>
+    html+=`<div class="sheet2-chip-wrap" id="tp-prio-wrap">
+      <button class="sheet2-chip prio-${t.prio}" ${ddToggle('tp-prio-dd')}>${prioLabels[t.prio]||'🟡 Mittel'}</button>
       <div class="sheet2-chip-dropdown" id="tp-prio-dd">
         ${['hoch','mittel','niedrig'].map(p=>`<div class="sheet2-chip-dropdown-item${t.prio===p?' selected':''}" data-prio="${p}">${prioLabels[p]}</div>`).join('')}
       </div>
@@ -1011,8 +1016,8 @@ function openTaskPopup(t){
 
   // Category chip
   if(canEditFields){
-    html+=`<div style="position:relative;display:inline-block" id="tp-cat-wrap">
-      <button class="sheet2-chip chip-cat" onclick="document.getElementById('tp-cat-dd').classList.toggle('open')">${t.cat}</button>
+    html+=`<div class="sheet2-chip-wrap" id="tp-cat-wrap">
+      <button class="sheet2-chip chip-cat" ${ddToggle('tp-cat-dd')}>${t.cat}</button>
       <div class="sheet2-chip-dropdown" id="tp-cat-dd">
         ${CATS.map(c=>`<div class="sheet2-chip-dropdown-item${t.cat===c?' selected':''}" data-cat="${c}">${c}</div>`).join('')}
       </div>
@@ -1026,7 +1031,7 @@ function openTaskPopup(t){
   const dv=t.due?dl(t.due):null;
   const soon=!late&&dv!==null&&dv<=7&&dv>=0;
   if(canEditFields){
-    html+=`<div style="position:relative;display:inline-block">
+    html+=`<div class="sheet2-chip-wrap">
       <span class="sheet2-chip chip-due ${late?'late':soon?'soon':''}">📅 <input type="date" id="tp-due" value="${t.due||''}" style="border:none;background:transparent;font-family:inherit;font-size:13px;color:inherit;outline:none;width:120px"/></span>
     </div>`;
   } else if(t.due) {
@@ -1037,8 +1042,8 @@ function openTaskPopup(t){
   // Vendor chip
   const vnd=t.vendorId?vendors.find(v=>v.id===t.vendorId):null;
   if(canEditFields){
-    html+=`<div style="position:relative;display:inline-block" id="tp-vendor-wrap">
-      <button class="sheet2-chip chip-vendor" onclick="document.getElementById('tp-vendor-dd').classList.toggle('open')">${vnd?vnd.name:'+ Anbieter'}</button>
+    html+=`<div class="sheet2-chip-wrap" id="tp-vendor-wrap">
+      <button class="sheet2-chip chip-vendor" ${ddToggle('tp-vendor-dd')}>${vnd?vnd.name:'+ Anbieter'}</button>
       <div class="sheet2-chip-dropdown" id="tp-vendor-dd">
         <div class="sheet2-chip-dropdown-item${!t.vendorId?' selected':''}" data-vendor="">– Kein Anbieter –</div>
         ${vendors.map(v=>`<div class="sheet2-chip-dropdown-item${t.vendorId===v.id?' selected':''}" data-vendor="${v.id}">${v.name} (${v.cat})</div>`).join('')}
@@ -1198,9 +1203,10 @@ function openTaskPopup(t){
 
   // Close dropdowns on outside click
   pc.addEventListener('click',(e)=>{
-    if(!e.target.closest('#tp-prio-wrap')){const dd=pc.querySelector('#tp-prio-dd');if(dd)dd.classList.remove('open');}
-    if(!e.target.closest('#tp-cat-wrap')){const dd=pc.querySelector('#tp-cat-dd');if(dd)dd.classList.remove('open');}
-    if(!e.target.closest('#tp-vendor-wrap')){const dd=pc.querySelector('#tp-vendor-dd');if(dd)dd.classList.remove('open');}
+    const wrap=e.target.closest('.sheet2-chip-wrap');
+    pc.querySelectorAll('.sheet2-chip-dropdown.open').forEach(dd=>{
+      if(!wrap||!wrap.contains(dd)) dd.classList.remove('open');
+    });
   });
 
   // Trash button
@@ -2286,16 +2292,16 @@ function openVendorPopup(id){
   // Info chips row: Category + Status
   html+='<div class="sheet2-section"><div class="sheet2-section-label">Info</div><div class="sheet2-chips">';
   if(canEdit){
-    html+='<div style="position:relative;display:inline-block" id="vp-cat-wrap">';
-    html+='<button class="sheet2-chip chip-cat" onclick="document.getElementById(\'vp-cat-dd\').classList.toggle(\'open\')">'+v.cat+'</button>';
+    var stLabel=v.status||'In Prüfung';
+    var stClass=stLabel==='Favorit'?'active':(stLabel==='Abgelehnt'?'':'');
+    html+='<div class="sheet2-chip-wrap" id="vp-cat-wrap">';
+    html+='<button class="sheet2-chip chip-cat" onclick="(function(e){e.stopPropagation();document.querySelectorAll(\'.sheet2-chip-dropdown.open\').forEach(function(d){if(d.id!==\'vp-cat-dd\')d.classList.remove(\'open\')});document.getElementById(\'vp-cat-dd\').classList.toggle(\'open\')})(event)">'+v.cat+'</button>';
     html+='<div class="sheet2-chip-dropdown" id="vp-cat-dd">';
     V_CATS.forEach(function(c){html+='<div class="sheet2-chip-dropdown-item'+(v.cat===c?' selected':'')+'" data-vcat="'+c+'">'+c+'</div>';});
     html+='</div></div>';
 
-    html+='<div style="position:relative;display:inline-block" id="vp-status-wrap">';
-    var stLabel=v.status||'In Prüfung';
-    var stClass=stLabel==='Favorit'?'active':(stLabel==='Abgelehnt'?'':'');
-    html+='<button class="sheet2-chip '+stClass+'" onclick="document.getElementById(\'vp-status-dd\').classList.toggle(\'open\')">'+stLabel+'</button>';
+    html+='<div class="sheet2-chip-wrap" id="vp-status-wrap">';
+    html+='<button class="sheet2-chip '+stClass+'" onclick="(function(e){e.stopPropagation();document.querySelectorAll(\'.sheet2-chip-dropdown.open\').forEach(function(d){if(d.id!==\'vp-status-dd\')d.classList.remove(\'open\')});document.getElementById(\'vp-status-dd\').classList.toggle(\'open\')})(event)">'+stLabel+'</button>';
     html+='<div class="sheet2-chip-dropdown" id="vp-status-dd">';
     V_STATUS.forEach(function(s){html+='<div class="sheet2-chip-dropdown-item'+(stLabel===s?' selected':'')+'" data-vstatus="'+s+'">'+s+'</div>';});
     html+='</div></div>';
@@ -2451,8 +2457,10 @@ function openVendorPopup(id){
 
   // Close dropdowns on outside click
   vpc.addEventListener('click',function(e){
-    if(!e.target.closest('#vp-cat-wrap')){var dd=vpc.querySelector('#vp-cat-dd');if(dd)dd.classList.remove('open');}
-    if(!e.target.closest('#vp-status-wrap')){var dd2=vpc.querySelector('#vp-status-dd');if(dd2)dd2.classList.remove('open');}
+    var wrap=e.target.closest('.sheet2-chip-wrap');
+    vpc.querySelectorAll('.sheet2-chip-dropdown.open').forEach(function(dd){
+      if(!wrap||!wrap.contains(dd)) dd.classList.remove('open');
+    });
   });
 
   // Save button
