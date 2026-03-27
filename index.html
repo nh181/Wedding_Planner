@@ -384,7 +384,7 @@
     /* ── SHEET2 — iOS-STYLE CARD SHEET ── */
     .sheet2-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:8000;opacity:0;pointer-events:none;transition:opacity .3s ease;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
     .sheet2-overlay.open{opacity:1;pointer-events:all}
-    .sheet2-container{width:100%;max-width:520px;background:var(--sur);border-radius:24px 24px 0 0;padding:0;max-height:92dvh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .35s cubic-bezier(0.32,0.72,0,1);box-shadow:0 -8px 60px rgba(0,0,0,.18);overflow:hidden}
+    .sheet2-container{width:100%;max-width:520px;background:var(--sur);border-radius:24px 24px 0 0;padding:0;max-height:92dvh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .35s cubic-bezier(0.32,0.72,0,1);box-shadow:0 -8px 60px rgba(0,0,0,.18);overflow:hidden;overflow-x:hidden}
     .sheet2-overlay.open .sheet2-container{transform:translateY(0)}
     @media(min-width:600px){
       .sheet2-overlay{align-items:center}
@@ -395,12 +395,13 @@
     .sheet2-header{display:flex;align-items:center;justify-content:space-between;padding:8px 20px 0;flex-shrink:0}
     .sheet2-close{width:30px;height:30px;border-radius:50%;border:none;background:rgba(120,120,128,.12);color:var(--t3);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
     .sheet2-close:hover{background:rgba(120,120,128,.2)}
-    .sheet2-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 20px calc(env(safe-area-inset-bottom,20px) + 12px);overscroll-behavior:contain}
+    .sheet2-body{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:0 20px calc(env(safe-area-inset-bottom,20px) + 12px);overscroll-behavior:contain;box-sizing:border-box;max-width:100%}
+    .sheet2-body *{max-width:100%;box-sizing:border-box}
     .sheet2-title-input{width:100%;font-size:22px;font-weight:700;letter-spacing:-.3px;color:var(--t);border:none;background:transparent;outline:none;padding:8px 0;font-family:inherit;border-bottom:2px solid transparent;transition:border-color .2s}
     .sheet2-title-input:focus{border-bottom-color:var(--rose)}
     .sheet2-title-input::placeholder{color:var(--t3)}
     .sheet2-title-static{font-size:22px;font-weight:700;letter-spacing:-.3px;color:var(--t);padding:8px 0}
-    .sheet2-section{margin-top:18px}
+    .sheet2-section{margin-top:18px;max-width:100%;overflow:hidden}
     .sheet2-section-label{font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
     .sheet2-chips{display:flex;flex-wrap:wrap;gap:8px}
     .sheet2-chip{font-size:13px;font-weight:500;padding:7px 14px;border-radius:12px;border:none;background:rgba(120,120,128,.1);color:var(--t2);cursor:pointer;font-family:inherit;transition:all .15s;position:relative;display:inline-flex;align-items:center;gap:5px}
@@ -430,10 +431,10 @@
     .sheet2-subtask-row.st-done span{text-decoration:line-through;color:var(--t3)}
     .sheet2-subtask-row button{border:none;background:none;color:var(--t3);cursor:pointer;font-size:18px;padding:0 4px;flex-shrink:0;transition:color .15s}
     .sheet2-subtask-row button:hover{color:var(--red)}
-    .sheet2-input-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-    .sheet2-input-row label{font-size:13px;font-weight:500;color:var(--t3);min-width:90px;flex-shrink:0}
-    .sheet2-input-row .inp{flex:1;margin-bottom:0}
-    .sheet2-input-row .sheet2-inline-input{flex:1;font-size:15px;font-weight:500;color:var(--t);border:none;background:transparent;outline:none;padding:8px 0;font-family:inherit;border-bottom:1px solid transparent;transition:border-color .2s}
+    .sheet2-input-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;max-width:100%;overflow:hidden}
+    .sheet2-input-row label{font-size:13px;font-weight:500;color:var(--t3);min-width:70px;flex-shrink:0}
+    .sheet2-input-row .inp{flex:1;margin-bottom:0;min-width:0}
+    .sheet2-input-row .sheet2-inline-input{flex:1;min-width:0;font-size:15px;font-weight:500;color:var(--t);border:none;background:transparent;outline:none;padding:8px 0;font-family:inherit;border-bottom:1px solid transparent;transition:border-color .2s;box-sizing:border-box}
     .sheet2-input-row .sheet2-inline-input:focus{border-bottom-color:var(--rose)}
     .sheet2-input-row .sheet2-unit{font-size:14px;color:var(--t3);font-weight:500;flex-shrink:0}
     .sheet2-actions{display:flex;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--br)}
@@ -494,10 +495,10 @@
     .doc-item a{color:var(--blue,#007AFF);text-decoration:none;font-size:12px;font-weight:600;flex-shrink:0}
     .doc-item .doc-del{background:none;border:none;color:var(--t3);font-size:16px;cursor:pointer;padding:0 2px;flex-shrink:0}
     .doc-item .doc-del:hover{color:#ef4444}
-    .doc-add{display:flex;gap:6px;margin-top:6px}
-    .doc-add input{flex:1;padding:7px 10px;border:1px solid var(--br);border-radius:8px;font-size:12px;font-family:inherit;background:var(--sur);color:var(--t)}
+    .doc-add{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;max-width:100%;overflow:hidden}
+    .doc-add input{flex:1 1 80px;min-width:0;padding:7px 10px;border:1px solid var(--br);border-radius:8px;font-size:12px;font-family:inherit;background:var(--sur);color:var(--t);box-sizing:border-box}
     .doc-add input::placeholder{color:var(--t3)}
-    .doc-add button{padding:6px 12px;border:none;border-radius:8px;background:var(--rose);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+    .doc-add button{padding:6px 12px;border:none;border-radius:8px;background:var(--rose);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
 
     /* ── BUDGET HISTORY ── */
     .bh-card{background:var(--sur);border-radius:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
