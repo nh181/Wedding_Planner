@@ -822,6 +822,9 @@ const UC=collection(db,'users');
 let tasks=[],vendors=[],wDate='',tmpls=[],nid=1,vnid=1,user=null,role='gast',firstName='',flt='alle',tab='home';
 let allUsers=[],totalBudget=0,catBudget={};
 let taskSort='none',taskView='liste',budgetHistory=[];
+let taskSearch='',vendorSearch='';
+window._setTaskSearch=function(v){taskSearch=v;render();};
+window._setVendorSearch=function(v){vendorSearch=v;renderAnbieter();};
 let vendorCriteria={
   Location:['Preis-Leistung','Erreichbarkeit','Sympathie','Flexibilität','Lage','Kapazität','Ambiente','Parkmöglichkeiten'],
   Catering:['Preis-Leistung','Erreichbarkeit','Sympathie','Flexibilität','Geschmack','Menüauswahl','Allergiker-Optionen','Präsentation'],
@@ -1453,6 +1456,7 @@ function renderAufgaben(){
 
   h+=`<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap"><div class="view-toggle" style="margin-bottom:0;flex:1"><button class="${taskView==='liste'?'on':''}" onclick="setTaskView('liste')">Liste</button><button class="${taskView==='kanban'?'on':''}" onclick="setTaskView('kanban')">Kanban</button></div><button onclick="window.openVorlagenOverlay()" style="font-size:13px;padding:7px 14px;border-radius:10px;border:none;background:var(--sur);color:var(--t2);cursor:pointer;font-family:inherit;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,.08);white-space:nowrap">📋 Vorlagen</button></div>`;
   h+=`<div class="sort-bar"><select class="sort-select" onchange="setTaskSort(this.value)"><option value="none"${taskSort==='none'?' selected':''}>Sortierung</option><option value="title"${taskSort==='title'?' selected':''}>Name A-Z</option><option value="title-desc"${taskSort==='title-desc'?' selected':''}>Name Z-A</option><option value="prio"${taskSort==='prio'?' selected':''}>Priorität ↑</option><option value="prio-desc"${taskSort==='prio-desc'?' selected':''}>Priorität ↓</option><option value="due"${taskSort==='due'?' selected':''}>Fällig bald → spät</option><option value="due-desc"${taskSort==='due-desc'?' selected':''}>Fällig spät → bald</option><option value="assignee"${taskSort==='assignee'?' selected':''}>Zugewiesen A-Z</option></select></div>`;
+  h+=`<div style="position:relative;margin-bottom:12px"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none">🔍</span><input type="text" class="task-search-input" value="${taskSearch.replace(/"/g,'&quot;')}" placeholder="Aufgaben durchsuchen…" oninput="window._setTaskSearch(this.value)" style="width:100%;padding:10px 14px 10px 38px;border-radius:10px;border:none;background:rgba(120,120,128,.12);font-family:inherit;font-size:15px;color:var(--t);outline:none"/></div>`;
 
   let vis=tasks.filter(t=>!t.trashed);
   if(flt==='offen')vis=vis.filter(t=>!t.done);
@@ -1460,6 +1464,8 @@ function renderAufgaben(){
   else if(flt==='hoch')vis=vis.filter(t=>t.prio==='hoch'&&!t.done);
   else if(flt==='woche')vis=vis.filter(t=>{if(t.done||!t.due)return false;const d=dl(t.due);return d>=0&&d<=7;});
   else if(flt==='meine')vis=vis.filter(t=>isAssigned(t));
+
+  if(taskSearch.trim()){const sq=taskSearch.trim().toLowerCase();vis=vis.filter(t=>(t.title||'').toLowerCase().includes(sq)||(t.cat||'').toLowerCase().includes(sq)||(t.assignees||[]).some(a=>a.toLowerCase().includes(sq)));}
 
   if(taskSort==='title') vis.sort((a,b)=>a.title.localeCompare(b.title));
   else if(taskSort==='title-desc') vis.sort((a,b)=>b.title.localeCompare(a.title));
@@ -1494,6 +1500,7 @@ function renderAufgaben(){
       <div class="kanban-col"><div class="kanban-col-head">Erledigt<span class="cnt">${done.length}</span></div>${done.map(kanbanCard).join('')}</div>
     </div>`;
     a.innerHTML=h;stats();
+    if(taskSearch){const tsi=a.querySelector('.task-search-input');if(tsi){tsi.focus();tsi.selectionStart=tsi.selectionEnd=tsi.value.length;}}
     return;
   }
 
@@ -1530,6 +1537,8 @@ function renderAufgaben(){
     </div>`;
   }).join('');
   a.innerHTML=h;stats();
+  // Restore search focus
+  if(taskSearch){const tsi=a.querySelector('.task-search-input');if(tsi){tsi.focus();tsi.selectionStart=tsi.selectionEnd=tsi.value.length;}}
 }
 
 window.setTaskSort=function(v){taskSort=v;render();};
@@ -2474,7 +2483,9 @@ function renderAnbieter(){
   const cats = ['Alle','Location','Catering','Fotografie','Musik','Dekoration','Kleidung','Sonstiges'];
   const trashedVendors = vendors.filter(function(v){ return v.trashed; });
   const activeVendors = vendors.filter(function(v){ return !v.trashed; });
-  const filtered = vFilter === 'Papierkorb' ? trashedVendors : activeVendors.filter(function(v){ return vFilter === 'Alle' || v.cat === vFilter; });
+  var filteredBase = vFilter === 'Papierkorb' ? trashedVendors : activeVendors.filter(function(v){ return vFilter === 'Alle' || v.cat === vFilter; });
+  var filtered = filteredBase;
+  if(vendorSearch.trim()){var vsq=vendorSearch.trim().toLowerCase();filtered=filteredBase.filter(function(v){return (v.name||'').toLowerCase().indexOf(vsq)>-1||(v.cat||'').toLowerCase().indexOf(vsq)>-1||(v.notes||'').toLowerCase().indexOf(vsq)>-1;});}
 
   let h = '';
 
@@ -2496,6 +2507,9 @@ function renderAnbieter(){
     h += '<button id="vfilter-trash" class="v-ftab' + (vFilter==='Papierkorb'?' on':'') + '" style="background:'+(vFilter==='Papierkorb'?'var(--rose)':'rgba(239,68,68,.1)')+';color:'+(vFilter==='Papierkorb'?'#fff':'#ef4444')+'">🗑 Papierkorb ('+trashedVendors.length+')</button>';
   }
   h += '</div>';
+
+  // Vendor search
+  h += '<div style="position:relative;margin-bottom:12px"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none">🔍</span><input type="text" class="vendor-search-input" value="'+(vendorSearch||'').replace(/"/g,'&quot;')+'" placeholder="Anbieter durchsuchen…" oninput="window._setVendorSearch(this.value)" style="width:100%;padding:10px 14px 10px 38px;border-radius:10px;border:none;background:rgba(120,120,128,.12);font-family:inherit;font-size:15px;color:var(--t);outline:none"/></div>';
 
   // Action buttons (hide when in trash view)
   if(vFilter !== 'Papierkorb'){
@@ -2558,6 +2572,7 @@ function renderAnbieter(){
       h += '<span style="font-size:14px;font-weight:700;color:var(--t)">' + (displayRating > 0 ? displayRating.toFixed(1) : '–') + '</span>';
       h += '</div>';
       if(v.price) h += '<div class="v-price">' + eur(v.price) + '</div>';
+      if(v.updatedAt) h += '<div style="font-size:11px;color:var(--t3);margin-top:4px">Aktualisiert: ' + new Date(v.updatedAt).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) + (v.updatedBy ? ' von ' + v.updatedBy : '') + '</div>';
       h += '</div>';
     }
     h += '</div>';
@@ -2627,6 +2642,8 @@ function renderAnbieter(){
 
   a.innerHTML = h;
   attachAnbieterListeners(cats);
+  // Restore search focus
+  if(vendorSearch){var vsi=a.querySelector('.vendor-search-input');if(vsi){vsi.focus();vsi.selectionStart=vsi.selectionEnd=vsi.value.length;}}
 }
 
 function attachAnbieterListeners(cats){
@@ -2708,6 +2725,12 @@ function openVendorPopup(id){
     html+='<div class="sheet2-title-static">'+v.name+'</div>';
   }
 
+  // Last updated timestamp
+  if(v.updatedAt){
+    var upd=new Date(v.updatedAt);
+    html+='<div style="font-size:12px;color:var(--t3);margin-bottom:10px">Zuletzt bearbeitet: '+upd.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+upd.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+(v.updatedBy?' von '+v.updatedBy:'')+'</div>';
+  }
+
   // Info chips row: Category + Status
   html+='<div class="sheet2-section"><div class="sheet2-section-label">Info</div><div class="sheet2-chips">';
   if(canEdit){
@@ -2747,8 +2770,12 @@ function openVendorPopup(id){
   html+='<div class="sheet2-section"><div class="sheet2-section-label">Kontakt</div>';
   if(canEdit){
     html+='<div class="sheet2-input-row"><label>Ansprechp.</label><input type="text" class="sheet2-inline-input" id="vp-cname" value="'+(v.contact_name||'').replace(/"/g,'&quot;')+'" placeholder="Vor- und Nachname"/></div>';
-    html+='<div class="sheet2-input-row"><label>E-Mail</label><input type="email" class="sheet2-inline-input" id="vp-cemail" value="'+(v.contact_email||'').replace(/"/g,'&quot;')+'" placeholder="name@anbieter.de"/></div>';
-    html+='<div class="sheet2-input-row"><label>Telefon</label><input type="tel" class="sheet2-inline-input" id="vp-cphone" value="'+(v.contact_phone||'').replace(/"/g,'&quot;')+'" placeholder="+49 123 456789"/></div>';
+    html+='<div class="sheet2-input-row"><label>E-Mail</label><input type="email" class="sheet2-inline-input" id="vp-cemail" value="'+(v.contact_email||'').replace(/"/g,'&quot;')+'" placeholder="name@anbieter.de"/>';
+    if(v.contact_email) html+='<a href="mailto:'+v.contact_email+'" style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:var(--rose);color:#fff;text-decoration:none;font-size:16px;flex-shrink:0" title="E-Mail senden">✉</a>';
+    html+='</div>';
+    html+='<div class="sheet2-input-row"><label>Telefon</label><input type="tel" class="sheet2-inline-input" id="vp-cphone" value="'+(v.contact_phone||'').replace(/"/g,'&quot;')+'" placeholder="+49 123 456789"/>';
+    if(v.contact_phone) html+='<a href="tel:'+v.contact_phone+'" style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:var(--rose);color:#fff;text-decoration:none;font-size:16px;flex-shrink:0" title="Anrufen">📞</a>';
+    html+='</div>';
   } else {
     if(v.contact_name) html+='<div class="sheet2-input-row"><label>Ansprechp.</label><span>'+v.contact_name+'</span></div>';
     if(v.contact_email) html+='<div class="sheet2-input-row"><label>E-Mail</label><a href="mailto:'+v.contact_email+'" style="color:var(--blue)">'+v.contact_email+'</a></div>';
@@ -2856,6 +2883,8 @@ function openVendorPopup(id){
     var cemailEl=document.getElementById('vp-cemail');if(cemailEl)v.contact_email=cemailEl.value.trim();
     var cphoneEl=document.getElementById('vp-cphone');if(cphoneEl)v.contact_phone=cphoneEl.value.trim();
     var notesEl=document.getElementById('vp-notes');if(notesEl)v.notes=notesEl.value.trim();
+    v.updatedAt=Date.now();
+    v.updatedBy=firstName||'Unbekannt';
     sheet2AutoSave();
   }
   ['vp-name','vp-price','vp-web','vp-cname','vp-cemail','vp-cphone','vp-notes'].forEach(function(elId){
