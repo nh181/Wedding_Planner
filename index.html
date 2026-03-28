@@ -2734,7 +2734,9 @@ function openVendorPopup(id){
   html+='<div class="sheet2-section"><div class="sheet2-section-label">Details</div>';
   if(canEdit){
     html+='<div class="sheet2-input-row"><label>Preis</label><input type="number" class="sheet2-inline-input" id="vp-price" value="'+(v.price||'')+'" placeholder="0" style="text-align:right;font-size:16px;font-weight:700"/><span class="sheet2-unit">€</span></div>';
-    html+='<div class="sheet2-input-row"><label>Website</label><input type="url" class="sheet2-inline-input" id="vp-web" value="'+(v.website||'').replace(/"/g,'&quot;')+'" placeholder="https://..."/></div>';
+    html+='<div class="sheet2-input-row"><label>Website</label><input type="url" class="sheet2-inline-input" id="vp-web" value="'+(v.website||'').replace(/"/g,'&quot;')+'" placeholder="https://..." style="flex:1"/>';
+    if(v.website) html+='<a href="'+(v.website.startsWith('http')?v.website:'https://'+v.website)+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:var(--rose);color:#fff;text-decoration:none;font-size:16px;flex-shrink:0" title="Website öffnen">↗</a>';
+    html+='</div>';
   } else {
     if(v.price) html+='<div class="sheet2-input-row"><label>Preis</label><span style="font-size:16px;font-weight:700">'+eur(v.price)+'</span></div>';
     if(v.website) html+='<div class="sheet2-input-row"><label>Website</label><a href="'+(v.website.startsWith('http')?v.website:'https://'+v.website)+'" target="_blank" style="color:var(--blue);font-size:14px">'+v.website+'</a></div>';
