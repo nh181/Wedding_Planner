@@ -875,7 +875,10 @@ window._weddingApp={
   getTasks:function(){return tasks;},
   setTasks:function(t){tasks=t;},
   save:function(){return save();},
-  render:function(){return render();}
+  render:function(){return render();},
+  setTab:function(t){tab=t;},
+  setFlt:function(f){flt=f;},
+  setRole:function(r){role=r;}
 };
 
 async function loadUsers(){
@@ -3121,32 +3124,6 @@ setTimeout(function(){
     navigator.serviceWorker.register('sw.js').catch(function(){});
   }
 },3000);
-</script>
-<script>
-// Papierkorb: hashchange-basiert (außerhalb des Moduls, wird IMMER registriert)
-window.addEventListener('hashchange', function(){
-  var h = location.hash;
-  if(!h || h.indexOf('#trash-') !== 0) return;
-  // Hash sofort zurücksetzen
-  history.replaceState(null, '', location.pathname + location.search);
-  var app = window._weddingApp;
-  if(!app) { alert('App nicht geladen. Bitte Seite neu laden.'); return; }
-  if(h === '#trash-empty'){
-    if(!confirm('Alle Aufgaben im Papierkorb endgültig löschen?')) return;
-    app.setTasks(app.getTasks().filter(function(x){ return !x.trashed; }));
-    app.save().then(function(){ app.render(); });
-  } else if(h.indexOf('#trash-delete-') === 0){
-    var id = parseInt(h.replace('#trash-delete-',''));
-    if(!confirm('Endgültig löschen?')) return;
-    app.setTasks(app.getTasks().filter(function(x){ return x.id !== id; }));
-    app.save().then(function(){ app.render(); });
-  } else if(h.indexOf('#trash-restore-') === 0){
-    var id2 = parseInt(h.replace('#trash-restore-',''));
-    var tasks = app.getTasks();
-    var t = tasks.find(function(x){ return x.id === id2; });
-    if(t){ delete t.trashed; delete t.trashedAt; app.save().then(function(){ app.render(); }); }
-  }
-});
 </script>
 </body>
 </html>
