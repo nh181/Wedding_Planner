@@ -2995,12 +2995,26 @@ async function importCSVFile(){
       imported.push({ id:vnid++, name:name, cat:get(row,'kategorie')||'Sonstiges', price:parseFloat(get(row,'preis'))||0, rating:parseInt(get(row,'bewertung'))||0, status:get(row,'status')||'In Prüfung', website:get(row,'website')||'', contact_name:get(row,'kontakt_name')||'', contact_email:get(row,'kontakt_email')||'', contact_phone:get(row,'kontakt_telefon')||'', notes:get(row,'notizen')||'', createdAt:Date.now() });
     }
     if(!imported.length){ alert('Keine gültigen Einträge gefunden. Prüfe ob die CSV-Spalten korrekt benannt sind (Name, Kategorie, Preis, etc.).'); return; }
-    if(!confirm(imported.length+' Anbieter importieren?')) return;
-    vendors = vendors.concat(imported);
+    // Check for duplicates (same name, case-insensitive)
+    var toAdd = [];
+    var skipped = 0;
+    for(var di=0; di<imported.length; di++){
+      var imp = imported[di];
+      var existing = vendors.find(function(v){ return v.name.toLowerCase().trim() === imp.name.toLowerCase().trim() && !v.trashed; });
+      if(existing){
+        var addAnyway = confirm('„' + imp.name + '" existiert bereits (Kategorie: ' + existing.cat + ').\n\nTrotzdem hinzufügen?');
+        if(addAnyway){ toAdd.push(imp); } else { skipped++; }
+      } else {
+        toAdd.push(imp);
+      }
+    }
+    if(!toAdd.length){ alert('Keine neuen Anbieter importiert. ' + (skipped ? skipped + ' Duplikat(e) übersprungen.' : '')); fileInput.value=''; return; }
+    if(!confirm(toAdd.length + ' Anbieter importieren?' + (skipped ? ' (' + skipped + ' Duplikat(e) übersprungen)' : ''))) { fileInput.value=''; return; }
+    vendors = vendors.concat(toAdd);
     await save();
     fileInput.value = '';
     renderAnbieter();
-    alert(imported.length+' Anbieter erfolgreich importiert!');
+    alert(toAdd.length + ' Anbieter erfolgreich importiert!' + (skipped ? ' ' + skipped + ' Duplikat(e) übersprungen.' : ''));
   }catch(e){
     alert('Fehler beim CSV-Import: '+e.message);
   }
