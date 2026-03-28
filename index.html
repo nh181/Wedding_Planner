@@ -885,7 +885,9 @@ window._weddingApp={
   setFlt:function(f){flt=f;},
   setRole:function(r){role=r;},
   getVendors:function(){return vendors;},
-  setVendors:function(v){vendors=v;}
+  setVendors:function(v){vendors=v;},
+  setCatBudget:function(b){catBudget=b;},
+  setTotalBudget:function(b){totalBudget=b;}
 };
 
 async function loadUsers(){
@@ -1156,11 +1158,30 @@ function openTaskPopup(t){
   }
   html+=`</div>`;
 
-  // Cost section
+  // Cost section - toggleable, optional
+  const catPlan=catBudget[t.cat]||0;
+  const catActual=tasks.filter(x=>x.cat===t.cat&&!x.trashed).reduce((s,x)=>s+(x.costActual||0),0);
+  const hasCost=t.costActual!=null&&t.costActual!=='';
+
   html+=`<div class="sheet2-section"><div class="sheet2-section-label">Kosten</div>`;
   if(canEditCost){
-    html+=`<div class="sheet2-input-row"><input type="number" class="sheet2-inline-input" id="tp-cost" value="${t.costActual||''}" placeholder="0" style="max-width:140px;text-align:right;font-size:18px;font-weight:700"/><span class="sheet2-unit">€</span></div>`;
-  } else if(t.costActual){
+    if(hasCost){
+      // Show cost input + optional remove button
+      html+=`<div class="sheet2-input-row">`;
+      html+=`<input type="number" class="sheet2-inline-input" id="tp-cost" value="${t.costActual||''}" placeholder="0" style="text-align:right;font-size:18px;font-weight:700"/>`;
+      html+=`<span class="sheet2-unit">€</span>`;
+      if(catPlan>0){
+        const catRemaining=catPlan-catActual;
+        const catColor=catRemaining<0?'var(--red)':catRemaining<catPlan*0.2?'var(--amber)':'var(--t3)';
+        html+=`<span style="font-size:12px;color:${catColor};margin-left:12px;white-space:nowrap">${catRemaining>=0?'Noch '+eur(catRemaining)+' in '+t.cat:eur(Math.abs(catRemaining))+' über Plan'}</span>`;
+      }
+      html+=`<button id="tp-cost-remove" style="margin-left:8px;background:none;border:none;font-size:18px;color:var(--t3);cursor:pointer;padding:4px" title="Kosten entfernen">✕</button>`;
+      html+=`</div>`;
+    } else {
+      // Show "add cost" button
+      html+=`<button id="tp-cost-add" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;border:1.5px dashed var(--br);background:none;color:var(--t3);font-size:13px;font-family:inherit;cursor:pointer;width:100%;justify-content:center">💶 Kosten hinzufügen</button>`;
+    }
+  } else if(hasCost){
     html+=`<div style="font-size:18px;font-weight:700">${eur(t.costActual)}</div>`;
   } else {
     html+=`<div style="font-size:13px;color:var(--t3)">Keine Kosten</div>`;
@@ -1241,6 +1262,24 @@ function openTaskPopup(t){
     if(oldVal!==newVal){budgetHistory.push({date:Date.now(),cat:tt.cat,title:tt.title,oldCost:oldVal,newCost:newVal});}
     tt.costActual=newVal;
     sheet2AutoSave();
+  });}
+  // Cost add button
+  const costAddBtn=pc.querySelector('#tp-cost-add');
+  if(costAddBtn){costAddBtn.addEventListener('click',()=>{
+    const tt=tasks.find(x=>x.id===t.id);if(!tt)return;
+    tt.costActual=0;
+    openTaskPopup(tt);
+    setTimeout(()=>{const inp=document.getElementById('tp-cost');if(inp)inp.focus();},100);
+  });}
+  // Cost remove button
+  const costRemBtn=pc.querySelector('#tp-cost-remove');
+  if(costRemBtn){costRemBtn.addEventListener('click',()=>{
+    const tt=tasks.find(x=>x.id===t.id);if(!tt)return;
+    const oldVal=tt.costActual||0;
+    if(oldVal>0){budgetHistory.push({date:Date.now(),cat:tt.cat,title:tt.title,oldCost:oldVal,newCost:0});}
+    tt.costActual=null;
+    sheet2AutoSave();
+    openTaskPopup(tt);
   });}
 
   // Priority dropdown
