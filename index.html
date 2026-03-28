@@ -2464,7 +2464,7 @@ window.removeCriterion=async function(cat,idx){
 // ── ANBIETER / VENDOR FUNCTIONS ──
 const V_CATS=['Location','Catering','Fotografie','Musik','Dekoration','Kleidung','Sonstiges'];
 const V_STATUS=['In Prüfung','Favorit','Abgelehnt'];
-let vFilter='Alle';let vView='karten';let vOpenCriteria=new Set();
+let vFilter='Alle';let vView='karten';let vOpenCriteria=new Set();let vCompareIds=[];
 
 let editingVendorId = null;
 
@@ -2562,47 +2562,67 @@ function renderAnbieter(){
     }
     h += '</div>';
   } else {
-    var shown = filtered.slice(0,4);
-    h += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;background:var(--sur);border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)">';
-    h += '<tr><th style="padding:12px;font-size:12px;color:var(--t3);text-align:left;background:var(--bg);border-bottom:1px solid var(--br)">Kriterium</th>';
-    for(var ti=0;ti<shown.length;ti++) h += '<th style="padding:12px;font-size:14px;font-weight:700;text-align:center;border-bottom:1px solid var(--br);border-left:1px solid var(--br)">' + shown[ti].name + '</th>';
-    h += '</tr>';
-    var tableRowsBase = [
-      ['Status', function(v){ return v.status||'In Prüfung'; }],
-      ['⌀ Bewertung', function(v){
-        var vR=v.ratings||{};var vC=vendorCriteria[v.cat]||vendorCriteria['Sonstiges'];
-        var s=0,c=0;vC.forEach(function(cr){if(vR[cr]){s+=vR[cr];c++;}});
-        var avg=c>0?(s/c):0;var disp=v.ratingOverride!=null?v.ratingOverride:(avg||v.rating||0);
-        var st='';for(var i=1;i<=5;i++)st+=(i<=Math.round(disp)?'★':'☆');
-        return '<span style="color:#f5a623">'+st+'</span> '+(disp>0?disp.toFixed(1):'–');
-      }]
-    ];
-    // Add criteria rows dynamically based on shown vendors
-    var allCritSets=shown.map(function(v){return vendorCriteria[v.cat]||vendorCriteria['Sonstiges'];});
-    var allCritUnique=[];
-    allCritSets.forEach(function(cs){cs.forEach(function(c){if(allCritUnique.indexOf(c)===-1)allCritUnique.push(c);});});
-    allCritUnique.forEach(function(crit){
-      tableRowsBase.push(['  '+crit, function(v){
-        var val=(v.ratings||{})[crit];
-        if(!val)return '<span style="color:#ccc">–</span>';
-        var s='';for(var i=1;i<=5;i++)s+=(i<=val?'★':'☆');
-        return '<span style="color:#f5a623;font-size:12px">'+s+'</span>';
-      }]);
+    // Vendor selection chips
+    h += '<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:600;color:var(--t3);margin-bottom:8px">Anbieter zum Vergleich auswählen:</div>';
+    h += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+    // Auto-select all if none selected yet
+    if(!vCompareIds.length) vCompareIds = filtered.map(function(v){return v.id;});
+    filtered.forEach(function(v){
+      var isOn = vCompareIds.indexOf(v.id) > -1;
+      h += '<button class="v-compare-chip" data-vid="' + v.id + '" style="padding:5px 12px;border-radius:16px;border:1.5px solid '
+        + (isOn ? 'var(--rose,#e91e8c)' : 'var(--br,#e0e0e0)') + ';background:'
+        + (isOn ? 'var(--rose,#e91e8c)' : 'var(--sur,#fff)') + ';color:'
+        + (isOn ? '#fff' : 'var(--t2,#666)') + ';font-size:12px;font-family:inherit;font-weight:500;cursor:pointer">' + v.name + '</button>';
     });
-    var tableRows = tableRowsBase.concat([
-      ['Preis', function(v){ return v.price?eur(v.price):'–'; }],
-      ['Kontakt', function(v){ return v.contact_name||'–'; }],
-      ['E-Mail', function(v){ return v.contact_email||'–'; }],
-      ['Telefon', function(v){ return v.contact_phone||'–'; }],
-      ['Notizen', function(v){ return v.notes||'–'; }],
-      ['Aufgaben', function(v){ return tasks.filter(function(t){return t.vendorId===v.id&&!t.trashed;}).length||'–'; }]
-    ]);
-    for(var ri=0;ri<tableRows.length;ri++){
-      h += '<tr><td style="padding:10px 12px;font-size:12px;font-weight:600;color:var(--t3);background:var(--bg);border-top:1px solid var(--br)">' + tableRows[ri][0] + '</td>';
-      for(var ti2=0;ti2<shown.length;ti2++) h += '<td style="padding:10px 12px;font-size:13px;text-align:center;border-top:1px solid var(--br);border-left:1px solid var(--br)">' + tableRows[ri][1](shown[ti2]) + '</td>';
+    h += '</div></div>';
+
+    var shown = filtered.filter(function(v){ return vCompareIds.indexOf(v.id) > -1; });
+    if(!shown.length){
+      h += '<div class="empty"><p style="font-size:14px;color:var(--t3)">Wähle mindestens einen Anbieter zum Vergleich aus.</p></div>';
+    } else {
+      // Table with sticky first column
+      h += '<div id="v-compare-scroll" style="overflow-x:auto;border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)">';
+      h += '<table style="border-collapse:collapse;background:var(--sur);min-width:100%">';
+      // Header row
+      h += '<tr><th style="position:sticky;left:0;z-index:2;padding:12px;font-size:12px;color:var(--t3);text-align:left;background:var(--bg);border-bottom:1px solid var(--br);min-width:120px;white-space:nowrap">Kriterium</th>';
+      for(var ti=0;ti<shown.length;ti++) h += '<th style="padding:12px;font-size:13px;font-weight:700;text-align:center;border-bottom:1px solid var(--br);border-left:1px solid var(--br);min-width:120px;white-space:nowrap">' + shown[ti].name + '</th>';
       h += '</tr>';
+      var tableRowsBase = [
+        ['Status', function(v){ return v.status||'In Prüfung'; }],
+        ['⌀ Bewertung', function(v){
+          var vR=v.ratings||{};var vC=vendorCriteria[v.cat]||vendorCriteria['Sonstiges'];
+          var s=0,c=0;vC.forEach(function(cr){if(vR[cr]){s+=vR[cr];c++;}});
+          var avg=c>0?(s/c):0;var disp=v.ratingOverride!=null?v.ratingOverride:(avg||v.rating||0);
+          var st='';for(var i=1;i<=5;i++)st+=(i<=Math.round(disp)?'★':'☆');
+          return '<span style="color:#f5a623">'+st+'</span> '+(disp>0?disp.toFixed(1):'–');
+        }]
+      ];
+      var allCritSets=shown.map(function(v){return vendorCriteria[v.cat]||vendorCriteria['Sonstiges'];});
+      var allCritUnique=[];
+      allCritSets.forEach(function(cs){cs.forEach(function(c){if(allCritUnique.indexOf(c)===-1)allCritUnique.push(c);});});
+      allCritUnique.forEach(function(crit){
+        tableRowsBase.push(['  '+crit, function(v){
+          var val=(v.ratings||{})[crit];
+          if(!val)return '<span style="color:#ccc">–</span>';
+          var s='';for(var i=1;i<=5;i++)s+=(i<=val?'★':'☆');
+          return '<span style="color:#f5a623;font-size:12px">'+s+'</span>';
+        }]);
+      });
+      var tableRows = tableRowsBase.concat([
+        ['Preis', function(v){ return v.price?eur(v.price):'–'; }],
+        ['Kontakt', function(v){ return v.contact_name||'–'; }],
+        ['E-Mail', function(v){ return v.contact_email||'–'; }],
+        ['Telefon', function(v){ return v.contact_phone||'–'; }],
+        ['Notizen', function(v){ return v.notes||'–'; }],
+        ['Aufgaben', function(v){ return tasks.filter(function(t){return t.vendorId===v.id&&!t.trashed;}).length||'–'; }]
+      ]);
+      for(var ri=0;ri<tableRows.length;ri++){
+        h += '<tr><td style="position:sticky;left:0;z-index:1;padding:10px 12px;font-size:12px;font-weight:600;color:var(--t3);background:var(--bg);border-top:1px solid var(--br);white-space:nowrap">' + tableRows[ri][0] + '</td>';
+        for(var ti2=0;ti2<shown.length;ti2++) h += '<td style="padding:10px 12px;font-size:13px;text-align:center;border-top:1px solid var(--br);border-left:1px solid var(--br);min-width:120px">' + tableRows[ri][1](shown[ti2]) + '</td>';
+        h += '</tr>';
+      }
+      h += '</table></div>';
     }
-    h += '</table></div>';
   }
 
   a.innerHTML = h;
@@ -2649,6 +2669,16 @@ function attachAnbieterListeners(cats){
       if(e.target.closest('.v-btn')) return;
       var vid = parseInt(card.dataset.vid);
       if(vid) openVendorPopup(vid);
+    });
+  });
+
+  // Compare view: vendor selection chips
+  a.querySelectorAll('.v-compare-chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      var vid = parseInt(chip.dataset.vid);
+      var idx = vCompareIds.indexOf(vid);
+      if(idx > -1){ vCompareIds.splice(idx, 1); } else { vCompareIds.push(vid); }
+      renderAnbieter();
     });
   });
 }
