@@ -870,6 +870,14 @@ async function save(){
   catch(e){document.getElementById('sync').style.background='#ef4444';}
 }
 
+// Export für externe Scripts
+window._weddingApp={
+  getTasks:function(){return tasks;},
+  setTasks:function(t){tasks=t;},
+  save:function(){return save();},
+  render:function(){return render();}
+};
+
 async function loadUsers(){
   try{const snap=await getDocs(UC);allUsers=snap.docs.map(d=>({uid:d.id,...d.data()})).filter(u=>u.role==='admin'||u.role==='mithelfer');}
   catch(e){allUsers=[];}
@@ -3101,26 +3109,6 @@ async function loadPublicData(){try{const s=await getDoc(DD);if(s.exists()&&s.da
 await loadPublicData();
 renderHome(); // Show immediately for guests
 render();
-// Papierkorb-Aktionen via URL-Hash (funktioniert immer, keine Click-Events nötig)
-window.addEventListener('hashchange',async function(){
-  var h=location.hash;
-  if(!h.startsWith('#trash-'))return;
-  location.hash='';
-  if(h==='#trash-empty'){
-    if(!confirm('Alle Aufgaben im Papierkorb endgültig löschen?'))return;
-    tasks=tasks.filter(function(x){return !x.trashed;});
-    await save();render();
-  } else if(h.startsWith('#trash-delete-')){
-    var id=parseInt(h.replace('#trash-delete-',''));
-    if(!confirm('Endgültig löschen?'))return;
-    tasks=tasks.filter(function(x){return x.id!==id;});
-    await save();render();
-  } else if(h.startsWith('#trash-restore-')){
-    var id2=parseInt(h.replace('#trash-restore-',''));
-    var t=tasks.find(function(x){return x.id===id2;});
-    if(t){delete t.trashed;delete t.trashedAt;await save();render();}
-  }
-});
 
 // Service Worker (verzögert, damit es nichts blockiert)
 setTimeout(function(){
@@ -3128,6 +3116,32 @@ setTimeout(function(){
     navigator.serviceWorker.register('sw.js').catch(function(){});
   }
 },3000);
+</script>
+<script>
+// Papierkorb: hashchange-basiert (außerhalb des Moduls, wird IMMER registriert)
+window.addEventListener('hashchange', function(){
+  var h = location.hash;
+  if(!h || h.indexOf('#trash-') !== 0) return;
+  // Hash sofort zurücksetzen
+  history.replaceState(null, '', location.pathname + location.search);
+  var app = window._weddingApp;
+  if(!app) { alert('App nicht geladen. Bitte Seite neu laden.'); return; }
+  if(h === '#trash-empty'){
+    if(!confirm('Alle Aufgaben im Papierkorb endgültig löschen?')) return;
+    app.setTasks(app.getTasks().filter(function(x){ return !x.trashed; }));
+    app.save().then(function(){ app.render(); });
+  } else if(h.indexOf('#trash-delete-') === 0){
+    var id = parseInt(h.replace('#trash-delete-',''));
+    if(!confirm('Endgültig löschen?')) return;
+    app.setTasks(app.getTasks().filter(function(x){ return x.id !== id; }));
+    app.save().then(function(){ app.render(); });
+  } else if(h.indexOf('#trash-restore-') === 0){
+    var id2 = parseInt(h.replace('#trash-restore-',''));
+    var tasks = app.getTasks();
+    var t = tasks.find(function(x){ return x.id === id2; });
+    if(t){ delete t.trashed; delete t.trashedAt; app.save().then(function(){ app.render(); }); }
+  }
+});
 </script>
 </body>
 </html>
