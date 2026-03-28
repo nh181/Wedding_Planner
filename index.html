@@ -3101,23 +3101,7 @@ async function loadPublicData(){try{const s=await getDoc(DD);if(s.exists()&&s.da
 await loadPublicData();
 renderHome(); // Show immediately for guests
 render();
-if('serviceWorker'in navigator){
-  try{
-    navigator.serviceWorker.register('sw.js').then(reg=>{
-      setInterval(()=>{try{reg.update();}catch(e){}},60000);
-      reg.addEventListener('updatefound',()=>{
-        const newSW=reg.installing;
-        if(newSW)newSW.addEventListener('statechange',()=>{
-          if(newSW.state==='activated')window.location.reload();
-        });
-      });
-    }).catch(()=>{});
-    navigator.serviceWorker.addEventListener('controllerchange',()=>window.location.reload());
-  }catch(e){}
-}
-
-// Papierkorb-Aktionen: Event-Delegation auf #scroll (überlebt innerHTML-Resets)
-// Listen for trash actions from non-module script
+// Papierkorb-Aktionen: Custom Event vom separaten Script-Block
 window.addEventListener('trash-action',async function(e){
   var d=e.detail;
   if(d.type==='delete'){
@@ -3131,6 +3115,13 @@ window.addEventListener('trash-action',async function(e){
     await save();render();
   }
 });
+
+// Service Worker (verzögert, damit es nichts blockiert)
+setTimeout(function(){
+  if('serviceWorker'in navigator){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  }
+},3000);
 </script>
 <script>
 // Papierkorb-Klick-Handler (separater Script-Block, kein Modul)
