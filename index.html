@@ -878,7 +878,9 @@ window._weddingApp={
   render:function(){return render();},
   setTab:function(t){tab=t;},
   setFlt:function(f){flt=f;},
-  setRole:function(r){role=r;}
+  setRole:function(r){role=r;},
+  getVendors:function(){return vendors;},
+  setVendors:function(v){vendors=v;}
 };
 
 async function loadUsers(){
@@ -1965,6 +1967,10 @@ document.body.addEventListener('click',async function(e){
     if(!confirm('Alle Aufgaben im Papierkorb endgültig löschen?'))return;
     tasks=tasks.filter(x=>!x.trashed);
     await save();render();
+  } else if(action==='empty-vendor-trash'){
+    if(!confirm('Alle Anbieter im Papierkorb endgültig löschen?'))return;
+    vendors=vendors.filter(x=>!x.trashed);
+    await save();renderAnbieter();
   } else if(action==='open-task'){
     const t=tasks.find(x=>x.id===id);if(t)openTaskPopup(t);
   } else if(action==='tog-task'){
@@ -2464,7 +2470,9 @@ function renderAnbieter(){
   const a = document.getElementById('scroll');
   const isA = role === 'admin';
   const cats = ['Alle','Location','Catering','Fotografie','Musik','Dekoration','Kleidung','Sonstiges'];
-  const filtered = vendors.filter(function(v){ return vFilter === 'Alle' || v.cat === vFilter; });
+  const trashedVendors = vendors.filter(function(v){ return v.trashed; });
+  const activeVendors = vendors.filter(function(v){ return !v.trashed; });
+  const filtered = vFilter === 'Papierkorb' ? trashedVendors : activeVendors.filter(function(v){ return vFilter === 'Alle' || v.cat === vFilter; });
 
   let h = '';
 
@@ -2482,15 +2490,42 @@ function renderAnbieter(){
     var cat = cats[ci];
     h += '<button id="vfilter-' + ci + '" class="v-ftab' + (vFilter===cat?' on':'') + '">' + cat + '</button>';
   }
+  if(trashedVendors.length>0){
+    h += '<button id="vfilter-trash" class="v-ftab' + (vFilter==='Papierkorb'?' on':'') + '" style="background:'+(vFilter==='Papierkorb'?'var(--rose)':'rgba(239,68,68,.1)')+';color:'+(vFilter==='Papierkorb'?'#fff':'#ef4444')+'">🗑 Papierkorb ('+trashedVendors.length+')</button>';
+  }
   h += '</div>';
 
-  // Action buttons
-  h += '<div style="display:flex;gap:8px;margin-bottom:14px">';
-  h += '<button data-body-action="open-vendor-modal" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:var(--rose);color:#fff;font-family:inherit;font-weight:600;cursor:pointer;margin-left:auto">+ Anbieter</button>';
-  h += '</div>';
+  // Action buttons (hide when in trash view)
+  if(vFilter !== 'Papierkorb'){
+    h += '<div style="display:flex;gap:8px;margin-bottom:14px">';
+    h += '<button data-body-action="open-vendor-modal" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:var(--rose);color:#fff;font-family:inherit;font-weight:600;cursor:pointer;margin-left:auto">+ Anbieter</button>';
+    h += '</div>';
+  } else {
+    h += '<div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button data-action="empty-vendor-trash" style="font-size:13px;padding:8px 16px;border-radius:10px;border:none;background:#ef4444;color:#fff;cursor:pointer;font-family:inherit;font-weight:600">🗑 Papierkorb leeren</button></div>';
+  }
 
   if(!filtered.length){
-    h += '<div class="empty"><div class="ei">&#127978;</div><p>Noch keine Anbieter.</p></div>';
+    if(vFilter==='Papierkorb'){
+      h += '<div class="empty"><div class="ei">🗑</div><p>Papierkorb ist leer.</p></div>';
+    } else {
+      h += '<div class="empty"><div class="ei">&#127978;</div><p>Noch keine Anbieter.</p></div>';
+    }
+    a.innerHTML = h;
+    attachAnbieterListeners(cats);
+    return;
+  }
+
+  if(vFilter === 'Papierkorb'){
+    // Trash view for vendors
+    filtered.forEach(function(v){
+      var date=v.trashedAt?new Date(v.trashedAt).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+      h+='<div class="v-card" style="opacity:.65;border-style:dashed;cursor:pointer" data-vid="'+v.id+'">';
+      h+='<div class="v-name" style="text-decoration:line-through;color:var(--t3)">'+v.name+'</div>';
+      h+='<div class="v-cat">'+v.cat+'</div>';
+      if(date) h+='<div style="font-size:12px;color:var(--t3);margin-top:4px">entfernt '+date+'</div>';
+      h+='<div style="margin-top:8px;font-size:12px;color:var(--t3)">Tippen zum Wiederherstellen oder Löschen</div>';
+      h+='</div>';
+    });
     a.innerHTML = h;
     attachAnbieterListeners(cats);
     return;
@@ -2588,7 +2623,12 @@ function attachAnbieterListeners(cats){
   }
   // Simpler filter tab approach
   a.querySelectorAll('.v-ftab').forEach(function(btn){
-    btn.addEventListener('click', function(){ vFilter = btn.textContent; renderAnbieter(); });
+    btn.addEventListener('click', function(){
+      var txt = btn.textContent.trim();
+      if(btn.id === 'vfilter-trash') { vFilter = 'Papierkorb'; }
+      else { vFilter = txt; }
+      renderAnbieter();
+    });
   });
 
   // Add vendor button handled by body delegator via data-body-action
@@ -2756,8 +2796,13 @@ function openVendorPopup(id){
 
   // Action buttons
   html+='<div class="sheet2-actions">';
-  if(canEdit) html+='<button class="sheet2-btn-primary" id="vp-save-btn" data-vid="'+v.id+'">Speichern</button>';
-  if(isA) html+='<button class="sheet2-btn-danger" id="vp-del-btn" data-vid="'+v.id+'">🗑 Löschen</button>';
+  if(v.trashed){
+    if(canEdit) html+='<button class="sheet2-btn-primary" id="vp-restore-btn" data-vid="'+v.id+'">↩ Wiederherstellen</button>';
+    if(isA) html+='<button class="sheet2-btn-danger" id="vp-del-final-btn" data-vid="'+v.id+'">🗑 Endgültig löschen</button>';
+  } else {
+    if(canEdit) html+='<button class="sheet2-btn-primary" id="vp-save-btn" data-vid="'+v.id+'">Speichern</button>';
+    if(isA) html+='<button class="sheet2-btn-danger" id="vp-del-btn" data-vid="'+v.id+'">🗑 Löschen</button>';
+  }
   html+='</div>';
 
   document.getElementById('vendor-popup-content').innerHTML=html;
@@ -2818,11 +2863,34 @@ function openVendorPopup(id){
     renderAnbieter();
   });}
 
-  // Delete button
+  // Delete button (move to trash)
   var delBtn=document.getElementById('vp-del-btn');
   if(delBtn){delBtn.addEventListener('click',async function(){
-    if(!confirm('Anbieter löschen?'))return;
+    if(!confirm('Anbieter in den Papierkorb verschieben?'))return;
     var vid=parseInt(delBtn.dataset.vid);
+    var vv=vendors.find(function(x){return x.id===vid;});
+    if(vv){vv.trashed=true;vv.trashedAt=Date.now();}
+    await save();
+    document.getElementById('vendor-popup').classList.remove('open');
+    renderAnbieter();
+  });}
+
+  // Restore button (from trash)
+  var restoreBtn=document.getElementById('vp-restore-btn');
+  if(restoreBtn){restoreBtn.addEventListener('click',async function(){
+    var vid=parseInt(restoreBtn.dataset.vid);
+    var vv=vendors.find(function(x){return x.id===vid;});
+    if(vv){delete vv.trashed;delete vv.trashedAt;}
+    await save();
+    document.getElementById('vendor-popup').classList.remove('open');
+    renderAnbieter();
+  });}
+
+  // Delete final button (permanent delete from trash)
+  var delFinalBtn=document.getElementById('vp-del-final-btn');
+  if(delFinalBtn){delFinalBtn.addEventListener('click',async function(){
+    if(!confirm('Anbieter endgültig löschen? Kann nicht rückgängig gemacht werden.'))return;
+    var vid=parseInt(delFinalBtn.dataset.vid);
     vendors=vendors.filter(function(x){return x.id!==vid;});
     await save();
     document.getElementById('vendor-popup').classList.remove('open');
