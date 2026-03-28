@@ -17,6 +17,11 @@ self.addEventListener('activate', e => {
   );
 });
 
+// Auf SKIP_WAITING Nachricht reagieren
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
 // Network-First: always try fresh content, fall back to cache only if offline
 self.addEventListener('fetch', e => {
   e.respondWith(

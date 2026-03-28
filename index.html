@@ -3118,12 +3118,23 @@ await loadPublicData();
 renderHome(); // Show immediately for guests
 render();
 
-// Service Worker (verzögert, damit es nichts blockiert)
+// Service Worker: bei jedem Laden auf Updates prüfen und alten Cache löschen
 setTimeout(function(){
   if('serviceWorker'in navigator){
-    navigator.serviceWorker.register('sw.js').catch(function(){});
+    navigator.serviceWorker.register('sw.js').then(function(reg){
+      reg.update();
+      if(reg.waiting){reg.waiting.postMessage({type:'SKIP_WAITING'});}
+      reg.addEventListener('updatefound',function(){
+        var nw=reg.installing;
+        if(nw)nw.addEventListener('statechange',function(){
+          if(nw.state==='installed'&&navigator.serviceWorker.controller){nw.postMessage({type:'SKIP_WAITING'});window.location.reload();}
+        });
+      });
+    }).catch(function(){});
+    // Alten Cache sofort löschen
+    if(window.caches)caches.keys().then(function(ks){ks.forEach(function(k){if(k!=='hochzeitsplaner-v7')caches.delete(k);});});
   }
-},3000);
+},1000);
 </script>
 </body>
 </html>
