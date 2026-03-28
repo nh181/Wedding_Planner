@@ -1916,31 +1916,6 @@ function renderPapierkorb(){
     </div>`;
   }).join('');
   a.innerHTML=h;
-  // Attach listeners AFTER innerHTML (same pattern as vendor delete)
-  var emptyBtn=document.getElementById('trash-empty-btn');
-  if(emptyBtn){emptyBtn.addEventListener('click',async function(){
-    if(!confirm('Alle Aufgaben im Papierkorb endgültig löschen?'))return;
-    tasks=tasks.filter(function(x){return !x.trashed;});
-    await save();render();
-  });}
-  document.querySelectorAll('.trash-restore-btn').forEach(function(btn){
-    btn.addEventListener('click',async function(e){
-      e.stopPropagation();
-      var id=parseInt(btn.dataset.tid);
-      var t=tasks.find(function(x){return x.id===id;});if(!t)return;
-      delete t.trashed;delete t.trashedAt;
-      await save();render();
-    });
-  });
-  document.querySelectorAll('.trash-delete-btn').forEach(function(btn){
-    btn.addEventListener('click',async function(e){
-      e.stopPropagation();
-      var id=parseInt(btn.dataset.tid);
-      if(!confirm('Endgültig löschen? Kann nicht rückgängig gemacht werden.'))return;
-      tasks=tasks.filter(function(x){return x.id!==id;});
-      await save();render();
-    });
-  });
 }
 
 // Global event delegator - handles all dynamic button clicks robustly
@@ -3127,20 +3102,49 @@ await loadPublicData();
 renderHome(); // Show immediately for guests
 render();
 if('serviceWorker'in navigator){
-  navigator.serviceWorker.register('sw.js').then(reg=>{
-    // Check for updates every 60 seconds
-    setInterval(()=>reg.update(),60000);
-    // When a new SW is found, activate it and reload
-    reg.addEventListener('updatefound',()=>{
-      const newSW=reg.installing;
-      if(newSW)newSW.addEventListener('statechange',()=>{
-        if(newSW.state==='activated')window.location.reload();
+  try{
+    navigator.serviceWorker.register('sw.js').then(reg=>{
+      setInterval(()=>{try{reg.update();}catch(e){}},60000);
+      reg.addEventListener('updatefound',()=>{
+        const newSW=reg.installing;
+        if(newSW)newSW.addEventListener('statechange',()=>{
+          if(newSW.state==='activated')window.location.reload();
+        });
       });
-    });
-  }).catch(()=>{});
-  // If a new SW takes over, reload immediately
-  navigator.serviceWorker.addEventListener('controllerchange',()=>window.location.reload());
+    }).catch(()=>{});
+    navigator.serviceWorker.addEventListener('controllerchange',()=>window.location.reload());
+  }catch(e){}
 }
+
+// Papierkorb-Aktionen: Event-Delegation auf #scroll (überlebt innerHTML-Resets)
+document.getElementById('scroll').addEventListener('click',async function(e){
+  var btn=e.target.closest('.trash-delete-btn');
+  if(btn){
+    e.stopPropagation();
+    var id=parseInt(btn.dataset.tid);
+    if(!confirm('Endgültig löschen? Kann nicht rückgängig gemacht werden.'))return;
+    tasks=tasks.filter(function(x){return x.id!==id;});
+    await save();render();
+    return;
+  }
+  var rbtn=e.target.closest('.trash-restore-btn');
+  if(rbtn){
+    e.stopPropagation();
+    var id2=parseInt(rbtn.dataset.tid);
+    var t=tasks.find(function(x){return x.id===id2;});if(!t)return;
+    delete t.trashed;delete t.trashedAt;
+    await save();render();
+    return;
+  }
+  var ebtn=e.target.closest('#trash-empty-btn');
+  if(ebtn){
+    e.stopPropagation();
+    if(!confirm('Alle Aufgaben im Papierkorb endgültig löschen?'))return;
+    tasks=tasks.filter(function(x){return !x.trashed;});
+    await save();render();
+    return;
+  }
+});
 </script>
 </body>
 </html>
