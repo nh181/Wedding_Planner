@@ -832,6 +832,7 @@ let vendorCriteria={
   Sonstiges:['Preis-Leistung','Erreichbarkeit','Sympathie','Flexibilität','Erfahrung','Referenzen','Zuverlässigkeit']
 };
 let seenMentions=new Set(JSON.parse(localStorage.getItem('seenMentions')||'[]'));
+let dataLoaded=false;
 let addSelectedAssignees=[],editingTaskId=null;
 const today=new Date().toISOString().split('T')[0];
 const CATS=['Location','Catering','Dekoration','Musik','Fotografie','Kleidung','Einladungen','Flitterwochen','Sonstiges'];
@@ -865,6 +866,7 @@ const isAssigned=t=>t.assignees&&t.assignees.includes(firstName);
 
 async function save(){
   if(role==='gast')return;
+  if(!dataLoaded){console.warn('save() blocked: data not yet loaded from Firebase');return;}
   try{await setDoc(DD,{tasks,vendors,weddingDate:wDate,templates:tmpls,budgetHistory:budgetHistory||[],vendorCriteria:vendorCriteria,updatedAt:Date.now()});
   document.getElementById('sync').style.background='#4caf50';}
   catch(e){document.getElementById('sync').style.background='#ef4444';}
@@ -2497,7 +2499,9 @@ function renderAnbieter(){
 
   // Action buttons (hide when in trash view)
   if(vFilter !== 'Papierkorb'){
-    h += '<div style="display:flex;gap:8px;margin-bottom:14px">';
+    h += '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">';
+    h += '<button id="btn-csv-dl" style="font-size:13px;padding:8px 14px;border-radius:10px;border:1px solid var(--br);background:var(--sur);color:var(--t);font-family:inherit;font-weight:500;cursor:pointer">📥 CSV Vorlage</button>';
+    h += '<button id="btn-csv-import" style="font-size:13px;padding:8px 14px;border-radius:10px;border:1px solid var(--br);background:var(--sur);color:var(--t);font-family:inherit;font-weight:500;cursor:pointer">📤 CSV Import</button>';
     h += '<button data-body-action="open-vendor-modal" style="font-size:13px;padding:8px 14px;border-radius:10px;border:none;background:var(--rose);color:#fff;font-family:inherit;font-weight:600;cursor:pointer;margin-left:auto">+ Anbieter</button>';
     h += '</div>';
   } else {
@@ -3065,8 +3069,8 @@ onAuthStateChanged(auth,async(u)=>{
       await loadUsers();
       try{const bs=await getDoc(BD);if(bs.exists()){totalBudget=bs.data().total||0;catBudget=bs.data().catBudget||{};}}catch(e){}
       onSnapshot(DD,(snap)=>{
-        if(snap.exists()){const d=snap.data();tasks=d.tasks||DEFS;vendors=d.vendors||[];vnid=vendors.reduce((m,v)=>Math.max(m,v.id),0)+1;wDate=d.weddingDate||'';tmpls=d.templates||[];budgetHistory=d.budgetHistory||[];vendorCriteria=d.vendorCriteria||vendorCriteria;nid=tasks.reduce((m,t)=>Math.max(m,t.id),0)+1;document.getElementById('sync').style.background='#34c759';checkMentions();render();}
-        else{tasks=DEFS;save();}
+        if(snap.exists()){const d=snap.data();tasks=d.tasks||DEFS;vendors=d.vendors||[];vnid=vendors.reduce((m,v)=>Math.max(m,v.id),0)+1;wDate=d.weddingDate||'';tmpls=d.templates||[];budgetHistory=d.budgetHistory||[];vendorCriteria=d.vendorCriteria||vendorCriteria;nid=tasks.reduce((m,t)=>Math.max(m,t.id),0)+1;dataLoaded=true;document.getElementById('sync').style.background='#34c759';checkMentions();render();}
+        else{dataLoaded=true;tasks=DEFS;save();}
       });
       if(tab==='home')tab='aufgaben';
     }
