@@ -2968,6 +2968,114 @@ function downloadCSVTemplate(){
   a2.href = URL.createObjectURL(blob);
   a2.download = 'anbieter_vorlage.csv';
   a2.click();
+  // Show AI tip dialog
+  showCSVTipDialog();
+}
+
+function showCSVTipDialog(){
+  var existing = document.getElementById('csv-tip-overlay');
+  if(existing) existing.remove();
+
+  var allCats = ['Location','Catering','Fotografie','Musik','Dekoration','Kleidung','Einladungen','Flitterwochen','Sonstiges'];
+  // Pre-select current filter if active, otherwise none
+  var selectedCats = (vFilter && vFilter !== 'Alle' && vFilter !== 'Papierkorb') ? [vFilter] : [];
+
+  function buildPrompt(){
+    var catList = selectedCats.length > 0 ? selectedCats.join(', ') : 'Location, Catering, Fotografie, Musik, Dekoration, Kleidung';
+    var countHint = selectedCats.length === 1 ? '5-8' : '3-5';
+    return 'Erstelle mir eine CSV-Tabelle mit Hochzeitsanbietern in Rödental 96472 und Umgebung für folgende Kategorie(n): ' + catList + '.\n\n'
+      + 'Die CSV soll diese Spalten haben (mit Semikolon als Trennzeichen):\n'
+      + 'Name;Kategorie;Preis;Bewertung;Status;Website;Kontakt_Name;Kontakt_Email;Kontakt_Telefon;Notizen\n\n'
+      + 'Kategorie muss exakt eine davon sein: ' + allCats.join(', ') + '.\n'
+      + 'Status muss exakt sein: In Prüfung\n'
+      + 'Bewertung: leer lassen\n'
+      + 'Preis: geschätzter Durchschnittspreis in Euro (nur Zahl)\n\n'
+      + 'Bitte ' + countHint + ' echte Anbieter pro Kategorie mit echten Websites und Kontaktdaten (soweit öffentlich verfügbar). Gib die Daten als reine CSV aus, ohne Erklärung.';
+  }
+
+  function updateDialog(){
+    // Update chips
+    var chips = overlay.querySelectorAll('.csv-cat-chip');
+    chips.forEach(function(chip){
+      var cat = chip.dataset.cat;
+      var isOn = selectedCats.indexOf(cat) > -1;
+      chip.style.background = isOn ? 'var(--rose,#e91e8c)' : 'var(--bg,#f5f5f5)';
+      chip.style.color = isOn ? '#fff' : 'var(--t2,#666)';
+      chip.style.borderColor = isOn ? 'var(--rose,#e91e8c)' : 'var(--br,#e0e0e0)';
+    });
+    // Update prompt text
+    var promptEl = document.getElementById('csv-tip-prompt');
+    if(promptEl) promptEl.textContent = buildPrompt();
+  }
+
+  function copyPrompt(){
+    navigator.clipboard.writeText(buildPrompt()).then(function(){
+      var btn = document.getElementById('csv-tip-copy');
+      btn.textContent = '✅ Kopiert!';
+      btn.style.background = '#34c759';
+      setTimeout(function(){ btn.textContent = '📋 Prompt kopieren'; btn.style.background = 'var(--rose,#e91e8c)'; }, 2000);
+    });
+  }
+
+  var overlay = document.createElement('div');
+  overlay.id = 'csv-tip-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)';
+
+  var box = document.createElement('div');
+  box.style.cssText = 'background:var(--sur,#fff);border-radius:20px;padding:24px;max-width:500px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);position:relative';
+
+  // Build category chips HTML
+  var chipsHtml = '';
+  allCats.forEach(function(cat){
+    var isOn = selectedCats.indexOf(cat) > -1;
+    chipsHtml += '<button class="csv-cat-chip" data-cat="' + cat + '" style="padding:6px 14px;border-radius:20px;border:1.5px solid '
+      + (isOn ? 'var(--rose,#e91e8c)' : 'var(--br,#e0e0e0)') + ';background:'
+      + (isOn ? 'var(--rose,#e91e8c)' : 'var(--bg,#f5f5f5)') + ';color:'
+      + (isOn ? '#fff' : 'var(--t2,#666)') + ';font-size:13px;font-family:inherit;font-weight:500;cursor:pointer;transition:all .15s">' + cat + '</button>';
+  });
+
+  box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
+    + '<div style="font-size:18px;font-weight:700">💡 Anbieter mit KI generieren</div>'
+    + '<button id="csv-tip-close" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--t3,#999);padding:4px">✕</button>'
+    + '</div>'
+    + '<p style="font-size:14px;color:var(--t2,#666);line-height:1.5;margin-bottom:14px">'
+    + 'Nutze <strong>ChatGPT / Claude</strong> um eine Anbieterliste zu generieren. Wähle die gewünschten Kategorien:</p>'
+    + '<div style="font-size:13px;font-weight:600;color:var(--t,#333);margin-bottom:8px">Kategorien auswählen:</div>'
+    + '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">' + chipsHtml + '</div>'
+    + '<div style="font-size:11px;color:var(--t3,#999);margin-bottom:14px">'
+    + (selectedCats.length === 0 ? 'Keine Auswahl = alle Hauptkategorien' : selectedCats.length + ' Kategorie(n) ausgewählt') + '</div>'
+    + '<div style="font-size:13px;font-weight:600;color:var(--t,#333);margin-bottom:8px">📋 Generierter Prompt:</div>'
+    + '<div id="csv-tip-prompt" style="background:var(--bg,#f5f5f5);border-radius:12px;padding:14px;font-size:12px;line-height:1.6;color:var(--t2,#666);font-family:monospace;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;border:1px solid var(--br,#e0e0e0);cursor:pointer" title="Klicken zum Kopieren">' + buildPrompt() + '</div>'
+    + '<button id="csv-tip-copy" style="margin-top:12px;width:100%;padding:12px;border-radius:12px;border:none;background:var(--rose,#e91e8c);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">📋 Prompt kopieren</button>'
+    + '<div style="margin-top:16px;padding:14px;background:rgba(52,199,89,.08);border-radius:12px;border:1px solid rgba(52,199,89,.2)">'
+    + '<div style="font-size:13px;font-weight:600;color:var(--sage,#34c759);margin-bottom:6px">So geht\'s:</div>'
+    + '<ol style="font-size:13px;color:var(--t2,#666);line-height:1.7;padding-left:18px;margin:0">'
+    + '<li>Prompt kopieren & in ChatGPT oder Claude einfügen</li>'
+    + '<li>Die generierte CSV als <strong>.csv Datei</strong> speichern</li>'
+    + '<li>Hier über <strong>CSV Import</strong> hochladen</li>'
+    + '</ol></div>';
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  // Event listeners
+  overlay.addEventListener('click', function(e){ if(e.target === overlay) overlay.remove(); });
+  document.getElementById('csv-tip-close').addEventListener('click', function(){ overlay.remove(); });
+  document.getElementById('csv-tip-copy').addEventListener('click', copyPrompt);
+  document.getElementById('csv-tip-prompt').addEventListener('click', copyPrompt);
+
+  // Category chip toggle listeners
+  overlay.querySelectorAll('.csv-cat-chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      var cat = chip.dataset.cat;
+      var idx = selectedCats.indexOf(cat);
+      if(idx > -1){ selectedCats.splice(idx, 1); } else { selectedCats.push(cat); }
+      // Update hint text
+      var hintEl = chip.parentElement.nextElementSibling;
+      if(hintEl) hintEl.textContent = selectedCats.length === 0 ? 'Keine Auswahl = alle Hauptkategorien' : selectedCats.length + ' Kategorie(n) ausgewählt';
+      updateDialog();
+    });
+  });
 }
 
 async function importCSVFile(){
