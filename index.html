@@ -1197,7 +1197,7 @@ function openTaskPopup(t){
   html+=`<div class="sheet2-actions">
     ${canChk?`<button class="sheet2-btn-primary" onclick="togAndClose(${t.id})">${t.done?'↩ Wiedereröffnen':'✓ Erledigt'}</button>`:''}
     ${t.due&&!t.trashed?`<button class="sheet2-btn-ghost" data-action="cal" data-id="${t.id}">📅</button>`:''}
-    ${t.trashed?`<button class="sheet2-btn-ghost" data-popup-restore="${t.id}">↩ Wiederherstellen</button>`:(isA?`<button class="sheet2-btn-danger" data-popup-trash="${t.id}">🗑 Papierkorb</button>`:'')}
+    ${t.trashed?`<button class="sheet2-btn-ghost" data-popup-restore="${t.id}">↩ Wiederherstellen</button><button class="sheet2-btn-danger" data-popup-delete-final="${t.id}">✕ Endgültig löschen</button>`:(isA?`<button class="sheet2-btn-danger" data-popup-trash="${t.id}">🗑 Papierkorb</button>`:'')}
   </div>`;
 
   document.getElementById('popup-content').innerHTML=html;
@@ -1286,6 +1286,14 @@ function openTaskPopup(t){
     const id=parseInt(restBtn.dataset.popupRestore);
     const tt=tasks.find(x=>x.id===id);if(!tt)return;
     delete tt.trashed;delete tt.trashedAt;
+    await save();document.getElementById('task-popup').classList.remove('open');render();
+  });}
+  // Endgültig löschen button in popup
+  const delFinalBtn=pc.querySelector('[data-popup-delete-final]');
+  if(delFinalBtn){delFinalBtn.addEventListener('click',async()=>{
+    const id=parseInt(delFinalBtn.dataset.popupDeleteFinal);
+    if(!confirm('Endgültig löschen? Kann nicht rückgängig gemacht werden.'))return;
+    tasks=tasks.filter(x=>x.id!==id);
     await save();document.getElementById('task-popup').classList.remove('open');render();
   });}
 }
@@ -1900,11 +1908,11 @@ function renderPapierkorb(){
     a.innerHTML=h+'<div class="empty"><div class="ei">🗑</div><p>Papierkorb ist leer.</p></div>';
     return;
   }
-  h+=`<div style="display:flex;justify-content:flex-end;margin-bottom:12px"><a href="#trash-empty" style="font-size:13px;padding:8px 16px;border-radius:10px;border:none;background:#ef4444;color:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;text-decoration:none;display:inline-block">🗑 Papierkorb leeren</a></div>`;
+  h+=`<div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button data-action="empty-trash" style="font-size:13px;padding:8px 16px;border-radius:10px;border:none;background:#ef4444;color:#fff;cursor:pointer;font-family:inherit;font-weight:600">🗑 Papierkorb leeren</button></div>`;
   h+=trashed.map(t=>{
     const names=(t.assignees||[]).join(', ');
     const date=t.trashedAt?new Date(t.trashedAt).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
-    return`<div class="tc" style="opacity:.65;border-style:dashed">
+    return`<div class="tc" style="opacity:.65;border-style:dashed;cursor:pointer" data-action="open-task" data-id="${t.id}">
       <div class="tc-row">
         <div style="width:26px;height:26px;border-radius:50%;background:var(--bg);border:2px solid var(--brm);flex-shrink:0;margin-top:1px"></div>
         <div style="flex:1">
@@ -1914,10 +1922,7 @@ function renderPapierkorb(){
             <span class="chip cat">${t.cat}</span>
             ${date?`<span class="chip due">entfernt ${date}</span>`:''}
           </div>
-          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-            <a href="#trash-restore-${t.id}" style="font-size:12px;padding:6px 14px;border-radius:8px;border:1px solid var(--brm);background:var(--bg);color:var(--t2);cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;display:inline-block">↩ Wiederherstellen</a>
-            <a href="#trash-delete-${t.id}" style="font-size:12px;padding:6px 14px;border-radius:8px;border:1px solid #ef4444;background:#fff0f0;color:#ef4444;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;display:inline-block">✕ Endgültig löschen</a>
-          </div>
+          <div style="margin-top:8px;font-size:12px;color:var(--t3)">Tippen zum Wiederherstellen oder Löschen</div>
         </div>
         <div class="pdot niedrig"></div>
       </div>
