@@ -142,14 +142,14 @@
       background:rgba(255,255,255,.9);
       backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
       border-bottom:1px solid var(--br);
-      padding:calc(var(--st)+12px) 16px 0;
+      padding:calc(var(--st, 0px) + 10px) 16px 10px;
       flex-shrink:0;
     }
-    .mhdr-top{display:flex;align-items:center;justify-content:space-between;padding-bottom:12px}
+    .mhdr-top{display:flex;align-items:center;justify-content:space-between;min-height:44px}
     .mhdr-top h1{font-family:'Lora',serif;font-size:20px;font-weight:600;color:var(--t);letter-spacing:-.2px}
     .mhdr-sub{font-size:12px;color:var(--t3);margin-top:1px}
-    .mhdr-acts{display:flex;gap:8px;align-items:center}
-    .hdr-btn{width:34px;height:34px;border-radius:50%;background:rgba(120,120,128,.1);border:none;color:var(--t2);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;position:relative}
+    .mhdr-acts{display:flex;gap:8px;align-items:center;height:34px}
+    .hdr-btn{width:34px;height:34px;border-radius:50%;background:rgba(120,120,128,.1);border:none;color:var(--t2);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;position:relative;padding:0;box-sizing:border-box;line-height:1}
     .rbadge{font-size:11px;font-weight:600;padding:3px 8px;border-radius:8px;background:rgba(120,120,128,.12);color:var(--t2)}
     .notif-dot{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:var(--red);display:none}
 
@@ -210,7 +210,7 @@
       #drawer-overlay,#mobile-drawer{display:none!important}
     }
     /* hamburger button */
-    .hamburger{display:flex;flex-direction:column;gap:4px;justify-content:center;align-items:center;width:34px;height:34px;border-radius:10px;border:none;background:rgba(120,120,128,.1);cursor:pointer;padding:8px}
+    .hamburger{display:flex;flex-direction:column;gap:4px;justify-content:center;align-items:center;width:34px;height:34px;border-radius:10px;border:none;background:rgba(120,120,128,.1);cursor:pointer;padding:0;box-sizing:border-box}
     .hamburger span{display:block;width:16px;height:2px;background:var(--t2);border-radius:1px;transition:all .2s}
 
     /* ── ALERTS ── */
@@ -735,11 +735,11 @@
   <!-- MOBILE HEADER -->
   <div id="mobile-header">
     <div class="mhdr-top">
-      <div style="display:flex;align-items:center;gap:10px">
+      <div style="display:flex;align-items:center;gap:10px;height:34px">
         <button class="hamburger" id="hamburger-btn" onclick="openDrawer()">
           <span></span><span></span><span></span>
         </button>
-        <div><div class="mhdr-title" id="page-title" style="font-size:17px;font-weight:700;letter-spacing:-.2px">Home</div></div>
+        <div class="mhdr-title" id="page-title" style="font-size:17px;font-weight:700;letter-spacing:-.2px;line-height:34px">Home</div>
       </div>
       <div class="mhdr-acts">
         <div id="sync" style="width:8px;height:8px;border-radius:50%;background:rgba(120,120,128,.2);flex-shrink:0;display:none"></div>
