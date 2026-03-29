@@ -2041,6 +2041,10 @@ document.body.addEventListener('click',async function(e){
     if(!confirm('Alle Anbieter im Papierkorb endgültig löschen?'))return;
     vendors=vendors.filter(x=>!x.trashed);
     await save();renderAnbieter();
+  } else if(action==='empty-guest-trash'){
+    if(!confirm('Alle Gäste im Papierkorb endgültig löschen?'))return;
+    guests=guests.filter(x=>!x.trashed);
+    await save();renderGaeste();
   } else if(action==='open-task'){
     const t=tasks.find(x=>x.id===id);if(t)openTaskPopup(t);
   } else if(action==='tog-task'){
@@ -2085,9 +2089,21 @@ document.body.addEventListener('click',async function(e){
 
 
 // ── GÄSTELISTE ──
+const REL_LABELS={3:'Hoch',2:'Mittel',1:'Niedrig'};
+const REL_FROM_LABEL={'Hoch':3,'Mittel':2,'Niedrig':1};
+
 function renderGaeste(){
   const a=document.getElementById('scroll');
-  const list=guests.filter(g=>{
+  const activeGuests=guests.filter(g=>!g.trashed);
+  const trashedGuests=guests.filter(g=>g.trashed);
+
+  // Check if showing trash view
+  if(guestFilter.status==='Papierkorb'){
+    renderGuestTrash(a,trashedGuests);
+    return;
+  }
+
+  const list=activeGuests.filter(g=>{
     if(guestFilter.von!=='Alle'&&g.von!==guestFilter.von)return false;
     if(guestFilter.beziehung!=='Alle'&&g.beziehung!==guestFilter.beziehung)return false;
     if(guestFilter.status!=='Alle'){
@@ -2099,23 +2115,23 @@ function renderGaeste(){
     return true;
   });
 
-  // Stats
-  const total=guests.length;
-  const zusagen=guests.filter(g=>g.status==='Zusage').length;
-  const absagen=guests.filter(g=>g.status==='Absage').length;
+  // Stats (only active guests)
+  const total=activeGuests.length;
+  const zusagen=activeGuests.filter(g=>g.status==='Zusage').length;
+  const absagen=activeGuests.filter(g=>g.status==='Absage').length;
   const offen=total-zusagen-absagen;
-  const luisaG=guests.filter(g=>g.von==='Luisa').length;
-  const nicoG=guests.filter(g=>g.von==='Nico').length;
-  const erwachsen=guests.filter(g=>g.altersklasse==='Erwachsen').length;
+  const luisaG=activeGuests.filter(g=>g.von==='Luisa').length;
+  const nicoG=activeGuests.filter(g=>g.von==='Nico').length;
+  const erwachsen=activeGuests.filter(g=>g.altersklasse==='Erwachsen').length;
   const kinder=total-erwachsen;
 
   // Beziehung counts
   const bezCounts={};
-  guests.forEach(g=>{const b=g.beziehung||'Sonstige';bezCounts[b]=(bezCounts[b]||0)+1;});
+  activeGuests.forEach(g=>{const b=g.beziehung||'Sonstige';bezCounts[b]=(bezCounts[b]||0)+1;});
 
   // Relevanz counts
   const relCounts={};
-  guests.forEach(g=>{const r=g.relevanz||'-';relCounts[r]=(relCounts[r]||0)+1;});
+  activeGuests.forEach(g=>{const r=REL_LABELS[g.relevanz]||'–';relCounts[r]=(relCounts[r]||0)+1;});
 
   const filterBtn=(label,key,val)=>{
     const active=guestFilter[key]===val;
@@ -2149,7 +2165,7 @@ function renderGaeste(){
     <summary style="font-size:14px;font-weight:600;cursor:pointer;color:var(--t)">Auswertung</summary>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
       <div>
-        <div style="font-size:12px;font-weight:600;color:var(--t3);margin-bottom:6px">Von</div>
+        <div style="font-size:12px;font-weight:600;color:var(--t3);margin-bottom:6px">Gast von</div>
         <div style="font-size:13px;color:var(--t)">Luisa: <strong>${luisaG}</strong></div>
         <div style="font-size:13px;color:var(--t)">Nico: <strong>${nicoG}</strong></div>
         <div style="font-size:13px;color:var(--t)">Gemeinsam: <strong>${total-luisaG-nicoG}</strong></div>
@@ -2165,7 +2181,7 @@ function renderGaeste(){
       </div>
       <div>
         <div style="font-size:12px;font-weight:600;color:var(--t3);margin-bottom:6px">Relevanz</div>
-        ${Object.entries(relCounts).sort((a,b)=>b[0]-a[0]).map(([k,v])=>`<div style="font-size:13px;color:var(--t)">Stufe ${k}: <strong>${v}</strong></div>`).join('')}
+        ${Object.entries(relCounts).map(([k,v])=>`<div style="font-size:13px;color:var(--t)">${k}: <strong>${v}</strong></div>`).join('')}
       </div>
     </div>
   </details>`;
@@ -2173,13 +2189,19 @@ function renderGaeste(){
   // Search
   h+=`<div style="margin-bottom:12px"><input type="text" placeholder="Gäste suchen..." value="${guestSearch.replace(/"/g,'&quot;')}" oninput="window._setGuestSearch(this.value)" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid var(--br);background:var(--c);font-size:14px;color:var(--t);box-sizing:border-box;font-family:inherit"/></div>`;
 
-  // Filters
-  h+=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">`;
+  // Filters with category labels
+  h+=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;align-items:center">`;
+  h+=`<span style="font-size:11px;font-weight:600;color:var(--t3);min-width:50px">Gast von</span>`;
   h+=filterBtn('Alle','von','Alle')+filterBtn('Luisa','von','Luisa')+filterBtn('Nico','von','Nico');
-  h+=`<span style="width:8px"></span>`;
+  h+=`</div>`;
+  h+=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;align-items:center">`;
+  h+=`<span style="font-size:11px;font-weight:600;color:var(--t3);min-width:50px">Beziehung</span>`;
   h+=filterBtn('Alle','beziehung','Alle')+filterBtn('Familie','beziehung','Familie')+filterBtn('Verwandt','beziehung','Verwandt')+filterBtn('Freunde','beziehung','Freunde');
-  h+=`<span style="width:8px"></span>`;
+  h+=`</div>`;
+  h+=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;align-items:center">`;
+  h+=`<span style="font-size:11px;font-weight:600;color:var(--t3);min-width:50px">Status</span>`;
   h+=filterBtn('Alle','status','Alle')+filterBtn('Offen','status','Offen')+filterBtn('Zusage','status','Zusage')+filterBtn('Absage','status','Absage');
+  h+=filterBtn(`Papierkorb${trashedGuests.length?' ('+trashedGuests.length+')':''}`,'status','Papierkorb');
   h+=`</div>`;
 
   // Action buttons
@@ -2197,7 +2219,6 @@ function renderGaeste(){
   }else{
     list.forEach(g=>{
       const statusColor=g.status==='Zusage'?'#34c759':g.status==='Absage'?'#ef4444':'#ff9500';
-      const statusLabel=g.status||'Offen';
       const statusBg=g.status==='Zusage'?'rgba(52,199,89,.1)':g.status==='Absage'?'rgba(239,68,68,.1)':'rgba(255,149,0,.1)';
       h+=`<div class="guest-card" data-gid="${g.id}" style="background:var(--c);border-radius:14px;padding:14px;margin-bottom:8px;cursor:pointer">
         <div style="display:flex;align-items:center;gap:12px">
@@ -2259,8 +2280,55 @@ function renderGaeste(){
   });
 }
 
+function renderGuestTrash(a,trashed){
+  let h=`<div style="padding:0 0 120px 0">`;
+  h+=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;align-items:center">`;
+  h+=`<span style="font-size:11px;font-weight:600;color:var(--t3);min-width:50px">Status</span>`;
+  h+=`<button class="fb" data-gf="status" data-gv="Alle" style="font-size:12px;padding:5px 12px;border-radius:20px;border:none;cursor:pointer;background:rgba(120,120,128,.12);color:var(--t2)">Alle</button>`;
+  h+=`<button class="fb on" data-gf="status" data-gv="Papierkorb" style="font-size:12px;padding:5px 12px;border-radius:20px;border:none;cursor:pointer;background:var(--rose);color:#fff">Papierkorb (${trashed.length})</button>`;
+  h+=`</div>`;
+
+  if(!trashed.length){
+    h+=`<div class="empty"><div class="ei">🗑</div><p>Papierkorb ist leer.</p></div>`;
+  }else{
+    h+=`<div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button data-action="empty-guest-trash" style="font-size:13px;padding:8px 16px;border-radius:10px;border:none;background:#ef4444;color:#fff;cursor:pointer;font-family:inherit;font-weight:600">🗑 Papierkorb leeren</button></div>`;
+    trashed.forEach(g=>{
+      const date=g.trashedAt?new Date(g.trashedAt).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+      h+=`<div class="guest-card" data-gid="${g.id}" style="background:var(--c);border-radius:14px;padding:14px;margin-bottom:8px;cursor:pointer;opacity:.65;border:1px dashed var(--br)">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:38px;height:38px;border-radius:50%;background:rgba(120,120,128,.08);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--t3);flex-shrink:0">${g.name?g.name[0].toUpperCase():'?'}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:15px;font-weight:600;color:var(--t3);text-decoration:line-through;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${g.name}</div>
+            <div style="display:flex;gap:6px;margin-top:3px;flex-wrap:wrap">
+              ${g.von?`<span style="font-size:11px;padding:2px 8px;border-radius:8px;background:rgba(120,120,128,.08);color:var(--t3)">${g.von}</span>`:''}
+              ${g.beziehung?`<span style="font-size:11px;padding:2px 8px;border-radius:8px;background:rgba(120,120,128,.08);color:var(--t3)">${g.beziehung}</span>`:''}
+              ${date?`<span style="font-size:11px;padding:2px 8px;border-radius:8px;background:rgba(239,68,68,.08);color:#ef4444">entfernt ${date}</span>`:''}
+            </div>
+            <div style="margin-top:4px;font-size:11px;color:var(--t3)">Tippen zum Wiederherstellen oder Löschen</div>
+          </div>
+        </div>
+      </div>`;
+    });
+  }
+  h+=`</div>`;
+  a.innerHTML=h;
+
+  // Filter buttons back
+  a.querySelectorAll('[data-gf]').forEach(btn=>{
+    btn.addEventListener('click',()=>{guestFilter[btn.dataset.gf]=btn.dataset.gv;renderGaeste();});
+  });
+  // Card click -> open popup (trashed)
+  a.querySelectorAll('.guest-card').forEach(card=>{
+    card.addEventListener('click',()=>{
+      const g=guests.find(x=>x.id===+card.dataset.gid);
+      if(g)openGuestPopup(g);
+    });
+  });
+}
+
 function openGuestPopup(g){
   const isNew=!g;
+  const isTrashed=g&&g.trashed;
   if(isNew)g={id:++gnid,name:'',von:'',beziehung:'',relevanz:3,altersklasse:'Erwachsen',status:'',notiz:'',updatedAt:Date.now(),updatedBy:firstName||'Unbekannt'};
 
   const ov=document.createElement('div');
@@ -2269,9 +2337,19 @@ function openGuestPopup(g){
   <div class="sheet2" style="max-width:500px">
     <div class="sheet2-handle"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div style="font-size:18px;font-weight:700;color:var(--t)">${isNew?'Neuer Gast':'Gast bearbeiten'}</div>
+      <div style="font-size:18px;font-weight:700;color:var(--t)">${isTrashed?g.name:isNew?'Neuer Gast':'Gast bearbeiten'}</div>
       <button class="gp-close" style="width:30px;height:30px;border-radius:50%;border:none;background:rgba(120,120,128,.12);color:var(--t3);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
     </div>
+    ${isTrashed?`
+    <div style="background:rgba(239,68,68,.06);border-radius:12px;padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;color:var(--t3)">Dieser Gast befindet sich im Papierkorb.</div>
+      ${g.trashedAt?`<div style="font-size:12px;color:var(--t3);margin-top:4px">Entfernt am ${new Date(g.trashedAt).toLocaleDateString('de-DE')}</div>`:''}
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="gp-restore" style="flex:1;padding:12px;border-radius:12px;border:none;background:var(--rose);color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">↩ Wiederherstellen</button>
+      <button class="gp-del-final" style="padding:12px 16px;border-radius:12px;border:none;background:rgba(239,68,68,.1);color:#ef4444;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">✕ Endgültig löschen</button>
+    </div>
+    `:`
     <div style="display:flex;flex-direction:column;gap:12px">
       <div>
         <label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:4px">Name</label>
@@ -2279,7 +2357,7 @@ function openGuestPopup(g){
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div>
-          <label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:4px">Von</label>
+          <label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:4px">Gast von</label>
           <select id="gp-von" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--br);background:var(--bg);font-size:14px;color:var(--t);font-family:inherit">
             <option value="">–</option>
             <option value="Luisa" ${g.von==='Luisa'?'selected':''}>Luisa</option>
@@ -2300,9 +2378,9 @@ function openGuestPopup(g){
         <div>
           <label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:4px">Relevanz</label>
           <select id="gp-rel" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--br);background:var(--bg);font-size:14px;color:var(--t);font-family:inherit">
-            <option value="3" ${g.relevanz==3?'selected':''}>3 – Hoch</option>
-            <option value="2" ${g.relevanz==2?'selected':''}>2 – Mittel</option>
-            <option value="1" ${g.relevanz==1?'selected':''}>1 – Niedrig</option>
+            <option value="3" ${g.relevanz==3?'selected':''}>Hoch</option>
+            <option value="2" ${g.relevanz==2?'selected':''}>Mittel</option>
+            <option value="1" ${g.relevanz==1?'selected':''}>Niedrig</option>
           </select>
         </div>
         <div>
@@ -2330,57 +2408,76 @@ function openGuestPopup(g){
     </div>
     <div style="display:flex;gap:8px;margin-top:16px">
       <button class="gp-save" style="flex:1;padding:12px;border-radius:12px;border:none;background:var(--rose);color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">${isNew?'Hinzufügen':'Speichern'}</button>
-      ${isNew?'':`<button class="gp-del" style="padding:12px 16px;border-radius:12px;border:none;background:rgba(239,68,68,.1);color:#ef4444;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">Löschen</button>`}
+      ${isNew?'':`<button class="gp-trash" style="padding:12px 16px;border-radius:12px;border:none;background:rgba(239,68,68,.1);color:#ef4444;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">🗑 Papierkorb</button>`}
     </div>
-    ${g.updatedAt?`<div style="text-align:center;margin-top:12px;font-size:11px;color:var(--t3)">${new Date(g.updatedAt).toLocaleDateString('de-DE')} ${new Date(g.updatedAt).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}${g.updatedBy?' · '+g.updatedBy:''}</div>`:''}
+    `}
+    ${g.updatedAt&&!isTrashed?`<div style="text-align:center;margin-top:12px;font-size:11px;color:var(--t3)">${new Date(g.updatedAt).toLocaleDateString('de-DE')} ${new Date(g.updatedAt).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}${g.updatedBy?' · '+g.updatedBy:''}</div>`:''}
   </div>`;
 
   document.body.appendChild(ov);
 
-  let currentStatus=g.status||'';
+  if(!isTrashed){
+    let currentStatus=g.status||'';
 
-  // Status buttons
-  ov.querySelectorAll('#gp-status-btns button').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      currentStatus=btn.dataset.st;
-      ov.querySelectorAll('#gp-status-btns button').forEach(b=>{
-        const st=b.dataset.st;
-        const isActive=st===currentStatus;
-        const col=st===''?'#ff9500':st==='Zusage'?'#34c759':'#ef4444';
-        b.style.border=`2px solid ${isActive?col:'var(--br)'}`;
-        b.style.background=isActive?col.replace(')',',0.1)').replace('rgb','rgba'):'transparent';
-        b.style.color=isActive?col:'var(--t3)';
+    // Status buttons
+    ov.querySelectorAll('#gp-status-btns button').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        currentStatus=btn.dataset.st;
+        ov.querySelectorAll('#gp-status-btns button').forEach(b=>{
+          const st=b.dataset.st;
+          const isActive=st===currentStatus;
+          const col=st===''?'#ff9500':st==='Zusage'?'#34c759':'#ef4444';
+          b.style.border=`2px solid ${isActive?col:'var(--br)'}`;
+          b.style.background=isActive?col.replace(')',',0.1)').replace('rgb','rgba'):'transparent';
+          b.style.color=isActive?col:'var(--t3)';
+        });
       });
     });
-  });
 
-  // Save
-  ov.querySelector('.gp-save').addEventListener('click',async()=>{
-    const name=ov.querySelector('#gp-name').value.trim();
-    if(!name){ov.querySelector('#gp-name').style.borderColor='#ef4444';return;}
-    g.name=name;
-    g.von=ov.querySelector('#gp-von').value;
-    g.beziehung=ov.querySelector('#gp-bez').value;
-    g.relevanz=parseInt(ov.querySelector('#gp-rel').value)||3;
-    g.altersklasse=ov.querySelector('#gp-age').value;
-    g.status=currentStatus;
-    g.notiz=ov.querySelector('#gp-notiz').value.trim();
-    g.updatedAt=Date.now();
-    g.updatedBy=firstName||'Unbekannt';
-    if(isNew)guests.push(g);
-    await save();
-    ov.remove();
-    renderGaeste();
-  });
+    // Save
+    ov.querySelector('.gp-save').addEventListener('click',async()=>{
+      const name=ov.querySelector('#gp-name').value.trim();
+      if(!name){ov.querySelector('#gp-name').style.borderColor='#ef4444';return;}
+      g.name=name;
+      g.von=ov.querySelector('#gp-von').value;
+      g.beziehung=ov.querySelector('#gp-bez').value;
+      g.relevanz=parseInt(ov.querySelector('#gp-rel').value)||3;
+      g.altersklasse=ov.querySelector('#gp-age').value;
+      g.status=currentStatus;
+      g.notiz=ov.querySelector('#gp-notiz').value.trim();
+      g.updatedAt=Date.now();
+      g.updatedBy=firstName||'Unbekannt';
+      if(isNew)guests.push(g);
+      await save();
+      ov.remove();
+      renderGaeste();
+    });
 
-  // Delete
-  ov.querySelector('.gp-del')?.addEventListener('click',async()=>{
-    if(!confirm('Gast wirklich löschen?'))return;
-    guests=guests.filter(x=>x.id!==g.id);
-    await save();
-    ov.remove();
-    renderGaeste();
-  });
+    // Move to trash
+    ov.querySelector('.gp-trash')?.addEventListener('click',async()=>{
+      g.trashed=true;g.trashedAt=Date.now();
+      await save();
+      ov.remove();
+      renderGaeste();
+    });
+  } else {
+    // Restore from trash
+    ov.querySelector('.gp-restore').addEventListener('click',async()=>{
+      delete g.trashed;delete g.trashedAt;
+      await save();
+      ov.remove();
+      renderGaeste();
+    });
+
+    // Delete permanently
+    ov.querySelector('.gp-del-final').addEventListener('click',async()=>{
+      if(!confirm('Endgültig löschen? Kann nicht rückgängig gemacht werden.'))return;
+      guests=guests.filter(x=>x.id!==g.id);
+      await save();
+      ov.remove();
+      renderGaeste();
+    });
+  }
 
   // Close
   ov.querySelector('.gp-close').addEventListener('click',()=>ov.remove());
