@@ -678,6 +678,15 @@
   </div>
 </div>
 
+<!-- GUEST POPUP (Sheet2) -->
+<div id="guest-popup" class="sheet2-overlay" style="z-index:8001">
+  <div class="sheet2-container" id="guest-popup-inner">
+    <div class="sheet2-handle-wrap"><div class="sheet2-handle"></div></div>
+    <div class="sheet2-header"><span></span><button class="sheet2-close" id="gp-close-btn">&times;</button></div>
+    <div class="sheet2-body" id="guest-popup-content"></div>
+  </div>
+</div>
+
 <!-- Auto-save indicator -->
 <div class="sheet2-saved-indicator" id="sheet2-saved">Gespeichert &#10003;</div>
 
@@ -2326,104 +2335,110 @@ function renderGuestTrash(a,trashed){
   });
 }
 
+function closeGuestPopup(){document.getElementById('guest-popup').classList.remove('open');}
+
 function openGuestPopup(g){
   const isNew=!g;
   const isTrashed=g&&g.trashed;
   if(isNew)g={id:++gnid,name:'',von:'',beziehung:'',relevanz:3,altersklasse:'Erwachsen',status:'',notiz:'',updatedAt:Date.now(),updatedBy:firstName||'Unbekannt'};
 
-  const ov=document.createElement('div');
-  ov.className='sheet-overlay open';
-  ov.innerHTML=`
-  <div class="sheet2" style="max-width:500px">
-    <div class="sheet2-handle"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div style="font-size:18px;font-weight:700;color:var(--t)">${isTrashed?g.name:isNew?'Neuer Gast':'Gast bearbeiten'}</div>
-      <button class="gp-close" style="width:30px;height:30px;border-radius:50%;border:none;background:rgba(120,120,128,.12);color:var(--t3);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
-    </div>
-    ${isTrashed?`
-    <div style="background:rgba(239,68,68,.06);border-radius:12px;padding:14px;margin-bottom:16px">
+  const popup=document.getElementById('guest-popup');
+  const pc=document.getElementById('guest-popup-content');
+  document.getElementById('gp-close-btn').onclick=closeGuestPopup;
+
+  let html='';
+
+  if(isTrashed){
+    html+=`<div class="sheet2-title-static">${g.name}</div>`;
+    html+=`<div style="background:rgba(239,68,68,.06);border-radius:12px;padding:14px;margin-bottom:16px">
       <div style="font-size:13px;color:var(--t3)">Dieser Gast befindet sich im Papierkorb.</div>
       ${g.trashedAt?`<div style="font-size:12px;color:var(--t3);margin-top:4px">Entfernt am ${new Date(g.trashedAt).toLocaleDateString('de-DE')}</div>`:''}
-    </div>
-    <div style="display:flex;gap:8px">
-      <button class="gp-restore" style="flex:1;padding:12px;border-radius:12px;border:none;background:var(--rose);color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">↩ Wiederherstellen</button>
-      <button class="gp-del-final" style="padding:12px 16px;border-radius:12px;border:none;background:rgba(239,68,68,.1);color:#ef4444;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">✕ Endgültig löschen</button>
-    </div>
-    `:`
-    <div style="display:flex;flex-direction:column;gap:12px">
-      <div>
-        <label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:4px">Name</label>
-        <input type="text" id="gp-name" value="${(g.name||'').replace(/"/g,'&quot;')}" placeholder="Name des Gastes" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--br);background:var(--bg);font-size:15px;color:var(--t);box-sizing:border-box;font-family:inherit"/>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div>
-          <label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:4px">Gast von</label>
-          <select id="gp-von" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--br);background:var(--bg);font-size:14px;color:var(--t);font-family:inherit">
-            <option value="">–</option>
-            <option value="Luisa" ${g.von==='Luisa'?'selected':''}>Luisa</option>
-            <option value="Nico" ${g.von==='Nico'?'selected':''}>Nico</option>
-          </select>
-        </div>
-        <div>
-          <label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:4px">Beziehung</label>
-          <select id="gp-bez" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--br);background:var(--bg);font-size:14px;color:var(--t);font-family:inherit">
-            <option value="">–</option>
-            <option value="Familie" ${g.beziehung==='Familie'?'selected':''}>Familie</option>
-            <option value="Verwandt" ${g.beziehung==='Verwandt'?'selected':''}>Verwandt</option>
-            <option value="Freunde" ${g.beziehung==='Freunde'?'selected':''}>Freunde</option>
-          </select>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div>
-          <label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:4px">Relevanz</label>
-          <select id="gp-rel" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--br);background:var(--bg);font-size:14px;color:var(--t);font-family:inherit">
-            <option value="3" ${g.relevanz==3?'selected':''}>Hoch</option>
-            <option value="2" ${g.relevanz==2?'selected':''}>Mittel</option>
-            <option value="1" ${g.relevanz==1?'selected':''}>Niedrig</option>
-          </select>
-        </div>
-        <div>
-          <label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:4px">Altersklasse</label>
-          <select id="gp-age" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--br);background:var(--bg);font-size:14px;color:var(--t);font-family:inherit">
-            <option value="Erwachsen" ${g.altersklasse==='Erwachsen'?'selected':''}>Erwachsen</option>
-            <option value="< 3" ${g.altersklasse==='< 3'?'selected':''}>< 3 Jahre</option>
-            <option value="< 8" ${g.altersklasse==='< 8'?'selected':''}>< 8 Jahre</option>
-            <option value="< 14" ${g.altersklasse==='< 14'?'selected':''}>< 14 Jahre</option>
-          </select>
-        </div>
-      </div>
-      <div>
-        <label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:4px">Status</label>
-        <div style="display:flex;gap:8px" id="gp-status-btns">
-          <button data-st="" style="flex:1;padding:10px;border-radius:10px;border:2px solid ${!g.status?'#ff9500':'var(--br)'};background:${!g.status?'rgba(255,149,0,.1)':'transparent'};color:${!g.status?'#ff9500':'var(--t3)'};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Offen</button>
-          <button data-st="Zusage" style="flex:1;padding:10px;border-radius:10px;border:2px solid ${g.status==='Zusage'?'#34c759':'var(--br)'};background:${g.status==='Zusage'?'rgba(52,199,89,.1)':'transparent'};color:${g.status==='Zusage'?'#34c759':'var(--t3)'};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Zusage</button>
-          <button data-st="Absage" style="flex:1;padding:10px;border-radius:10px;border:2px solid ${g.status==='Absage'?'#ef4444':'var(--br)'};background:${g.status==='Absage'?'rgba(239,68,68,.1)':'transparent'};color:${g.status==='Absage'?'#ef4444':'var(--t3)'};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Absage</button>
-        </div>
-      </div>
-      <div>
-        <label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:4px">Notiz</label>
-        <textarea id="gp-notiz" rows="2" placeholder="Optionale Notiz..." style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--br);background:var(--bg);font-size:14px;color:var(--t);box-sizing:border-box;font-family:inherit;resize:vertical">${(g.notiz||'').replace(/</g,'&lt;')}</textarea>
-      </div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:16px">
-      <button class="gp-save" style="flex:1;padding:12px;border-radius:12px;border:none;background:var(--rose);color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">${isNew?'Hinzufügen':'Speichern'}</button>
-      ${isNew?'':`<button class="gp-trash" style="padding:12px 16px;border-radius:12px;border:none;background:rgba(239,68,68,.1);color:#ef4444;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">🗑 Papierkorb</button>`}
-    </div>
-    `}
-    ${g.updatedAt&&!isTrashed?`<div style="text-align:center;margin-top:12px;font-size:11px;color:var(--t3)">${new Date(g.updatedAt).toLocaleDateString('de-DE')} ${new Date(g.updatedAt).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}${g.updatedBy?' · '+g.updatedBy:''}</div>`:''}
-  </div>`;
+    </div>`;
+    html+=`<div class="sheet2-actions">
+      <button class="sheet2-btn-primary gp-restore">↩ Wiederherstellen</button>
+      <button class="sheet2-btn-danger gp-del-final">✕ Endgültig löschen</button>
+    </div>`;
+  } else {
+    // Title
+    html+=`<input type="text" class="sheet2-title-input" id="gp-name" value="${(g.name||'').replace(/"/g,'&quot;')}" placeholder="Name des Gastes..."/>`;
 
-  document.body.appendChild(ov);
+    // Details section with chips
+    html+=`<div class="sheet2-section"><div class="sheet2-section-label">Details</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div>
+        <label style="font-size:12px;font-weight:500;color:var(--t3);display:block;margin-bottom:4px">Gast von</label>
+        <select id="gp-von" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--br);background:var(--bg);font-size:14px;color:var(--t);font-family:inherit">
+          <option value="">–</option>
+          <option value="Luisa" ${g.von==='Luisa'?'selected':''}>Luisa</option>
+          <option value="Nico" ${g.von==='Nico'?'selected':''}>Nico</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:500;color:var(--t3);display:block;margin-bottom:4px">Beziehung</label>
+        <select id="gp-bez" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--br);background:var(--bg);font-size:14px;color:var(--t);font-family:inherit">
+          <option value="">–</option>
+          <option value="Familie" ${g.beziehung==='Familie'?'selected':''}>Familie</option>
+          <option value="Verwandt" ${g.beziehung==='Verwandt'?'selected':''}>Verwandt</option>
+          <option value="Freunde" ${g.beziehung==='Freunde'?'selected':''}>Freunde</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:500;color:var(--t3);display:block;margin-bottom:4px">Relevanz</label>
+        <select id="gp-rel" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--br);background:var(--bg);font-size:14px;color:var(--t);font-family:inherit">
+          <option value="3" ${g.relevanz==3?'selected':''}>Hoch</option>
+          <option value="2" ${g.relevanz==2?'selected':''}>Mittel</option>
+          <option value="1" ${g.relevanz==1?'selected':''}>Niedrig</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:500;color:var(--t3);display:block;margin-bottom:4px">Altersklasse</label>
+        <select id="gp-age" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--br);background:var(--bg);font-size:14px;color:var(--t);font-family:inherit">
+          <option value="Erwachsen" ${g.altersklasse==='Erwachsen'?'selected':''}>Erwachsen</option>
+          <option value="< 3" ${g.altersklasse==='< 3'?'selected':''}>< 3 Jahre</option>
+          <option value="< 8" ${g.altersklasse==='< 8'?'selected':''}>< 8 Jahre</option>
+          <option value="< 14" ${g.altersklasse==='< 14'?'selected':''}>< 14 Jahre</option>
+        </select>
+      </div>
+    </div></div>`;
+
+    // Status section
+    html+=`<div class="sheet2-section"><div class="sheet2-section-label">Status</div>
+    <div style="display:flex;gap:8px" id="gp-status-btns">
+      <button data-st="" style="flex:1;padding:10px;border-radius:10px;border:2px solid ${!g.status?'#ff9500':'var(--br)'};background:${!g.status?'rgba(255,149,0,.1)':'transparent'};color:${!g.status?'#ff9500':'var(--t3)'};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Offen</button>
+      <button data-st="Zusage" style="flex:1;padding:10px;border-radius:10px;border:2px solid ${g.status==='Zusage'?'#34c759':'var(--br)'};background:${g.status==='Zusage'?'rgba(52,199,89,.1)':'transparent'};color:${g.status==='Zusage'?'#34c759':'var(--t3)'};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Zusage</button>
+      <button data-st="Absage" style="flex:1;padding:10px;border-radius:10px;border:2px solid ${g.status==='Absage'?'#ef4444':'var(--br)'};background:${g.status==='Absage'?'rgba(239,68,68,.1)':'transparent'};color:${g.status==='Absage'?'#ef4444':'var(--t3)'};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Absage</button>
+    </div></div>`;
+
+    // Notiz section
+    html+=`<div class="sheet2-section"><div class="sheet2-section-label">Notiz</div>
+    <textarea id="gp-notiz" rows="2" placeholder="Optionale Notiz..." style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--br);background:var(--bg);font-size:14px;color:var(--t);box-sizing:border-box;font-family:inherit;resize:vertical">${(g.notiz||'').replace(/</g,'&lt;')}</textarea></div>`;
+
+    // Action buttons
+    html+=`<div class="sheet2-actions">
+      <button class="sheet2-btn-primary gp-save">${isNew?'Hinzufügen':'Speichern'}</button>
+      ${isNew?'':`<button class="sheet2-btn-danger gp-trash">🗑 Papierkorb</button>`}
+    </div>`;
+
+    // Timestamp
+    if(g.updatedAt){
+      html+=`<div style="text-align:center;margin-top:12px;font-size:11px;color:var(--t3)">${new Date(g.updatedAt).toLocaleDateString('de-DE')} ${new Date(g.updatedAt).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}${g.updatedBy?' · '+g.updatedBy:''}</div>`;
+    }
+  }
+
+  pc.innerHTML=html;
+  popup.classList.add('open');
+
+  // Click overlay to close
+  popup.onclick=(e)=>{if(e.target===popup)closeGuestPopup();};
 
   if(!isTrashed){
     let currentStatus=g.status||'';
 
     // Status buttons
-    ov.querySelectorAll('#gp-status-btns button').forEach(btn=>{
+    pc.querySelectorAll('#gp-status-btns button').forEach(btn=>{
       btn.addEventListener('click',()=>{
         currentStatus=btn.dataset.st;
-        ov.querySelectorAll('#gp-status-btns button').forEach(b=>{
+        pc.querySelectorAll('#gp-status-btns button').forEach(b=>{
           const st=b.dataset.st;
           const isActive=st===currentStatus;
           const col=st===''?'#ff9500':st==='Zusage'?'#34c759':'#ef4444';
@@ -2435,53 +2450,49 @@ function openGuestPopup(g){
     });
 
     // Save
-    ov.querySelector('.gp-save').addEventListener('click',async()=>{
-      const name=ov.querySelector('#gp-name').value.trim();
-      if(!name){ov.querySelector('#gp-name').style.borderColor='#ef4444';return;}
+    pc.querySelector('.gp-save').addEventListener('click',async()=>{
+      const name=pc.querySelector('#gp-name').value.trim();
+      if(!name){pc.querySelector('#gp-name').style.borderColor='#ef4444';return;}
       g.name=name;
-      g.von=ov.querySelector('#gp-von').value;
-      g.beziehung=ov.querySelector('#gp-bez').value;
-      g.relevanz=parseInt(ov.querySelector('#gp-rel').value)||3;
-      g.altersklasse=ov.querySelector('#gp-age').value;
+      g.von=pc.querySelector('#gp-von').value;
+      g.beziehung=pc.querySelector('#gp-bez').value;
+      g.relevanz=parseInt(pc.querySelector('#gp-rel').value)||3;
+      g.altersklasse=pc.querySelector('#gp-age').value;
       g.status=currentStatus;
-      g.notiz=ov.querySelector('#gp-notiz').value.trim();
+      g.notiz=pc.querySelector('#gp-notiz').value.trim();
       g.updatedAt=Date.now();
       g.updatedBy=firstName||'Unbekannt';
       if(isNew)guests.push(g);
       await save();
-      ov.remove();
+      closeGuestPopup();
       renderGaeste();
     });
 
     // Move to trash
-    ov.querySelector('.gp-trash')?.addEventListener('click',async()=>{
+    pc.querySelector('.gp-trash')?.addEventListener('click',async()=>{
       g.trashed=true;g.trashedAt=Date.now();
       await save();
-      ov.remove();
+      closeGuestPopup();
       renderGaeste();
     });
   } else {
     // Restore from trash
-    ov.querySelector('.gp-restore').addEventListener('click',async()=>{
+    pc.querySelector('.gp-restore').addEventListener('click',async()=>{
       delete g.trashed;delete g.trashedAt;
       await save();
-      ov.remove();
+      closeGuestPopup();
       renderGaeste();
     });
 
     // Delete permanently
-    ov.querySelector('.gp-del-final').addEventListener('click',async()=>{
+    pc.querySelector('.gp-del-final').addEventListener('click',async()=>{
       if(!confirm('Endgültig löschen? Kann nicht rückgängig gemacht werden.'))return;
       guests=guests.filter(x=>x.id!==g.id);
       await save();
-      ov.remove();
+      closeGuestPopup();
       renderGaeste();
     });
   }
-
-  // Close
-  ov.querySelector('.gp-close').addEventListener('click',()=>ov.remove());
-  ov.addEventListener('click',(e)=>{if(e.target===ov)ov.remove();});
 }
 
 function importGuestCSV(){
