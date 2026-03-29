@@ -834,9 +834,11 @@ const UC=collection(db,'users');
 let tasks=[],vendors=[],wDate='',tmpls=[],nid=1,vnid=1,user=null,role='gast',firstName='',flt='alle',tab='home';
 let allUsers=[],totalBudget=0,catBudget={};
 let taskSort='none',taskView='liste',budgetHistory=[];
-let taskSearch='',vendorSearch='';
+let taskSearch='',vendorSearch='',guestSearch='';
+let guests=[];let guestFilter={von:'Alle',beziehung:'Alle',status:'Alle'};let gnid=1;
 window._setTaskSearch=function(v){taskSearch=v;render();};
 window._setVendorSearch=function(v){vendorSearch=v;renderAnbieter();};
+window._setGuestSearch=function(v){guestSearch=v;renderGaeste();};
 let vendorCriteria={
   Location:['Preis-Leistung','Erreichbarkeit','Sympathie','Flexibilität','Lage','Kapazität','Ambiente','Parkmöglichkeiten'],
   Catering:['Preis-Leistung','Erreichbarkeit','Sympathie','Flexibilität','Geschmack','Menüauswahl','Allergiker-Optionen','Präsentation'],
@@ -873,6 +875,8 @@ const TPLS=[
   {id:'std',ico:'🏛️',name:'Standesamt & Kirche',ts:['Standesamt kontaktieren','Unterlagen zusammenstellen','Termin beim Standesamt buchen','Traugespräch (kirchlich)','Kirchliche Trauung anmelden','Ehevertrag prüfen/erstellen','Namensänderung planen','Trauzeugen offiziell benennen']},
 ];
 
+const GUEST_SEED=[{id:1,name:"Lulu",von:"",beziehung:"",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:2,name:"Noggi",von:"",beziehung:"",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:3,name:"Bettina Kiesewetter",von:"Luisa",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:4,name:"Andreas Kiesewetter",von:"Luisa",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:5,name:"Julia Kiesewetter",von:"Luisa",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:6,name:"GiGi S.",von:"Luisa",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:7,name:"Dany Hildebrandt",von:"Nico",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:8,name:"Andy Hildebrandt",von:"Nico",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:9,name:"Jan Hildebrandt",von:"Nico",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:10,name:"Lisa Lindner",von:"Nico",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:11,name:"Heidi Kiesewetter",von:"Luisa",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:12,name:"Uschi Hildebrandt",von:"Nico",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:13,name:"Dieter Hildebrandt",von:"Nico",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:14,name:"Christine Saller",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:15,name:"Luca Saller",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:16,name:"Saskia Grosch",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:17,name:"Max Grosch",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:18,name:"Freundin von Max",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:19,name:"Gerhard Reh",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:20,name:"Susi (??)",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:21,name:"Benni Reh",von:"Luisa",beziehung:"Verwandt",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:22,name:"Sybille Reh",von:"Luisa",beziehung:"Verwandt",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:23,name:"Johanna Wagner",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:24,name:"Josi Wagner",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:25,name:"Ann-Kathrin Wagner",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:26,name:"Freund von Ann-Kathrin",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:27,name:"Baby Wagner",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"< 3",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:28,name:"Sebastian Wagner",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:29,name:"Freundin von Sebastian",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:30,name:"Elfi",von:"Luisa",beziehung:"Verwandt",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:31,name:"Isabell",von:"Luisa",beziehung:"Verwandt",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:32,name:"Stefan",von:"Luisa",beziehung:"Verwandt",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:33,name:"Lea Renner",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:34,name:"Plus 1",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:35,name:"Maren Heublein",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:36,name:"Steffen Gundermann",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:37,name:"Celine Rosenbauer",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:38,name:"Tassilo Rosenbauer",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:39,name:"Tiara Rosenbauer",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"< 3",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:40,name:"Baby 2 Rosenbauer",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"< 3",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:41,name:"Julia Raps",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:42,name:"Julian Raps",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:43,name:"Aaron Raps",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"< 3",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:44,name:"Julia Seidel",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:45,name:"Robin (??)",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:46,name:"Franzi Wettels",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:47,name:"Marc Wettels",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:48,name:"Marie",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:49,name:"Plus 1",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:50,name:"Marco P\u00f6hn",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:51,name:"Anja P\u00f6hn",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:52,name:"Jula P\u00f6hn",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:53,name:"Lara P\u00f6hn",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:54,name:"Johann (??)",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:55,name:"Antje Ulbert",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:56,name:"Bernd (??)",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:57,name:"Thomas Hildebrandt",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:58,name:"Sandra Hildebrandt",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:59,name:"Sophie Hildebrandt",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:60,name:"Flo (??)",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:61,name:"Sarah Hildebrandt",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:62,name:"Markus Franz",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:63,name:"Annalena Franz",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:64,name:"Denise Franz",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:65,name:"Lia Franz",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"< 8",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:66,name:"Plus 1",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:67,name:"Jan Tuchan",von:"Nico",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:68,name:"Julian \u00dcberhack",von:"Nico",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:69,name:"Plus 1",von:"Nico",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:70,name:"Paul Wohlleben",von:"Nico",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:71,name:"Hanna Wohlleben",von:"Nico",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:72,name:"Yannick Weyhersm\u00fcller",von:"Nico",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:73,name:"Niklas Pomm\u00e9",von:"Nico",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:74,name:"Anna Pom\u00e9",von:"Nico",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:75,name:"Nico Holland",von:"Nico",beziehung:"Freunde",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:76,name:"Nathalie (??)",von:"Nico",beziehung:"Freunde",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:77,name:"Fabian H\u00f6hn",von:"Nico",beziehung:"Freunde",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:78,name:"Plus 1",von:"Nico",beziehung:"Freunde",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:79,name:"Andreas Morgenroth",von:"Nico",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:80,name:"Lucas Fischer",von:"Nico",beziehung:"Freunde",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:81,name:"Lorenzo R\u00fcger",von:"Nico",beziehung:"Freunde",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:82,name:"Plus 1",von:"Nico",beziehung:"Freunde",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"}];
+
 const fmt=d=>{if(!d)return'';const[y,m,day]=d.split('-');return`${day}.${m}.${y}`};
 const dl=d=>d?Math.ceil((new Date(d)-new Date())/86400000):null;
 const ini=n=>n?(n.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2)):'?';
@@ -882,7 +886,7 @@ const isAssigned=t=>t.assignees&&t.assignees.includes(firstName);
 async function save(){
   if(role==='gast')return;
   if(!dataLoaded){console.warn('save() blocked: data not yet loaded from Firebase');return;}
-  try{await setDoc(DD,{tasks,vendors,weddingDate:wDate,templates:tmpls,budgetHistory:budgetHistory||[],vendorCriteria:vendorCriteria,updatedAt:Date.now()});
+  try{await setDoc(DD,{tasks,vendors,guests,weddingDate:wDate,templates:tmpls,budgetHistory:budgetHistory||[],vendorCriteria:vendorCriteria,updatedAt:Date.now()});
   document.getElementById('sync').style.background='#4caf50';}
   catch(e){document.getElementById('sync').style.background='#ef4444';}
 }
@@ -899,7 +903,9 @@ window._weddingApp={
   getVendors:function(){return vendors;},
   setVendors:function(v){vendors=v;},
   setCatBudget:function(b){catBudget=b;},
-  setTotalBudget:function(b){totalBudget=b;}
+  setTotalBudget:function(b){totalBudget=b;},
+  getGuests:function(){return guests;},
+  setGuests:function(g){guests=g;}
 };
 
 async function loadUsers(){
@@ -958,6 +964,7 @@ const TAB_DEFS=[
   {id:'budget',ico:'💶',lbl:'Budget',roles:['admin']},
   {id:'nutzer',ico:'👥',lbl:'Nutzer',roles:['admin']},
   {id:'anbieter',ico:'🏪',lbl:'Anbieter',roles:['admin','mithelfer']},
+  {id:'gaeste',ico:'💒',lbl:'Gäste',roles:['admin','mithelfer']},
   {id:'info',ico:'⚙️',lbl:'Info',roles:['admin']},
 ];
 function getVisibleTabs(){return TAB_DEFS.filter(t=>t.always||(t.roles&&t.roles.includes(role)));}
@@ -1463,6 +1470,7 @@ function render(){
   }
   else if(tab==='meilensteine')renderMeilensteine();
   else if(tab==='anbieter')renderAnbieter();
+  else if(tab==='gaeste')renderGaeste();
   else if(tab==='budget')renderBudget();
   else if(tab==='papierkorb')renderPapierkorb();
   else if(tab==='nutzer')renderNutzer();
@@ -2075,6 +2083,363 @@ document.body.addEventListener('click',async function(e){
 });
 
 
+
+// ── GÄSTELISTE ──
+function renderGaeste(){
+  const a=document.getElementById('scroll');
+  const list=guests.filter(g=>{
+    if(guestFilter.von!=='Alle'&&g.von!==guestFilter.von)return false;
+    if(guestFilter.beziehung!=='Alle'&&g.beziehung!==guestFilter.beziehung)return false;
+    if(guestFilter.status!=='Alle'){
+      if(guestFilter.status==='Offen'&&g.status)return false;
+      if(guestFilter.status==='Zusage'&&g.status!=='Zusage')return false;
+      if(guestFilter.status==='Absage'&&g.status!=='Absage')return false;
+    }
+    if(guestSearch){const q=guestSearch.toLowerCase();if(!g.name.toLowerCase().includes(q))return false;}
+    return true;
+  });
+
+  // Stats
+  const total=guests.length;
+  const zusagen=guests.filter(g=>g.status==='Zusage').length;
+  const absagen=guests.filter(g=>g.status==='Absage').length;
+  const offen=total-zusagen-absagen;
+  const luisaG=guests.filter(g=>g.von==='Luisa').length;
+  const nicoG=guests.filter(g=>g.von==='Nico').length;
+  const erwachsen=guests.filter(g=>g.altersklasse==='Erwachsen').length;
+  const kinder=total-erwachsen;
+
+  // Beziehung counts
+  const bezCounts={};
+  guests.forEach(g=>{const b=g.beziehung||'Sonstige';bezCounts[b]=(bezCounts[b]||0)+1;});
+
+  // Relevanz counts
+  const relCounts={};
+  guests.forEach(g=>{const r=g.relevanz||'-';relCounts[r]=(relCounts[r]||0)+1;});
+
+  const filterBtn=(label,key,val)=>{
+    const active=guestFilter[key]===val;
+    return `<button class="fb${active?' on':''}" data-gf="${key}" data-gv="${val}" style="font-size:12px;padding:5px 12px;border-radius:20px;border:none;cursor:pointer;background:${active?'var(--rose)':'rgba(120,120,128,.12)'};color:${active?'#fff':'var(--t2)'}">${label}</button>`;
+  };
+
+  let h=`<div style="padding:0 0 120px 0">`;
+
+  // Stats cards
+  h+=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+    <div style="background:var(--c);border-radius:14px;padding:14px;text-align:center">
+      <div style="font-size:24px;font-weight:700;color:var(--t)">${total}</div>
+      <div style="font-size:11px;color:var(--t3)">Gesamt</div>
+    </div>
+    <div style="background:var(--c);border-radius:14px;padding:14px;text-align:center">
+      <div style="font-size:24px;font-weight:700;color:#34c759">${zusagen}</div>
+      <div style="font-size:11px;color:var(--t3)">Zusagen</div>
+    </div>
+    <div style="background:var(--c);border-radius:14px;padding:14px;text-align:center">
+      <div style="font-size:24px;font-weight:700;color:#ef4444">${absagen}</div>
+      <div style="font-size:11px;color:var(--t3)">Absagen</div>
+    </div>
+    <div style="background:var(--c);border-radius:14px;padding:14px;text-align:center">
+      <div style="font-size:24px;font-weight:700;color:#ff9500">${offen}</div>
+      <div style="font-size:11px;color:var(--t3)">Offen</div>
+    </div>
+  </div>`;
+
+  // Detail stats (collapsible)
+  h+=`<details style="background:var(--c);border-radius:14px;padding:14px;margin-bottom:16px">
+    <summary style="font-size:14px;font-weight:600;cursor:pointer;color:var(--t)">Auswertung</summary>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--t3);margin-bottom:6px">Von</div>
+        <div style="font-size:13px;color:var(--t)">Luisa: <strong>${luisaG}</strong></div>
+        <div style="font-size:13px;color:var(--t)">Nico: <strong>${nicoG}</strong></div>
+        <div style="font-size:13px;color:var(--t)">Gemeinsam: <strong>${total-luisaG-nicoG}</strong></div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--t3);margin-bottom:6px">Altersklasse</div>
+        <div style="font-size:13px;color:var(--t)">Erwachsen: <strong>${erwachsen}</strong></div>
+        <div style="font-size:13px;color:var(--t)">Kinder: <strong>${kinder}</strong></div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--t3);margin-bottom:6px">Beziehung</div>
+        ${Object.entries(bezCounts).map(([k,v])=>`<div style="font-size:13px;color:var(--t)">${k}: <strong>${v}</strong></div>`).join('')}
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--t3);margin-bottom:6px">Relevanz</div>
+        ${Object.entries(relCounts).sort((a,b)=>b[0]-a[0]).map(([k,v])=>`<div style="font-size:13px;color:var(--t)">Stufe ${k}: <strong>${v}</strong></div>`).join('')}
+      </div>
+    </div>
+  </details>`;
+
+  // Search
+  h+=`<div style="margin-bottom:12px"><input type="text" placeholder="Gäste suchen..." value="${guestSearch.replace(/"/g,'&quot;')}" oninput="window._setGuestSearch(this.value)" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid var(--br);background:var(--c);font-size:14px;color:var(--t);box-sizing:border-box;font-family:inherit"/></div>`;
+
+  // Filters
+  h+=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">`;
+  h+=filterBtn('Alle','von','Alle')+filterBtn('Luisa','von','Luisa')+filterBtn('Nico','von','Nico');
+  h+=`<span style="width:8px"></span>`;
+  h+=filterBtn('Alle','beziehung','Alle')+filterBtn('Familie','beziehung','Familie')+filterBtn('Verwandt','beziehung','Verwandt')+filterBtn('Freunde','beziehung','Freunde');
+  h+=`<span style="width:8px"></span>`;
+  h+=filterBtn('Alle','status','Alle')+filterBtn('Offen','status','Offen')+filterBtn('Zusage','status','Zusage')+filterBtn('Absage','status','Absage');
+  h+=`</div>`;
+
+  // Action buttons
+  h+=`<div style="display:flex;gap:8px;margin-bottom:16px">
+    <button id="btn-add-guest" style="flex:1;padding:10px;border-radius:12px;border:none;background:var(--rose);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">+ Gast hinzufügen</button>
+    <button id="btn-import-guests" style="padding:10px 16px;border-radius:12px;border:1px solid var(--br);background:var(--c);color:var(--t);font-size:13px;cursor:pointer;font-family:inherit">CSV Import</button>
+  </div>`;
+
+  // Count
+  h+=`<div style="font-size:12px;color:var(--t3);margin-bottom:10px">${list.length} von ${total} Gästen</div>`;
+
+  // Guest list
+  if(!list.length){
+    h+=`<div class="empty"><div class="ei">💒</div>Keine Gäste gefunden.</div>`;
+  }else{
+    list.forEach(g=>{
+      const statusColor=g.status==='Zusage'?'#34c759':g.status==='Absage'?'#ef4444':'#ff9500';
+      const statusLabel=g.status||'Offen';
+      const statusBg=g.status==='Zusage'?'rgba(52,199,89,.1)':g.status==='Absage'?'rgba(239,68,68,.1)':'rgba(255,149,0,.1)';
+      h+=`<div class="guest-card" data-gid="${g.id}" style="background:var(--c);border-radius:14px;padding:14px;margin-bottom:8px;cursor:pointer">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:38px;height:38px;border-radius:50%;background:${statusBg};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:${statusColor};flex-shrink:0">${g.name?g.name[0].toUpperCase():'?'}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:15px;font-weight:600;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${g.name}</div>
+            <div style="display:flex;gap:6px;margin-top:3px;flex-wrap:wrap">
+              ${g.von?`<span style="font-size:11px;padding:2px 8px;border-radius:8px;background:rgba(120,120,128,.08);color:var(--t3)">${g.von}</span>`:''}
+              ${g.beziehung?`<span style="font-size:11px;padding:2px 8px;border-radius:8px;background:rgba(120,120,128,.08);color:var(--t3)">${g.beziehung}</span>`:''}
+              ${g.altersklasse&&g.altersklasse!=='Erwachsen'?`<span style="font-size:11px;padding:2px 8px;border-radius:8px;background:rgba(255,149,0,.1);color:#ff9500">${g.altersklasse}</span>`:''}
+            </div>
+          </div>
+          <div style="display:flex;gap:4px;flex-shrink:0">
+            <button class="gbtn-z" data-gid="${g.id}" style="width:32px;height:32px;border-radius:50%;border:2px solid ${g.status==='Zusage'?'#34c759':'rgba(120,120,128,.2)'};background:${g.status==='Zusage'?'#34c759':'transparent'};color:${g.status==='Zusage'?'#fff':'rgba(120,120,128,.3)'};cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center" title="Zusage">✓</button>
+            <button class="gbtn-a" data-gid="${g.id}" style="width:32px;height:32px;border-radius:50%;border:2px solid ${g.status==='Absage'?'#ef4444':'rgba(120,120,128,.2)'};background:${g.status==='Absage'?'#ef4444':'transparent'};color:${g.status==='Absage'?'#fff':'rgba(120,120,128,.3)'};cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center" title="Absage">✗</button>
+          </div>
+        </div>
+      </div>`;
+    });
+  }
+
+  h+=`</div>`;
+  a.innerHTML=h;
+
+  // Event listeners
+  document.getElementById('btn-add-guest')?.addEventListener('click',()=>openGuestPopup());
+  document.getElementById('btn-import-guests')?.addEventListener('click',()=>importGuestCSV());
+
+  // Filter buttons
+  a.querySelectorAll('[data-gf]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      guestFilter[btn.dataset.gf]=btn.dataset.gv;
+      renderGaeste();
+    });
+  });
+
+  // Zusage/Absage buttons
+  a.querySelectorAll('.gbtn-z').forEach(btn=>{
+    btn.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      const g=guests.find(x=>x.id===+btn.dataset.gid);
+      if(g){g.status=g.status==='Zusage'?'':'Zusage';g.updatedAt=Date.now();g.updatedBy=firstName||'Unbekannt';save();renderGaeste();}
+    });
+  });
+  a.querySelectorAll('.gbtn-a').forEach(btn=>{
+    btn.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      const g=guests.find(x=>x.id===+btn.dataset.gid);
+      if(g){g.status=g.status==='Absage'?'':'Absage';g.updatedAt=Date.now();g.updatedBy=firstName||'Unbekannt';save();renderGaeste();}
+    });
+  });
+
+  // Card click -> open popup
+  a.querySelectorAll('.guest-card').forEach(card=>{
+    card.addEventListener('click',()=>{
+      const g=guests.find(x=>x.id===+card.dataset.gid);
+      if(g)openGuestPopup(g);
+    });
+  });
+}
+
+function openGuestPopup(g){
+  const isNew=!g;
+  if(isNew)g={id:++gnid,name:'',von:'',beziehung:'',relevanz:3,altersklasse:'Erwachsen',status:'',notiz:'',updatedAt:Date.now(),updatedBy:firstName||'Unbekannt'};
+
+  const ov=document.createElement('div');
+  ov.className='sheet-overlay open';
+  ov.innerHTML=`
+  <div class="sheet2" style="max-width:500px">
+    <div class="sheet2-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:18px;font-weight:700;color:var(--t)">${isNew?'Neuer Gast':'Gast bearbeiten'}</div>
+      <button class="gp-close" style="width:30px;height:30px;border-radius:50%;border:none;background:rgba(120,120,128,.12);color:var(--t3);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:4px">Name</label>
+        <input type="text" id="gp-name" value="${(g.name||'').replace(/"/g,'&quot;')}" placeholder="Name des Gastes" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--br);background:var(--bg);font-size:15px;color:var(--t);box-sizing:border-box;font-family:inherit"/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:4px">Von</label>
+          <select id="gp-von" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--br);background:var(--bg);font-size:14px;color:var(--t);font-family:inherit">
+            <option value="">–</option>
+            <option value="Luisa" ${g.von==='Luisa'?'selected':''}>Luisa</option>
+            <option value="Nico" ${g.von==='Nico'?'selected':''}>Nico</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:4px">Beziehung</label>
+          <select id="gp-bez" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--br);background:var(--bg);font-size:14px;color:var(--t);font-family:inherit">
+            <option value="">–</option>
+            <option value="Familie" ${g.beziehung==='Familie'?'selected':''}>Familie</option>
+            <option value="Verwandt" ${g.beziehung==='Verwandt'?'selected':''}>Verwandt</option>
+            <option value="Freunde" ${g.beziehung==='Freunde'?'selected':''}>Freunde</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:4px">Relevanz</label>
+          <select id="gp-rel" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--br);background:var(--bg);font-size:14px;color:var(--t);font-family:inherit">
+            <option value="3" ${g.relevanz==3?'selected':''}>3 – Hoch</option>
+            <option value="2" ${g.relevanz==2?'selected':''}>2 – Mittel</option>
+            <option value="1" ${g.relevanz==1?'selected':''}>1 – Niedrig</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:4px">Altersklasse</label>
+          <select id="gp-age" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--br);background:var(--bg);font-size:14px;color:var(--t);font-family:inherit">
+            <option value="Erwachsen" ${g.altersklasse==='Erwachsen'?'selected':''}>Erwachsen</option>
+            <option value="< 3" ${g.altersklasse==='< 3'?'selected':''}>< 3 Jahre</option>
+            <option value="< 8" ${g.altersklasse==='< 8'?'selected':''}>< 8 Jahre</option>
+            <option value="< 14" ${g.altersklasse==='< 14'?'selected':''}>< 14 Jahre</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:4px">Status</label>
+        <div style="display:flex;gap:8px" id="gp-status-btns">
+          <button data-st="" style="flex:1;padding:10px;border-radius:10px;border:2px solid ${!g.status?'#ff9500':'var(--br)'};background:${!g.status?'rgba(255,149,0,.1)':'transparent'};color:${!g.status?'#ff9500':'var(--t3)'};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Offen</button>
+          <button data-st="Zusage" style="flex:1;padding:10px;border-radius:10px;border:2px solid ${g.status==='Zusage'?'#34c759':'var(--br)'};background:${g.status==='Zusage'?'rgba(52,199,89,.1)':'transparent'};color:${g.status==='Zusage'?'#34c759':'var(--t3)'};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Zusage</button>
+          <button data-st="Absage" style="flex:1;padding:10px;border-radius:10px;border:2px solid ${g.status==='Absage'?'#ef4444':'var(--br)'};background:${g.status==='Absage'?'rgba(239,68,68,.1)':'transparent'};color:${g.status==='Absage'?'#ef4444':'var(--t3)'};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Absage</button>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:4px">Notiz</label>
+        <textarea id="gp-notiz" rows="2" placeholder="Optionale Notiz..." style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--br);background:var(--bg);font-size:14px;color:var(--t);box-sizing:border-box;font-family:inherit;resize:vertical">${(g.notiz||'').replace(/</g,'&lt;')}</textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="gp-save" style="flex:1;padding:12px;border-radius:12px;border:none;background:var(--rose);color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">${isNew?'Hinzufügen':'Speichern'}</button>
+      ${isNew?'':`<button class="gp-del" style="padding:12px 16px;border-radius:12px;border:none;background:rgba(239,68,68,.1);color:#ef4444;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">Löschen</button>`}
+    </div>
+    ${g.updatedAt?`<div style="text-align:center;margin-top:12px;font-size:11px;color:var(--t3)">${new Date(g.updatedAt).toLocaleDateString('de-DE')} ${new Date(g.updatedAt).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}${g.updatedBy?' · '+g.updatedBy:''}</div>`:''}
+  </div>`;
+
+  document.body.appendChild(ov);
+
+  let currentStatus=g.status||'';
+
+  // Status buttons
+  ov.querySelectorAll('#gp-status-btns button').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      currentStatus=btn.dataset.st;
+      ov.querySelectorAll('#gp-status-btns button').forEach(b=>{
+        const st=b.dataset.st;
+        const isActive=st===currentStatus;
+        const col=st===''?'#ff9500':st==='Zusage'?'#34c759':'#ef4444';
+        b.style.border=`2px solid ${isActive?col:'var(--br)'}`;
+        b.style.background=isActive?col.replace(')',',0.1)').replace('rgb','rgba'):'transparent';
+        b.style.color=isActive?col:'var(--t3)';
+      });
+    });
+  });
+
+  // Save
+  ov.querySelector('.gp-save').addEventListener('click',async()=>{
+    const name=ov.querySelector('#gp-name').value.trim();
+    if(!name){ov.querySelector('#gp-name').style.borderColor='#ef4444';return;}
+    g.name=name;
+    g.von=ov.querySelector('#gp-von').value;
+    g.beziehung=ov.querySelector('#gp-bez').value;
+    g.relevanz=parseInt(ov.querySelector('#gp-rel').value)||3;
+    g.altersklasse=ov.querySelector('#gp-age').value;
+    g.status=currentStatus;
+    g.notiz=ov.querySelector('#gp-notiz').value.trim();
+    g.updatedAt=Date.now();
+    g.updatedBy=firstName||'Unbekannt';
+    if(isNew)guests.push(g);
+    await save();
+    ov.remove();
+    renderGaeste();
+  });
+
+  // Delete
+  ov.querySelector('.gp-del')?.addEventListener('click',async()=>{
+    if(!confirm('Gast wirklich löschen?'))return;
+    guests=guests.filter(x=>x.id!==g.id);
+    await save();
+    ov.remove();
+    renderGaeste();
+  });
+
+  // Close
+  ov.querySelector('.gp-close').addEventListener('click',()=>ov.remove());
+  ov.addEventListener('click',(e)=>{if(e.target===ov)ov.remove();});
+}
+
+function importGuestCSV(){
+  const inp=document.createElement('input');
+  inp.type='file';inp.accept='.csv';
+  inp.onchange=async(e)=>{
+    const file=e.target.files[0];if(!file)return;
+    const text=await file.text();
+    const delim=text.includes(';')?';':',';
+    const lines=text.split('\n').filter(l=>l.trim());
+    if(lines.length<2){alert('CSV ist leer');return;}
+    const headers=lines[0].split(delim).map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase());
+
+    const nameIdx=headers.findIndex(h=>h==='name');
+    const vonIdx=headers.findIndex(h=>h==='von');
+    const bezIdx=headers.findIndex(h=>h==='beziehung');
+    const relIdx=headers.findIndex(h=>h==='relevanz');
+    const ageIdx=headers.findIndex(h=>h==='altersklasse');
+    const statusIdx=headers.findIndex(h=>h.includes('zusage')||h.includes('absage')||h==='status');
+    const notizIdx=headers.findIndex(h=>h==='notiz');
+
+    if(nameIdx===-1){alert('Spalte "Name" nicht gefunden');return;}
+
+    let added=0,skipped=0;
+    for(let i=1;i<lines.length;i++){
+      const cols=lines[i].split(delim).map(c=>c.trim().replace(/^"|"$/g,''));
+      const name=cols[nameIdx];
+      if(!name)continue;
+
+      // Check duplicate
+      const exists=guests.find(g=>g.name.toLowerCase()===name.toLowerCase());
+      if(exists){
+        if(!confirm(`"${name}" existiert bereits. Trotzdem hinzufügen?`)){skipped++;continue;}
+      }
+
+      guests.push({
+        id:++gnid,
+        name:name,
+        von:vonIdx>=0?cols[vonIdx]||'':'',
+        beziehung:bezIdx>=0?cols[bezIdx]||'':'',
+        relevanz:relIdx>=0?parseInt(cols[relIdx])||3:3,
+        altersklasse:ageIdx>=0?cols[ageIdx]||'Erwachsen':'Erwachsen',
+        status:statusIdx>=0?cols[statusIdx]||'':'',
+        notiz:notizIdx>=0?cols[notizIdx]||'':'',
+        updatedAt:Date.now(),
+        updatedBy:firstName||'Import'
+      });
+      added++;
+    }
+    await save();
+    alert(`${added} Gäste importiert${skipped?', '+skipped+' übersprungen':''}`);
+    renderGaeste();
+  };
+  inp.click();
+}
 
 function renderBudget(){
   const a=document.getElementById('scroll');
@@ -3305,7 +3670,7 @@ onAuthStateChanged(auth,async(u)=>{
       await loadUsers();
       try{const bs=await getDoc(BD);if(bs.exists()){totalBudget=bs.data().total||0;catBudget=bs.data().catBudget||{};}}catch(e){}
       onSnapshot(DD,(snap)=>{
-        if(snap.exists()){const d=snap.data();tasks=d.tasks||DEFS;vendors=d.vendors||[];vnid=vendors.reduce((m,v)=>Math.max(m,v.id),0)+1;wDate=d.weddingDate||'';tmpls=d.templates||[];budgetHistory=d.budgetHistory||[];vendorCriteria=d.vendorCriteria||vendorCriteria;nid=tasks.reduce((m,t)=>Math.max(m,t.id),0)+1;dataLoaded=true;document.getElementById('sync').style.background='#34c759';checkMentions();render();}
+        if(snap.exists()){const d=snap.data();tasks=d.tasks||DEFS;vendors=d.vendors||[];guests=d.guests||(GUEST_SEED.map(g=>({...g})));vnid=vendors.reduce((m,v)=>Math.max(m,v.id),0)+1;gnid=guests.reduce((m,g)=>Math.max(m,g.id),0)+1;wDate=d.weddingDate||'';tmpls=d.templates||[];budgetHistory=d.budgetHistory||[];vendorCriteria=d.vendorCriteria||vendorCriteria;nid=tasks.reduce((m,t)=>Math.max(m,t.id),0)+1;dataLoaded=true;document.getElementById('sync').style.background='#34c759';checkMentions();render();}
         else{dataLoaded=true;tasks=DEFS;save();}
       });
       if(tab==='home')tab='aufgaben';
