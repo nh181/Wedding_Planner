@@ -1066,21 +1066,77 @@ function motiv(p){if(p===100)return'🎊 Alles erledigt!';if(p>=75)return'🎉 F
 // TASK POPUP
 window.openTaskById=function(id){const t=tasks.find(x=>x.id===id);if(t)openTaskPopup(t);};
 
-// Auto-save debounce
+// Save/dirty tracking for popups
 let _sheet2SaveTimer=null;
+let _taskDirty=false;
+let _vendorDirty=false;
+let _taskSnapshot=null;
+let _vendorSnapshot=null;
+
 function sheet2AutoSave(){
+  // Legacy: still used by category/status chip changes that save immediately
   clearTimeout(_sheet2SaveTimer);
   _sheet2SaveTimer=setTimeout(async()=>{
     await save();
-    const ind=document.getElementById('sheet2-saved');
-    if(ind){ind.classList.add('show');setTimeout(()=>ind.classList.remove('show'),1500);}
+    showSavedIndicator();
     render();
   },500);
 }
-window.closeTaskPopup=function(){document.getElementById('task-popup').classList.remove('open');render();};
-window.closeVendorSheet=function(){document.getElementById('vendor-popup').classList.remove('open');render();};
+function sheet2MarkDirty(type){
+  if(type==='task')_taskDirty=true;
+  else if(type==='vendor')_vendorDirty=true;
+}
+function showSavedIndicator(){
+  const ind=document.getElementById('sheet2-saved');
+  if(ind){ind.classList.add('show');setTimeout(()=>ind.classList.remove('show'),1500);}
+}
+
+function confirmDiscardOrSave(onSave,onDiscard){
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)';
+  ov.innerHTML=`<div style="background:var(--sur,#fff);border-radius:18px;padding:24px;max-width:320px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.2)">
+    <div style="font-size:16px;font-weight:700;margin-bottom:8px;color:var(--t,#000)">Ungespeicherte Änderungen</div>
+    <div style="font-size:14px;color:var(--t3,#888);margin-bottom:20px">Möchtest du die Änderungen speichern?</div>
+    <div style="display:flex;gap:8px">
+      <button id="cds-discard" style="flex:1;padding:11px;border-radius:12px;border:none;background:rgba(120,120,128,.12);color:var(--t2,#666);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Verwerfen</button>
+      <button id="cds-save" style="flex:1;padding:11px;border-radius:12px;border:none;background:var(--rose,#e91e63);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Speichern</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.querySelector('#cds-save').addEventListener('click',()=>{ov.remove();onSave();});
+  ov.querySelector('#cds-discard').addEventListener('click',()=>{ov.remove();onDiscard();});
+}
+
+window.closeTaskPopup=function(force){
+  if(!force&&_taskDirty){
+    confirmDiscardOrSave(
+      async()=>{await save();showSavedIndicator();_taskDirty=false;document.getElementById('task-popup').classList.remove('open');render();},
+      ()=>{
+        // Restore task from snapshot
+        if(_taskSnapshot){const t=tasks.find(x=>x.id===_taskSnapshot.id);if(t)Object.assign(t,_taskSnapshot);}
+        _taskDirty=false;document.getElementById('task-popup').classList.remove('open');render();
+      }
+    );return;
+  }
+  _taskDirty=false;document.getElementById('task-popup').classList.remove('open');render();
+};
+window.closeVendorSheet=function(force){
+  if(!force&&_vendorDirty){
+    confirmDiscardOrSave(
+      async()=>{await save();showSavedIndicator();_vendorDirty=false;document.getElementById('vendor-popup').classList.remove('open');render();},
+      ()=>{
+        // Restore vendor from snapshot
+        if(_vendorSnapshot){const v=vendors.find(x=>x.id===_vendorSnapshot.id);if(v)Object.assign(v,_vendorSnapshot);}
+        _vendorDirty=false;document.getElementById('vendor-popup').classList.remove('open');render();
+      }
+    );return;
+  }
+  _vendorDirty=false;document.getElementById('vendor-popup').classList.remove('open');render();
+};
 
 function openTaskPopup(t){
+  _taskDirty=false;
+  _taskSnapshot=JSON.parse(JSON.stringify(t));
   const isA=role==='admin';
   const isH=role==='mithelfer';
   const assigned=isAssigned(t);
@@ -1254,7 +1310,8 @@ function openTaskPopup(t){
 
   // Action buttons
   html+=`<div class="sheet2-actions">
-    ${canChk?`<button class="sheet2-btn-primary" onclick="togAndClose(${t.id})">${t.done?'↩ Wiedereröffnen':'✓ Erledigt'}</button>`:''}
+    ${!t.trashed&&canEditFields?`<button class="sheet2-btn-primary" id="tp-save-btn">💾 Speichern</button>`:''}
+    ${canChk?`<button class="sheet2-btn-ghost" onclick="togAndClose(${t.id})">${t.done?'↩ Wiedereröffnen':'✓ Erledigt'}</button>`:''}
     ${t.due&&!t.trashed?`<button class="sheet2-btn-ghost" data-action="cal" data-id="${t.id}">📅</button>`:''}
     ${t.trashed?`<button class="sheet2-btn-ghost" data-popup-restore="${t.id}">↩ Wiederherstellen</button><button class="sheet2-btn-danger" data-popup-delete-final="${t.id}">✕ Endgültig löschen</button>`:(isA?`<button class="sheet2-btn-danger" data-popup-trash="${t.id}">🗑 Papierkorb</button>`:'')}
   </div>`;
@@ -1265,23 +1322,23 @@ function openTaskPopup(t){
   // Attach auto-save listeners for inline editing
   const pc=document.getElementById('popup-content');
 
-  // Title auto-save
+  // Title change
   const titleEl=pc.querySelector('#tp-title');
   if(titleEl){titleEl.addEventListener('input',()=>{
     const tt=tasks.find(x=>x.id===t.id);if(!tt)return;
     tt.title=titleEl.value.trim()||tt.title;
-    sheet2AutoSave();
+    sheet2MarkDirty('task');
   });}
 
-  // Due date auto-save
+  // Due date change
   const dueEl=pc.querySelector('#tp-due');
   if(dueEl){dueEl.addEventListener('change',()=>{
     const tt=tasks.find(x=>x.id===t.id);if(!tt)return;
     tt.due=dueEl.value;
-    sheet2AutoSave();
+    sheet2MarkDirty('task');
   });}
 
-  // Cost auto-save
+  // Cost change
   const costEl=pc.querySelector('#tp-cost');
   if(costEl){costEl.addEventListener('input',()=>{
     const tt=tasks.find(x=>x.id===t.id);if(!tt)return;
@@ -1289,7 +1346,7 @@ function openTaskPopup(t){
     const newVal=parseFloat(costEl.value)||0;
     if(oldVal!==newVal){budgetHistory.push({date:Date.now(),cat:tt.cat,title:tt.title,oldCost:oldVal,newCost:newVal});}
     tt.costActual=newVal;
-    sheet2AutoSave();
+    sheet2MarkDirty('task');
   });}
   // Cost add button
   const costAddBtn=pc.querySelector('#tp-cost-add');
@@ -1306,7 +1363,7 @@ function openTaskPopup(t){
     const oldVal=tt.costActual||0;
     if(oldVal>0){budgetHistory.push({date:Date.now(),cat:tt.cat,title:tt.title,oldCost:oldVal,newCost:0});}
     tt.costActual=null;
-    sheet2AutoSave();
+    sheet2MarkDirty('task');
     openTaskPopup(tt);
   });}
 
@@ -1315,7 +1372,7 @@ function openTaskPopup(t){
     item.addEventListener('click',()=>{
       const tt=tasks.find(x=>x.id===t.id);if(!tt)return;
       tt.prio=item.dataset.prio;
-      sheet2AutoSave();
+      sheet2MarkDirty('task');
       openTaskPopup(tt);
     });
   });
@@ -1325,7 +1382,7 @@ function openTaskPopup(t){
     item.addEventListener('click',()=>{
       const tt=tasks.find(x=>x.id===t.id);if(!tt)return;
       tt.cat=item.dataset.cat;
-      sheet2AutoSave();
+      sheet2MarkDirty('task');
       openTaskPopup(tt);
     });
   });
@@ -1336,7 +1393,7 @@ function openTaskPopup(t){
       const tt=tasks.find(x=>x.id===t.id);if(!tt)return;
       const vv=item.dataset.vendor;
       tt.vendorId=vv?parseInt(vv):null;
-      sheet2AutoSave();
+      sheet2MarkDirty('task');
       openTaskPopup(tt);
     });
   });
@@ -1349,13 +1406,22 @@ function openTaskPopup(t){
     });
   });
 
+  // Save button
+  const saveBtn=pc.querySelector('#tp-save-btn');
+  if(saveBtn){saveBtn.addEventListener('click',async()=>{
+    _taskDirty=false;
+    await save();
+    showSavedIndicator();
+    closeTaskPopup(true);
+  });}
+
   // Trash button
   const trashBtn=pc.querySelector('[data-popup-trash]');
   if(trashBtn){trashBtn.addEventListener('click',async()=>{
     const id=parseInt(trashBtn.dataset.popupTrash);
     const tt=tasks.find(x=>x.id===id);if(!tt)return;
     tt.trashed=true;tt.trashedAt=Date.now();
-    await save();document.getElementById('task-popup').classList.remove('open');render();
+    _taskDirty=false;await save();document.getElementById('task-popup').classList.remove('open');render();
   });}
   // Restore button
   const restBtn=pc.querySelector('[data-popup-restore]');
@@ -1363,7 +1429,7 @@ function openTaskPopup(t){
     const id=parseInt(restBtn.dataset.popupRestore);
     const tt=tasks.find(x=>x.id===id);if(!tt)return;
     delete tt.trashed;delete tt.trashedAt;
-    await save();document.getElementById('task-popup').classList.remove('open');render();
+    _taskDirty=false;await save();document.getElementById('task-popup').classList.remove('open');render();
   });}
   // Endgültig löschen button in popup
   const delFinalBtn=pc.querySelector('[data-popup-delete-final]');
@@ -1371,7 +1437,7 @@ function openTaskPopup(t){
     const id=parseInt(delFinalBtn.dataset.popupDeleteFinal);
     if(!confirm('Endgültig löschen? Kann nicht rückgängig gemacht werden.'))return;
     tasks=tasks.filter(x=>x.id!==id);
-    await save();document.getElementById('task-popup').classList.remove('open');render();
+    _taskDirty=false;await save();document.getElementById('task-popup').classList.remove('open');render();
   });}
 }
 
@@ -1380,6 +1446,7 @@ window.togglePopupAssignee=async function(id,name){
   if(!t.assignees)t.assignees=[];
   const idx=t.assignees.indexOf(name);
   if(idx>-1)t.assignees.splice(idx,1);else t.assignees.push(name);
+  _taskSnapshot=JSON.parse(JSON.stringify(t));_taskDirty=false;
   await save();
   // Refresh avatars (sheet2-avatar or aschip)
   const grid=document.getElementById('popup-assignees');
@@ -1402,7 +1469,7 @@ window.updateTaskCost=async function(id,v){
 
 window.togAndClose=async function(id){
   const t=tasks.find(x=>x.id===id);if(!t)return;
-  t.done=!t.done;await save();
+  t.done=!t.done;_taskDirty=false;await save();
   document.getElementById('task-popup').classList.remove('open');
   render();
 };
@@ -1456,6 +1523,7 @@ window.submitComment=async function(id){
     }
   });
   inp.value='';document.getElementById('mention-suggestions').style.display='none';
+  _taskSnapshot=JSON.parse(JSON.stringify(t));_taskDirty=false;
   await save();
   // Update comment list in popup
   const list=document.getElementById('popup-comments');
@@ -1464,7 +1532,7 @@ window.submitComment=async function(id){
 };
 
 // CLOSE TASK POPUP (click on backdrop)
-document.getElementById('task-popup').addEventListener('click',e=>{if(e.target===document.getElementById('task-popup')){document.getElementById('task-popup').classList.remove('open');render();}});
+document.getElementById('task-popup').addEventListener('click',e=>{if(e.target===document.getElementById('task-popup'))closeTaskPopup();});
 
 // RENDER FUNCTIONS
 function render(){
@@ -2935,12 +3003,14 @@ window.rateVendorCriterion=async function(vendorId,criterion,val){
   var sum=0,cnt=0;
   vCrit.forEach(function(c){if(v.ratings[c]){sum+=v.ratings[c];cnt++;}});
   v.rating=cnt>0?Math.round(sum/cnt*10)/10:0;
+  _vendorSnapshot=JSON.parse(JSON.stringify(v));_vendorDirty=false;
   await save();renderAnbieter();
 };
 window.setVendorOverride=async function(vendorId,val){
   var v=vendors.find(function(x){return x.id===vendorId;});if(!v)return;
   v.ratingOverride=val;
   v.rating=val;
+  _vendorSnapshot=JSON.parse(JSON.stringify(v));_vendorDirty=false;
   await save();renderAnbieter();
 };
 window.clearVendorOverride=async function(vendorId){
@@ -2950,6 +3020,7 @@ window.clearVendorOverride=async function(vendorId){
   var sum=0,cnt=0;
   vCrit.forEach(function(c){if(v.ratings&&v.ratings[c]){sum+=v.ratings[c];cnt++;}});
   v.rating=cnt>0?Math.round(sum/cnt*10)/10:0;
+  _vendorSnapshot=JSON.parse(JSON.stringify(v));_vendorDirty=false;
   await save();renderAnbieter();
 };
 window.openCriteriaManager=function(cat){
@@ -3228,6 +3299,7 @@ function attachAnbieterListeners(cats){
 function openVendorPopup(id){
   var v=vendors.find(function(x){return x.id===id;});
   if(!v)return;
+  if(!_vendorDirty){_vendorSnapshot=JSON.parse(JSON.stringify(v));_vendorDirty=false;}
   var isA=role==='admin';
   var isH=role==='mithelfer';
   var canEdit=isA||isH;
@@ -3411,7 +3483,7 @@ function openVendorPopup(id){
     var notesEl=document.getElementById('vp-notes');if(notesEl)v.notes=notesEl.value.trim();
     v.updatedAt=Date.now();
     v.updatedBy=firstName||'Unbekannt';
-    sheet2AutoSave();
+    sheet2MarkDirty('vendor');
   }
   ['vp-name','vp-price','vp-web','vp-cname','vp-cemail','vp-cphone','vp-notes'].forEach(function(elId){
     var el=document.getElementById(elId);
@@ -3422,7 +3494,7 @@ function openVendorPopup(id){
   vpc.querySelectorAll('#vp-cat-dd .sheet2-chip-dropdown-item').forEach(function(item){
     item.addEventListener('click',function(){
       v.cat=item.dataset.vcat;
-      sheet2AutoSave();
+      sheet2MarkDirty('vendor');
       openVendorPopup(v.id);
     });
   });
@@ -3431,7 +3503,7 @@ function openVendorPopup(id){
   vpc.querySelectorAll('#vp-status-dd .sheet2-chip-dropdown-item').forEach(function(item){
     item.addEventListener('click',function(){
       v.status=item.dataset.vstatus;
-      sheet2AutoSave();
+      sheet2MarkDirty('vendor');
       openVendorPopup(v.id);
     });
   });
@@ -3449,7 +3521,9 @@ function openVendorPopup(id){
   if(saveBtn){saveBtn.addEventListener('click',async function(){
     vpAutoSave();
     clearTimeout(_sheet2SaveTimer);
+    _vendorDirty=false;
     await save();
+    showSavedIndicator();
     document.getElementById('vendor-popup').classList.remove('open');
     renderAnbieter();
   });}
@@ -3524,7 +3598,7 @@ function openVendorPopup(id){
 window.openVendorPopup=openVendorPopup;
 
 // Close vendor popup on overlay click
-document.getElementById('vendor-popup').addEventListener('click',function(e){if(e.target===document.getElementById('vendor-popup')){document.getElementById('vendor-popup').classList.remove('open');render();}});
+document.getElementById('vendor-popup').addEventListener('click',function(e){if(e.target===document.getElementById('vendor-popup'))closeVendorSheet();});
 
 // ── CSV ──
 
