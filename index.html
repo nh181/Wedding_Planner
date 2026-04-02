@@ -2691,16 +2691,24 @@ function renderPakete(){
   h+='<button class="pkg-view-btn" data-pv="vergleich" style="font-size:12px;padding:6px 12px;border-radius:8px;border:none;font-family:inherit;font-weight:500;cursor:pointer">Vergleich</button>';
   h+='</div></div>';
 
+  var trashedPkgs=packages.filter(function(p){return p.trashed;});
+  var activePkgs=packages.filter(function(p){return !p.trashed;});
+
   if(pkgView==='liste'){
-    // Add button
+    // Add button + Papierkorb filter
     if(canEdit){
-      h+='<button id="pkg-add-btn" style="width:100%;padding:12px;border-radius:12px;border:2px dashed var(--br);background:none;font-family:inherit;font-size:14px;font-weight:500;color:var(--t3);cursor:pointer;margin-bottom:16px">+ Neues Szenario erstellen</button>';
+      h+='<div style="display:flex;gap:8px;margin-bottom:12px">';
+      h+='<button id="pkg-add-btn" style="flex:1;padding:12px;border-radius:12px;border:2px dashed var(--br);background:none;font-family:inherit;font-size:14px;font-weight:500;color:var(--t3);cursor:pointer">+ Neues Szenario erstellen</button>';
+      if(trashedPkgs.length>0){
+        h+='<button id="pkg-trash-btn" style="padding:12px 16px;border-radius:12px;border:none;background:rgba(239,68,68,.1);color:#ef4444;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">🗑 '+trashedPkgs.length+'</button>';
+      }
+      h+='</div>';
     }
 
-    if(!packages.length){
+    if(!activePkgs.length){
       h+='<div class="empty"><div class="ei">📦</div><p>Noch keine Pakete erstellt.</p><p style="font-size:13px;color:var(--t3)">Erstelle Szenarien, um verschiedene Anbieter-Kombinationen zu vergleichen.</p></div>';
     } else {
-      packages.forEach(function(pkg){
+      activePkgs.forEach(function(pkg){
         var total=getPkgTotal(pkg);
         var avgR=getPkgAvgRating(pkg);
         var coverage=getPkgCoverage(pkg);
@@ -2739,22 +2747,40 @@ function renderPakete(){
         h+='</div>';
       });
     }
+  } else if(pkgView==='papierkorb'){
+    // Trash view
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+    h+='<button id="pkg-back-btn" style="font-size:13px;padding:8px 14px;border-radius:10px;border:1px solid var(--br);background:var(--sur);font-family:inherit;font-weight:500;cursor:pointer">← Zurück</button>';
+    if(trashedPkgs.length>0)h+='<button id="pkg-empty-trash-btn" style="font-size:13px;padding:8px 16px;border-radius:10px;border:none;background:#ef4444;color:#fff;cursor:pointer;font-family:inherit;font-weight:600">🗑 Papierkorb leeren</button>';
+    h+='</div>';
+    if(!trashedPkgs.length){
+      h+='<div class="empty"><div class="ei">🗑</div><p>Papierkorb ist leer.</p></div>';
+    } else {
+      trashedPkgs.forEach(function(pkg){
+        var date=pkg.trashedAt?new Date(pkg.trashedAt).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+        h+='<div class="pkg-card" data-pkgid="'+pkg.id+'" style="background:var(--sur);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;opacity:.65;border:2px dashed var(--br)">';
+        h+='<div style="font-size:16px;font-weight:700;text-decoration:line-through;color:var(--t3)">'+pkg.name+'</div>';
+        if(date)h+='<div style="font-size:12px;color:var(--t3);margin-top:4px">entfernt '+date+'</div>';
+        h+='<div style="font-size:12px;color:var(--t3);margin-top:4px">Tippen zum Wiederherstellen oder Löschen</div>';
+        h+='</div>';
+      });
+    }
   } else {
-    // Comparison view
-    if(packages.length<2){
+    // Comparison view — only active packages
+    if(activePkgs.length<2){
       h+='<div class="empty"><div class="ei">⚖️</div><p>Erstelle mindestens 2 Pakete, um sie zu vergleichen.</p></div>';
     } else {
       // Selection chips
-      if(!pkgCompareIds.length)pkgCompareIds=packages.map(function(p){return p.id;});
+      if(!pkgCompareIds.length)pkgCompareIds=activePkgs.map(function(p){return p.id;});
       h+='<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:600;color:var(--t3);margin-bottom:8px">Pakete zum Vergleich auswählen:</div>';
       h+='<div style="display:flex;flex-wrap:wrap;gap:6px">';
-      packages.forEach(function(p){
+      activePkgs.forEach(function(p){
         var isOn=pkgCompareIds.indexOf(p.id)>-1;
         h+='<button class="pkg-cmp-chip" data-pkgid="'+p.id+'" style="padding:5px 12px;border-radius:16px;border:1.5px solid '+(isOn?'var(--rose)':'var(--br)')+';background:'+(isOn?'var(--rose)':'var(--sur)')+';color:'+(isOn?'#fff':'var(--t2)')+';font-size:12px;font-family:inherit;font-weight:500;cursor:pointer">'+(p.favorite?'★ ':'')+p.name+'</button>';
       });
       h+='</div></div>';
 
-      var shown=packages.filter(function(p){return pkgCompareIds.indexOf(p.id)>-1;});
+      var shown=activePkgs.filter(function(p){return pkgCompareIds.indexOf(p.id)>-1;});
       if(shown.length<2){
         h+='<div class="empty"><p style="font-size:14px;color:var(--t3)">Wähle mindestens 2 Pakete zum Vergleich.</p></div>';
       } else {
@@ -2830,6 +2856,20 @@ function renderPakete(){
   var addBtn=document.getElementById('pkg-add-btn');
   if(addBtn)addBtn.addEventListener('click',function(){_tmpPkg=null;openPackagePopup(null);});
 
+  var trashBtn=document.getElementById('pkg-trash-btn');
+  if(trashBtn)trashBtn.addEventListener('click',function(){pkgView='papierkorb';renderPakete();});
+
+  var backBtn=document.getElementById('pkg-back-btn');
+  if(backBtn)backBtn.addEventListener('click',function(){pkgView='liste';renderPakete();});
+
+  var emptyTrashBtn=document.getElementById('pkg-empty-trash-btn');
+  if(emptyTrashBtn)emptyTrashBtn.addEventListener('click',async function(){
+    if(!confirm('Alle Pakete im Papierkorb endgültig löschen?'))return;
+    packages=packages.filter(function(p){return !p.trashed;});
+    await save();
+    pkgView='liste';renderPakete();
+  });
+
   a.querySelectorAll('.pkg-card').forEach(function(card){
     card.addEventListener('click',function(){
       var pid=parseInt(card.dataset.pkgid);
@@ -2862,7 +2902,8 @@ function openPackagePopup(id){
 
   var popup=document.getElementById('pkg-popup');
   var pc=document.getElementById('pkg-popup-content');
-  var canEdit=role==='admin'||role==='mithelfer';
+  var isA=role==='admin';
+  var canEdit=isA||role==='mithelfer';
 
   var html='';
   html+='<input type="text" class="sheet2-title-input" id="pp-name" value="'+(pkg.name||'').replace(/"/g,'&quot;')+'" placeholder="Szenario-Name..."/>';
@@ -2922,6 +2963,9 @@ function openPackagePopup(id){
   html+='<textarea class="sheet2-textarea" id="pp-notiz" placeholder="Anmerkungen zum Szenario...">'+(pkg.notiz||'')+'</textarea>';
   html+='</div>';
 
+  // Spacer
+  html+='<div style="height:12px"></div>';
+
   // Summary
   var total=getPkgTotal(pkg);
   var avgR=getPkgAvgRating(pkg);
@@ -2935,8 +2979,13 @@ function openPackagePopup(id){
 
   // Actions
   html+='<div class="sheet2-actions">';
-  if(canEdit)html+='<button class="sheet2-btn-primary" id="pp-save-btn">'+(isNew?'✓ Erstellen':'✓ Speichern')+'</button>';
-  if(!isNew&&canEdit)html+='<button class="sheet2-btn-danger" id="pp-del-btn">🗑 Löschen</button>';
+  if(pkg.trashed){
+    if(canEdit)html+='<button class="sheet2-btn-primary" id="pp-restore-btn">↩ Wiederherstellen</button>';
+    if(isA)html+='<button class="sheet2-btn-danger" id="pp-del-final-btn">✕ Endgültig löschen</button>';
+  } else {
+    if(canEdit)html+='<button class="sheet2-btn-primary" id="pp-save-btn">'+(isNew?'✓ Erstellen':'✓ Speichern')+'</button>';
+    if(!isNew&&canEdit)html+='<button class="sheet2-btn-danger" id="pp-del-btn">🗑 Papierkorb</button>';
+  }
   html+='</div>';
 
   pc.innerHTML=html;
@@ -3024,10 +3073,31 @@ function openPackagePopup(id){
     renderPakete();
   });
 
-  // Delete
+  // Move to trash
   var delBtn=document.getElementById('pp-del-btn');
   if(delBtn)delBtn.addEventListener('click',async function(){
-    if(!confirm('Paket "'+pkg.name+'" löschen?'))return;
+    if(!confirm('Paket "'+pkg.name+'" in den Papierkorb verschieben?'))return;
+    pkg.trashed=true;pkg.trashedAt=Date.now();
+    await save();
+    _tmpPkg=null;
+    popup.classList.remove('open');
+    renderPakete();
+  });
+
+  // Restore from trash
+  var restoreBtn=document.getElementById('pp-restore-btn');
+  if(restoreBtn)restoreBtn.addEventListener('click',async function(){
+    delete pkg.trashed;delete pkg.trashedAt;
+    await save();
+    _tmpPkg=null;
+    popup.classList.remove('open');
+    renderPakete();
+  });
+
+  // Permanent delete
+  var delFinalBtn=document.getElementById('pp-del-final-btn');
+  if(delFinalBtn)delFinalBtn.addEventListener('click',async function(){
+    if(!confirm('Paket endgültig löschen? Kann nicht rückgängig gemacht werden.'))return;
     packages=packages.filter(function(p){return p.id!==pkg.id;});
     await save();
     _tmpPkg=null;

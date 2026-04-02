@@ -1,4 +1,4 @@
-const CACHE = 'hochzeitsplaner-v11';
+const CACHE = 'hochzeitsplaner-v12';
 const ASSETS = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', e => {
