@@ -881,17 +881,48 @@ const DEFS=[
   {id:5,title:'Catering vergleichen',assignees:['Nico'],cat:'Catering',prio:'hoch',due:'2026-03-18',done:false,comments:[],costActual:0},
 ];
 const TPLS=[
-  {id:'loc',ico:'🏰',name:'Location',ts:['Locations recherchieren','Besichtigungstermine vereinbaren','Locations besichtigen','Angebote vergleichen','Vertrag unterschreiben','Raumplan erstellen','Parkplätze klären','Übernachtungsmöglichkeiten prüfen','Bestuhlung planen','Auf-/Abbauzeiten klären']},
-  {id:'cat',ico:'🍽️',name:'Catering',ts:['Caterer recherchieren','Angebote einholen','Probeessen vereinbaren','Menü auswählen','Getränkepauschale klären','Torte bestellen','Allergien & Unverträglichkeiten erfassen','Kinderteller planen','Mitternachtssnack planen','Service-Personal besprechen']},
-  {id:'foto',ico:'📸',name:'Fotografie',ts:['Fotografen anfragen','Portfolio prüfen','Angebote vergleichen','Vorgespräch führen','Vertrag abschließen','Wunschliste für Motive erstellen','Engagement-Shooting planen','Foto-Locations festlegen','Shotliste erstellen','Lieferzeit & Format klären']},
-  {id:'deko',ico:'💐',name:'Dekoration',ts:['Stil & Farbkonzept festlegen','Moodboard erstellen','Florist anfragen','Blumenauswahl treffen','Tischdeko planen','Stuhlhussen/Deko mieten','Kirchen-/Traudeko planen','Sitzordnung erstellen','Tischkarten gestalten','Lichtkonzept planen','Candy Bar / Sweet Table planen']},
-  {id:'mus',ico:'🎵',name:'Musik',ts:['DJ oder Band anfragen','Referenzen/Proben anhören','Angebote vergleichen','Vertrag abschließen','Playlist erstellen (Wünsche & No-Gos)','Einzugslied wählen','Eröffnungstanz-Lied wählen','Tanzkurs buchen','Technik & Equipment klären','Zeitplan mit DJ/Band abstimmen']},
-  {id:'kld',ico:'👗',name:'Kleidung',ts:['Brautkleid-Stil recherchieren','Brautmodengeschäfte besuchen','Brautkleid kaufen','Änderungstermine einplanen','Letzte Anprobe','Anzug/Hochzeitsoutfit kaufen','Accessoires wählen (Schleier, Schmuck)','Brautschuhe kaufen','Schneiderin/Schneider buchen','Outfits für Trauzeugen abstimmen']},
-  {id:'inv',ico:'✉️',name:'Einladungen',ts:['Gästeliste erstellen','Save-the-Date versenden','Einladungsdesign wählen','Text formulieren','Druckerei beauftragen','Einladungen adressieren','Einladungen versenden','Rückmeldungen tracken','Nachfassen bei ausstehenden Zusagen','Menükarten & Kirchenhefte gestalten']},
-  {id:'flh',ico:'✈️',name:'Flitterwochen',ts:['Reiseziel festlegen','Budget planen','Reiseanbieter vergleichen','Flüge buchen','Hotel/Unterkunft buchen','Ausflüge & Aktivitäten planen','Reiseversicherung abschließen','Reisedokumente prüfen (Visum, Reisepass)','Koffer packen','Haustier-/Wohnungsbetreuung organisieren']},
-  {id:'org',ico:'📋',name:'Organisation',ts:['Trauzeug:innen wählen','Hochzeitsplaner:in anfragen','Ablaufplan Hochzeitstag erstellen','Trauredner:in buchen','Ringträger:in bestimmen','Hochzeitsspiele planen','Gastgeschenke besorgen','Hochzeitsauto mieten','Notfallkit zusammenstellen','Dankeskarten vorbereiten']},
-  {id:'bty',ico:'💄',name:'Beauty & Gesundheit',ts:['Friseur:in für Hochzeitstag buchen','Probe-Frisur','Make-up Artist buchen','Probe-Make-up','Hautpflege-Routine starten','Zahnarzt-Check','Maniküre/Pediküre planen','Wellness-Tag vor Hochzeit','Bräutigam-Grooming planen']},
-  {id:'std',ico:'🏛️',name:'Standesamt & Kirche',ts:['Standesamt kontaktieren','Unterlagen zusammenstellen','Termin beim Standesamt buchen','Traugespräch (kirchlich)','Kirchliche Trauung anmelden','Ehevertrag prüfen/erstellen','Namensänderung planen','Trauzeugen offiziell benennen']},
+  {id:'loc',ico:'🏰',name:'Location',ts:[
+    {t:'Location recherchieren & besichtigen',sub:['Online-Portale & Empfehlungen durchsuchen','Budget-Rahmen festlegen','Besichtigungstermine vereinbaren','Checkliste vorbereiten & Fotos vor Ort machen','Kapazität, Raumaufteilung & Ambiente prüfen']},
+    {t:'Location buchen & Vertrag abschließen',sub:['Angebote vergleichen','Stornobedingungen & AGB prüfen','Anzahlung leisten & Termin reservieren']},
+    {t:'Location-Details planen',sub:['Raumplan & Bestuhlung erstellen','Parkplätze & Anfahrt klären','Übernachtungsmöglichkeiten für Gäste prüfen','Auf-/Abbauzeiten mit Location abstimmen','Lärmschutz & Sperrzeiten klären']}]},
+  {id:'cat',ico:'🍽️',name:'Catering',ts:[
+    {t:'Caterer auswählen',sub:['Caterer recherchieren & Angebote einholen','Probeessen vereinbaren','Referenzen & Bewertungen prüfen','Angebote vergleichen & Vertrag abschließen']},
+    {t:'Menü & Getränke zusammenstellen',sub:['Vorspeise, Hauptgang & Dessert festlegen','Vegetarische/vegane Optionen planen','Getränkepauschale & Barkarte klären','Allergien & Unverträglichkeiten der Gäste erfassen','Kinderteller einplanen']},
+    {t:'Extras planen',sub:['Hochzeitstorte bestellen (Design & Geschmack)','Mitternachtssnack planen','Candy Bar / Sweet Table organisieren','Service-Personal & Ablauf besprechen']}]},
+  {id:'foto',ico:'📸',name:'Fotografie',ts:[
+    {t:'Fotograf:in finden & buchen',sub:['Fotografen anfragen & Portfolios prüfen','Angebote vergleichen','Vorgespräch führen & Stil abstimmen','Vertrag abschließen & Lieferzeit klären']},
+    {t:'Shooting vorbereiten',sub:['Must-Have-Motive & Gruppenfotos festlegen','Foto-Locations & Zeitfenster planen','Getting-Ready Ablauf mit Fotograf besprechen','Shotliste erstellen','Ggf. Engagement-Shooting planen']}]},
+  {id:'deko',ico:'💐',name:'Dekoration',ts:[
+    {t:'Stil & Farbkonzept entwickeln',sub:['Inspiration sammeln (Pinterest, Magazine)','Farbpalette & Stil definieren','Moodboard erstellen','Konzept mit Location abstimmen']},
+    {t:'Floristik & Blumenschmuck',sub:['Florist:in anfragen & Angebote einholen','Brautstrauß & Anstecker auswählen','Blumenschmuck für Kirche/Trauung planen','Tischblumen & Gestecke bestimmen']},
+    {t:'Tisch- & Raumdeko planen',sub:['Tischdeko festlegen (Läufer, Kerzen, Vasen)','Tischkarten & Menükarten gestalten','Sitzordnung erstellen','Stuhlhussen & Deko-Elemente mieten','Lichtkonzept planen (Lichterketten, Kerzen, Spots)']}]},
+  {id:'mus',ico:'🎵',name:'Musik',ts:[
+    {t:'DJ oder Band buchen',sub:['DJ/Band anfragen & Referenzen anhören','Angebote vergleichen','Vorgespräch führen & Vertrag abschließen','Technik & Equipment-Anforderungen klären']},
+    {t:'Musik & Tanz planen',sub:['Playlist erstellen (Wünsche & No-Gos)','Wunschliste der Gäste sammeln','Einzugslied & Eröffnungstanz wählen','Ggf. Tanzkurs buchen','Zeitplan & Stimmungs-Phasen mit DJ/Band abstimmen']}]},
+  {id:'kld',ico:'👗',name:'Kleidung',ts:[
+    {t:'Brautkleid finden',sub:['Stil recherchieren & Inspiration sammeln','Brautmodengeschäfte besuchen','Brautkleid kaufen','Änderungstermine & letzte Anprobe einplanen','Brautschuhe kaufen']},
+    {t:'Outfit Bräutigam',sub:['Stil & Farbe festlegen','Anzug kaufen oder maßanfertigen lassen','Passende Schuhe & Accessoires besorgen','Anprobe-Termine einplanen']},
+    {t:'Accessoires & Outfits abstimmen',sub:['Schleier/Haarschmuck auswählen','Schmuck auswählen','Outfits für Trauzeugen & Brautjungfern abstimmen','Schneiderin/Schneider für Änderungen buchen']}]},
+  {id:'inv',ico:'✉️',name:'Einladungen',ts:[
+    {t:'Gästeliste & Save-the-Date',sub:['Gästeliste erstellen & finalisieren','Save-the-Date designen & versenden']},
+    {t:'Einladungen gestalten & versenden',sub:['Format festlegen (Karte, Heft, Digital)','Einladungsdesign & Text erstellen','Druckerei beauftragen oder DIY','Einladungen adressieren & versenden']},
+    {t:'Rückmeldungen verwalten',sub:['Zusagen & Absagen erfassen','Nachfassen bei ausstehenden Rückmeldungen','Finale Gästezahl an Location & Caterer melden']},
+    {t:'Drucksachen für den Tag',sub:['Menükarten gestalten','Kirchenhefte/Programmhefte erstellen','Tischkarten drucken','Dankeskarten vorbereiten']}]},
+  {id:'flh',ico:'✈️',name:'Flitterwochen',ts:[
+    {t:'Reise planen & buchen',sub:['Reiseziel & Budget festlegen','Reiseanbieter vergleichen','Flüge buchen','Hotel/Unterkunft buchen (Honeymoon-Paket anfragen)','Ausflüge & Aktivitäten planen']},
+    {t:'Reisevorbereitung',sub:['Reisepass-Gültigkeit & Visum prüfen','Ggf. Impfungen klären','Reiseversicherung abschließen','Koffer packen','Haustier-/Wohnungsbetreuung organisieren']}]},
+  {id:'org',ico:'📋',name:'Organisation',ts:[
+    {t:'Team & Dienstleister organisieren',sub:['Trauzeug:innen wählen','Ggf. Hochzeitsplaner:in anfragen','Trauredner:in buchen','Hochzeitsauto mieten']},
+    {t:'Ablaufplan Hochzeitstag',sub:['Zeitplan von Getting-Ready bis Party erstellen','Ansprechpartner für jeden Programmpunkt festlegen','Plan an alle Beteiligten verteilen','Notfallplan & Regenalternative']},
+    {t:'Programm & Extras',sub:['Hochzeitsspiele planen & Moderator bestimmen','Gastgeschenke besorgen','Ringträger:in bestimmen','Notfallkit zusammenstellen (Nähzeug, Pflaster, Deo)','Dankeskarten vorbereiten']}]},
+  {id:'bty',ico:'💄',name:'Beauty & Gesundheit',ts:[
+    {t:'Styling für die Braut',sub:['Friseur:in buchen & Probe-Frisur','Make-up Artist buchen & Probe-Make-up','Maniküre/Pediküre planen','Hautpflege-Routine starten']},
+    {t:'Styling für den Bräutigam',sub:['Friseur-Termin buchen','Grooming planen (Bart, Haut)','Ggf. Maniküre einplanen']},
+    {t:'Wellness & Gesundheit',sub:['Zahnarzt-Check','Wellness-Tag vor der Hochzeit planen','Ausreichend Schlaf & Erholung einplanen']}]},
+  {id:'std',ico:'🏛️',name:'Standesamt & Kirche',ts:[
+    {t:'Standesamtliche Trauung',sub:['Standesamt kontaktieren & Termin buchen','Unterlagen zusammenstellen (Geburtsurkunden, Aufenthaltsbescheinigung)','Ggf. Ehefähigkeitszeugnis besorgen','Trauzeugen offiziell benennen']},
+    {t:'Kirchliche Trauung',sub:['Kirchliche Trauung anmelden','Traugespräch mit Pfarrer:in führen','Kirchenmusik & Lieder auswählen','Ablauf der Zeremonie besprechen']},
+    {t:'Rechtliches & Namensänderung',sub:['Ggf. Ehevertrag prüfen & Notar-Termin','Namensänderung planen','Dokumente nach Hochzeit aktualisieren (Ausweis, Bank, Versicherungen)']}]},
 ];
 
 const GUEST_SEED=[{id:1,name:"Lulu",von:"",beziehung:"",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:2,name:"Noggi",von:"",beziehung:"",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:3,name:"Bettina Kiesewetter",von:"Luisa",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:4,name:"Andreas Kiesewetter",von:"Luisa",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:5,name:"Julia Kiesewetter",von:"Luisa",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:6,name:"GiGi S.",von:"Luisa",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:7,name:"Dany Hildebrandt",von:"Nico",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:8,name:"Andy Hildebrandt",von:"Nico",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:9,name:"Jan Hildebrandt",von:"Nico",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:10,name:"Lisa Lindner",von:"Nico",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:11,name:"Heidi Kiesewetter",von:"Luisa",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:12,name:"Uschi Hildebrandt",von:"Nico",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:13,name:"Dieter Hildebrandt",von:"Nico",beziehung:"Familie",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:14,name:"Christine Saller",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:15,name:"Luca Saller",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:16,name:"Saskia Grosch",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:17,name:"Max Grosch",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:18,name:"Freundin von Max",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:19,name:"Gerhard Reh",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:20,name:"Susi (??)",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:21,name:"Benni Reh",von:"Luisa",beziehung:"Verwandt",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:22,name:"Sybille Reh",von:"Luisa",beziehung:"Verwandt",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:23,name:"Johanna Wagner",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:24,name:"Josi Wagner",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:25,name:"Ann-Kathrin Wagner",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:26,name:"Freund von Ann-Kathrin",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:27,name:"Baby Wagner",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"< 3",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:28,name:"Sebastian Wagner",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:29,name:"Freundin von Sebastian",von:"Luisa",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:30,name:"Elfi",von:"Luisa",beziehung:"Verwandt",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:31,name:"Isabell",von:"Luisa",beziehung:"Verwandt",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:32,name:"Stefan",von:"Luisa",beziehung:"Verwandt",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:33,name:"Lea Renner",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:34,name:"Plus 1",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:35,name:"Maren Heublein",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:36,name:"Steffen Gundermann",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:37,name:"Celine Rosenbauer",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:38,name:"Tassilo Rosenbauer",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:39,name:"Tiara Rosenbauer",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"< 3",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:40,name:"Baby 2 Rosenbauer",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"< 3",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:41,name:"Julia Raps",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:42,name:"Julian Raps",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:43,name:"Aaron Raps",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"< 3",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:44,name:"Julia Seidel",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:45,name:"Robin (??)",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:46,name:"Franzi Wettels",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:47,name:"Marc Wettels",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:48,name:"Marie",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:49,name:"Plus 1",von:"Luisa",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:50,name:"Marco P\u00f6hn",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:51,name:"Anja P\u00f6hn",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:52,name:"Jula P\u00f6hn",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:53,name:"Lara P\u00f6hn",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:54,name:"Johann (??)",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:55,name:"Antje Ulbert",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:56,name:"Bernd (??)",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:57,name:"Thomas Hildebrandt",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:58,name:"Sandra Hildebrandt",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:59,name:"Sophie Hildebrandt",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:60,name:"Flo (??)",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:61,name:"Sarah Hildebrandt",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:62,name:"Markus Franz",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:63,name:"Annalena Franz",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:64,name:"Denise Franz",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:65,name:"Lia Franz",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"< 8",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:66,name:"Plus 1",von:"Nico",beziehung:"Verwandt",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:67,name:"Jan Tuchan",von:"Nico",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:68,name:"Julian \u00dcberhack",von:"Nico",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:69,name:"Plus 1",von:"Nico",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:70,name:"Paul Wohlleben",von:"Nico",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:71,name:"Hanna Wohlleben",von:"Nico",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:72,name:"Yannick Weyhersm\u00fcller",von:"Nico",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:73,name:"Niklas Pomm\u00e9",von:"Nico",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:74,name:"Anna Pom\u00e9",von:"Nico",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:75,name:"Nico Holland",von:"Nico",beziehung:"Freunde",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:76,name:"Nathalie (??)",von:"Nico",beziehung:"Freunde",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:77,name:"Fabian H\u00f6hn",von:"Nico",beziehung:"Freunde",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:78,name:"Plus 1",von:"Nico",beziehung:"Freunde",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:79,name:"Andreas Morgenroth",von:"Nico",beziehung:"Freunde",relevanz:3,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:80,name:"Lucas Fischer",von:"Nico",beziehung:"Freunde",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:81,name:"Lorenzo R\u00fcger",von:"Nico",beziehung:"Freunde",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"},{id:82,name:"Plus 1",von:"Nico",beziehung:"Freunde",relevanz:2,altersklasse:"Erwachsen",status:"",notiz:"",updatedAt:0,updatedBy:"Import"}];
@@ -1919,25 +1950,30 @@ function renderMeilensteine(){
   a.innerHTML=h;
 }
 
+// Helper: get title from template entry (string or {t,sub} object)
+function tplTitle(entry){return typeof entry==='string'?entry:entry.t;}
+function tplSubs(entry){return typeof entry==='object'&&entry.sub?entry.sub:[];}
+
 // addTpl: add tasks from a template
 window.addTpl=async function(tplId){
   const tpl=TPLS.find(t=>t.id===tplId);if(!tpl)return;
   if(tmpls.includes(tplId))return;
   const catMap={loc:'Location',cat:'Catering',foto:'Fotografie',deko:'Dekoration',mus:'Musik',kld:'Kleidung',inv:'Einladungen',flh:'Flitterwochen',org:'Sonstiges',bty:'Sonstiges',std:'Sonstiges'};
   const cat=catMap[tplId]||'Sonstiges';
-  // Spread due dates within a relevant timeframe based on wedding date
   const wd2=wDate?new Date(wDate):null;
-  tpl.ts.forEach((title,idx)=>{
+  tpl.ts.forEach((entry,idx)=>{
+    var title=tplTitle(entry);
+    var subs=tplSubs(entry);
     let due='';
     if(wd2){
       const offset=new Date(wd2);
-      // Spread tasks over several months before wedding
       const monthsBefore=Math.max(1,Math.floor((tpl.ts.length-idx)/tpl.ts.length*10));
       offset.setMonth(offset.getMonth()-monthsBefore);
       offset.setDate(offset.getDate()+idx*3);
       due=offset.toISOString().split('T')[0];
     }
-    tasks.push({id:nid++,title,assignees:[],cat,prio:'mittel',due,done:false,comments:[],costActual:0,trashed:false});
+    var subtasks=subs.map(function(s){return {id:'st'+Date.now()+Math.random().toString(36).slice(2,6),text:s,done:false};});
+    tasks.push({id:nid++,title,assignees:[],cat,prio:'mittel',due,done:false,comments:[],costActual:0,trashed:false,subtasks:subtasks});
   });
   tmpls.push(tplId);
   await save();render();
@@ -1964,18 +2000,24 @@ window.renderVorlagenContent=function(){
   const cont=document.getElementById('vorlagen-content');if(!cont)return;
   if(window._vorlagenView==='detail'&&window._vorlagenTplId){
     const tpl=TPLS.find(t=>t.id===window._vorlagenTplId);if(!tpl){window._vorlagenView='grid';renderVorlagenContent();return;}
-    // Find which tasks already exist
     const existingTitles=new Set(tasks.filter(t=>!t.trashed).map(t=>t.title.toLowerCase()));
     let h=`<button class="tpl-detail-back" onclick="window._vorlagenView='grid';renderVorlagenContent()">← Zurück</button>`;
     h+=`<div class="tpl-detail-header"><div class="tpl-ico">${tpl.ico}</div><div><div class="tpl-name">${tpl.name}</div><div class="tpl-cnt">${tpl.ts.length} Aufgaben verfügbar</div></div></div>`;
     h+=`<div class="tpl-select-bar"><button onclick="toggleAllTpl(true)">Alle auswählen</button><button onclick="toggleAllTpl(false)">Keine auswählen</button></div>`;
     h+=`<div class="tpl-task-list">`;
-    tpl.ts.forEach((title,i)=>{
+    tpl.ts.forEach((entry,i)=>{
+      var title=tplTitle(entry);
+      var subs=tplSubs(entry);
       const exists=existingTitles.has(title.toLowerCase());
       h+=`<div class="tpl-task-item ${exists?'already-added':''}">
         <input type="checkbox" id="tpl-cb-${i}" data-tpl-idx="${i}" ${exists?'disabled':'checked'} class="tpl-task-cb"/>
         <label for="tpl-cb-${i}">${title}${exists?' (bereits vorhanden)':''}</label>
       </div>`;
+      if(subs.length){
+        h+=`<div style="margin-left:34px;margin-bottom:4px">`;
+        subs.forEach(function(s){h+=`<div style="font-size:12px;color:var(--t3);padding:2px 0">↳ ${s}</div>`;});
+        h+=`</div>`;
+      }
     });
     h+=`</div>`;
     h+=`<button class="tpl-add-selected" onclick="addSelectedTplTasks('${tpl.id}')">Ausgewählte hinzufügen</button>`;
@@ -1987,7 +2029,7 @@ window.renderVorlagenContent=function(){
     h+=`<p style="font-size:13px;color:var(--t2);margin-bottom:14px">Wähle eine Kategorie und dann die einzelnen Aufgaben, die du übernehmen möchtest.</p>`;
     h+=`<div class="tpl-grid">`;
     TPLS.forEach(tpl=>{
-      const addedCount=tpl.ts.filter(t=>tasks.some(x=>!x.trashed&&x.title.toLowerCase()===t.toLowerCase())).length;
+      const addedCount=tpl.ts.filter(function(entry){return tasks.some(function(x){return !x.trashed&&x.title.toLowerCase()===tplTitle(entry).toLowerCase();});}).length;
       const allAdded=addedCount===tpl.ts.length;
       h+=`<button class="tpl-card ${allAdded?'added':''}" onclick="window._vorlagenView='detail';window._vorlagenTplId='${tpl.id}';renderVorlagenContent()">
         <div class="tpl-ico">${tpl.ico}</div>
@@ -2027,7 +2069,9 @@ window.addSelectedTplTasks=async function(tplId){
   const wd2=wDate?new Date(wDate):null;
   const indices=Array.from(cbs).map(cb=>parseInt(cb.dataset.tplIdx));
   indices.forEach((idx,i)=>{
-    const title=tpl.ts[idx];if(!title)return;
+    const entry=tpl.ts[idx];if(!entry)return;
+    const title=tplTitle(entry);
+    const subs=tplSubs(entry);
     let due='';
     if(wd2){
       const offset=new Date(wd2);
@@ -2036,7 +2080,8 @@ window.addSelectedTplTasks=async function(tplId){
       offset.setDate(offset.getDate()+i*3);
       due=offset.toISOString().split('T')[0];
     }
-    tasks.push({id:nid++,title,assignees:[],cat,prio:'mittel',due,done:false,comments:[],costActual:0,trashed:false});
+    var subtasks=subs.map(function(s){return {id:'st'+Date.now()+Math.random().toString(36).slice(2,6),text:s,done:false};});
+    tasks.push({id:nid++,title,assignees:[],cat,prio:'mittel',due,done:false,comments:[],costActual:0,trashed:false,subtasks:subtasks});
   });
   if(!tmpls.includes(tplId))tmpls.push(tplId);
   await save();render();
@@ -3558,7 +3603,7 @@ window.removeCriterion=async function(cat,idx){
 // ── ANBIETER / VENDOR FUNCTIONS ──
 const V_CATS=['Location','Catering','Fotografie','Musik','Dekoration','Kleidung','Sonstiges'];
 const V_STATUS=['In Prüfung','Favorit','Abgelehnt'];
-let vFilter='Alle';let vView='karten';let vOpenCriteria=new Set();let vCompareIds=[];
+let vFilter='Alle';let vView='karten';let vOpenCriteria=new Set();let vCompareIds=[];let vHideAbgelehnt=false;
 
 let editingVendorId = null;
 
@@ -3569,6 +3614,7 @@ function renderAnbieter(){
   const trashedVendors = vendors.filter(function(v){ return v.trashed; });
   const activeVendors = vendors.filter(function(v){ return !v.trashed; });
   var filteredBase = vFilter === 'Papierkorb' ? trashedVendors : activeVendors.filter(function(v){ return vFilter === 'Alle' || v.cat === vFilter; });
+  if(vHideAbgelehnt && vFilter !== 'Papierkorb'){filteredBase=filteredBase.filter(function(v){return v.status!=='Abgelehnt';});}
   var filtered = filteredBase;
   if(vendorSearch.trim()){var vsq=vendorSearch.trim().toLowerCase();filtered=filteredBase.filter(function(v){return (v.name||'').toLowerCase().indexOf(vsq)>-1||(v.cat||'').toLowerCase().indexOf(vsq)>-1||(v.notes||'').toLowerCase().indexOf(vsq)>-1;});}
 
@@ -3593,8 +3639,14 @@ function renderAnbieter(){
   }
   h += '</div>';
 
-  // Vendor search
-  h += '<div style="position:relative;margin-bottom:12px"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none">🔍</span><input type="text" class="vendor-search-input" value="'+(vendorSearch||'').replace(/"/g,'&quot;')+'" placeholder="Anbieter durchsuchen…" oninput="window._setVendorSearch(this.value)" style="width:100%;padding:10px 14px 10px 38px;border-radius:10px;border:none;background:rgba(120,120,128,.12);font-family:inherit;font-size:15px;color:var(--t);outline:none"/></div>';
+  // Vendor search + hide-rejected toggle
+  h += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">';
+  h += '<div style="position:relative;flex:1"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none">🔍</span><input type="text" class="vendor-search-input" value="'+(vendorSearch||'').replace(/"/g,'&quot;')+'" placeholder="Anbieter durchsuchen…" oninput="window._setVendorSearch(this.value)" style="width:100%;padding:10px 14px 10px 38px;border-radius:10px;border:none;background:rgba(120,120,128,.12);font-family:inherit;font-size:15px;color:var(--t);outline:none"/></div>';
+  var abgCount=activeVendors.filter(function(v){return v.status==='Abgelehnt';}).length;
+  if(abgCount>0){
+    h += '<button id="btn-hide-abgelehnt" style="font-size:12px;padding:8px 12px;border-radius:10px;border:1px solid '+(vHideAbgelehnt?'var(--rose)':'var(--br)')+';background:'+(vHideAbgelehnt?'var(--rose-l)':'var(--sur)')+';color:'+(vHideAbgelehnt?'var(--rose-d)':'var(--t2)')+';font-family:inherit;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0">'+(vHideAbgelehnt?'Abgelehnte einblenden':'Abgelehnte ausblenden')+'</button>';
+  }
+  h += '</div>';
 
   // Action buttons (hide when in trash view)
   if(vFilter !== 'Papierkorb'){
@@ -3765,6 +3817,8 @@ function attachAnbieterListeners(cats){
   if(dlBtn) dlBtn.addEventListener('click', downloadCSVTemplate);
   var impBtn = document.getElementById('btn-csv-import');
   if(impBtn) impBtn.addEventListener('click', function(){ document.getElementById('csv-file-input').click(); });
+  var habBtn = document.getElementById('btn-hide-abgelehnt');
+  if(habBtn) habBtn.addEventListener('click', function(){ vHideAbgelehnt=!vHideAbgelehnt; renderAnbieter(); });
 
   // Make vendor cards clickable to open vendor popup
   a.querySelectorAll('.v-card').forEach(function(card){
