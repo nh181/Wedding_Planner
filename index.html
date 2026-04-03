@@ -1384,7 +1384,7 @@ function openTaskPopup(t){
 
   // Cost change
   const costEl=pc.querySelector('#tp-cost');
-  if(costEl){costEl.addEventListener('input',()=>{
+  if(costEl){costEl.addEventListener('change',()=>{
     const tt=tasks.find(x=>x.id===t.id);if(!tt)return;
     const oldVal=tt.costActual||0;
     const newVal=parseFloat(costEl.value)||0;
@@ -1480,6 +1480,8 @@ function openTaskPopup(t){
   if(delFinalBtn){delFinalBtn.addEventListener('click',async()=>{
     const id=parseInt(delFinalBtn.dataset.popupDeleteFinal);
     if(!confirm('Endgültig löschen? Kann nicht rückgängig gemacht werden.'))return;
+    const dt=tasks.find(x=>x.id===id);
+    if(dt)budgetHistory=budgetHistory.filter(e=>e.title!==dt.title||e.cat!==dt.cat);
     tasks=tasks.filter(x=>x.id!==id);
     _taskDirty=false;await save();document.getElementById('task-popup').classList.remove('open');render();
   });}
@@ -1795,11 +1797,15 @@ window.restoreTask=async function(id){
 };
 window.finalDelete=async function(id){
   if(!confirm('Endgültig löschen? Kann nicht rückgängig gemacht werden.'))return;
+  const dt=tasks.find(x=>x.id===id);
+  if(dt)budgetHistory=budgetHistory.filter(e=>e.title!==dt.title||e.cat!==dt.cat);
   tasks=tasks.filter(x=>x.id!==id);
   await save();render();
 };
 window.emptyTrash=async function(){
   if(!confirm('Alle Aufgaben im Papierkorb endgültig löschen?'))return;
+  var trashedTasks=tasks.filter(x=>x.trashed);
+  trashedTasks.forEach(function(dt){budgetHistory=budgetHistory.filter(e=>e.title!==dt.title||e.cat!==dt.cat);});
   tasks=tasks.filter(x=>!x.trashed);
   await save();render();
 };
@@ -2167,10 +2173,14 @@ document.body.addEventListener('click',async function(e){
     await save();render();
   } else if(action==='delete-final'){
     if(!confirm('Endgültig löschen? Kann nicht rückgängig gemacht werden.'))return;
+    const dt=tasks.find(x=>x.id===id);
+    if(dt)budgetHistory=budgetHistory.filter(e=>e.title!==dt.title||e.cat!==dt.cat);
     tasks=tasks.filter(x=>x.id!==id);
     await save();render();
   } else if(action==='empty-trash'){
     if(!confirm('Alle Aufgaben im Papierkorb endgültig löschen?'))return;
+    var trashedT=tasks.filter(x=>x.trashed);
+    trashedT.forEach(function(dt){budgetHistory=budgetHistory.filter(e=>e.title!==dt.title||e.cat!==dt.cat);});
     tasks=tasks.filter(x=>!x.trashed);
     await save();render();
   } else if(action==='empty-vendor-trash'){
