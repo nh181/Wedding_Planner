@@ -1,5 +1,5 @@
-const CACHE = 'hochzeitsplaner-v14';
-const ASSETS = ['/', '/index.html', '/manifest.json'];
+const CACHE = 'hochzeitsplaner-v15';
+const ASSETS = ['/', '/index.html', '/manifest.json', '/icon-180.png', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', e => {
   // Skip waiting = activate immediately, don't wait for old tabs to close
