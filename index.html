@@ -460,8 +460,8 @@
     .sheet2-btn-danger{flex:1;padding:14px;border-radius:14px;border:none;background:var(--red-l);color:var(--red);font-family:inherit;font-size:15px;font-weight:500;cursor:pointer;transition:opacity .15s}
     .sheet2-btn-danger:hover{opacity:.9}
     .sheet2-btn-ghost{flex:1;padding:14px;border-radius:14px;border:none;background:rgba(120,120,128,.1);color:var(--t2);font-family:inherit;font-size:15px;font-weight:500;cursor:pointer;transition:opacity .15s}
-    .sheet2-saved-indicator{position:fixed;bottom:calc(env(safe-area-inset-bottom,20px) + 16px);left:50%;transform:translateX(-50%) translateY(60px);background:rgba(0,0,0,.8);color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;font-weight:500;z-index:9999;transition:transform .3s cubic-bezier(0.32,0.72,0,1);pointer-events:none;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-    .sheet2-saved-indicator.show{transform:translateX(-50%) translateY(0)}
+    .sheet2-saved-indicator{position:fixed;bottom:calc(env(safe-area-inset-bottom,20px) + 16px);left:50%;transform:translateX(-50%);background:rgba(0,0,0,.8);color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;font-weight:500;z-index:9999;transition:opacity .3s ease;pointer-events:none;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);opacity:0}
+    .sheet2-saved-indicator.show{opacity:1}
     .sheet2-star-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0}
     .sheet2-star-row .star-label{font-size:13px;color:var(--t2)}
     .sheet2-star-row .star-icons{display:flex;gap:2px}
