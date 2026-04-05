@@ -2,7 +2,7 @@
   "name": "Hochzeitsplaner",
   "short_name": "Hochzeit",
   "description": "Aufgaben für euren großen Tag",
-  "start_url": "/index.html",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#fdfaf8",
   "theme_color": "#c2185b",

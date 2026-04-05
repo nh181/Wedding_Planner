@@ -4593,7 +4593,7 @@ setTimeout(function(){
       });
     }).catch(function(){});
     // Alten Cache sofort löschen (aktueller Cache wird vom Service Worker verwaltet)
-    if(window.caches)caches.keys().then(function(ks){ks.forEach(function(k){if(k!=='hochzeitsplaner-v15')caches.delete(k);});});
+    if(window.caches)caches.keys().then(function(ks){ks.forEach(function(k){if(k!=='hochzeitsplaner-v16')caches.delete(k);});});
   }
 },1000);
 </script>

@@ -1,5 +1,5 @@
-const CACHE = 'hochzeitsplaner-v15';
-const ASSETS = ['/', '/index.html', '/manifest.json', '/icon-180.png', '/icon-192.png', '/icon-512.png'];
+const CACHE = 'hochzeitsplaner-v16';
+const ASSETS = ['./', './index.html', './manifest.json', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
   // Skip waiting = activate immediately, don't wait for old tabs to close
@@ -29,6 +29,6 @@ self.addEventListener('fetch', e => {
       const clone = response.clone();
       caches.open(CACHE).then(c => c.put(e.request, clone));
       return response;
-    }).catch(() => caches.match(e.request).then(r => r || caches.match('/index.html')))
+    }).catch(() => caches.match(e.request).then(r => r || caches.match('./index.html')))
   );
 });
