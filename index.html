@@ -564,23 +564,26 @@
     .guest-card.dragging{opacity:.4;background:var(--rose-l)!important}
     .guest-card.drag-over-top{box-shadow:0 -3px 0 0 var(--rose)}
     .guest-card.drag-over-bottom{box-shadow:0 3px 0 0 var(--rose)}
-    .tp-wrap{display:flex;gap:12px;height:calc(100vh - 200px);min-height:400px}
-    .tp-canvas{flex:1;background:var(--sur);border-radius:16px;position:relative;overflow:auto;border:1px solid var(--br);touch-action:none}
-    .tp-sidebar{width:220px;flex-shrink:0;overflow-y:auto;max-height:100%}
-    .tp-table{position:absolute;display:flex;align-items:center;justify-content:center;cursor:move;user-select:none;-webkit-user-select:none;touch-action:none;transition:box-shadow .15s}
-    .tp-table.round{border-radius:50%}
-    .tp-table.rect{border-radius:12px}
-    .tp-table:hover{box-shadow:0 4px 16px rgba(0,0,0,.12)}
-    .tp-table.selected{box-shadow:0 0 0 3px var(--rose)}
-    .tp-seat{position:absolute;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;cursor:pointer;transition:transform .15s,box-shadow .15s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .tp-seat.empty{background:rgba(120,120,128,.08);border:2px dashed rgba(120,120,128,.2);color:var(--t3)}
-    .tp-seat.filled{border:2px solid var(--rose);color:#fff;font-size:9px}
-    .tp-seat.drop-target{transform:scale(1.2);box-shadow:0 0 0 3px var(--rose)}
-    .tp-sg{padding:6px 10px;border-radius:10px;background:var(--sur);margin-bottom:4px;font-size:13px;cursor:grab;display:flex;align-items:center;gap:8px;border:1px solid var(--br);touch-action:none;user-select:none;-webkit-user-select:none}
-    .tp-sg.placed{opacity:.4;text-decoration:line-through}
+    .tp-wrap{display:flex;gap:14px;min-height:500px}
+    .tp-canvas{flex:1;background:var(--sur);border-radius:16px;position:relative;overflow:auto;border:1px solid var(--br);min-height:500px}
+    .tp-sidebar{width:240px;flex-shrink:0;overflow-y:auto;max-height:calc(100vh - 260px)}
+    .tp-tbl-wrap{position:absolute;user-select:none;-webkit-user-select:none}
+    .tp-tbl-inner{position:relative;display:flex;align-items:center;justify-content:center;cursor:move;touch-action:none}
+    .tp-tbl-inner.round{border-radius:50%;background:var(--sur2);border:2px solid var(--br)}
+    .tp-tbl-inner.rect{border-radius:14px;background:var(--sur2);border:2px solid var(--br)}
+    .tp-tbl-inner:hover{border-color:var(--rose)}
+    .tp-tbl-edit{position:absolute;top:-10px;right:-10px;width:30px;height:30px;border-radius:50%;background:var(--rose);color:#fff;border:none;cursor:pointer;font-size:14px;display:none;align-items:center;justify-content:center;z-index:3;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+    .tp-tbl-wrap:hover .tp-tbl-edit{display:flex}
+    @media(hover:none){.tp-tbl-edit{display:flex!important}}
+    .tp-seat{position:absolute;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;cursor:pointer;transition:transform .15s,box-shadow .15s;line-height:1.1;text-align:center;z-index:1}
+    .tp-seat.empty{background:var(--bg);border:2px dashed rgba(120,120,128,.25);color:var(--t3);font-size:14px}
+    .tp-seat.filled{color:#fff;font-size:8px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+    .tp-seat.drop-target{transform:scale(1.25);box-shadow:0 0 0 3px var(--rose)}
+    .tp-sg{padding:8px 10px;border-radius:10px;background:var(--sur);margin-bottom:4px;font-size:13px;cursor:grab;display:flex;align-items:center;gap:8px;border:1px solid var(--br);touch-action:none;user-select:none;-webkit-user-select:none}
+    .tp-sg:hover{border-color:var(--rose);background:var(--rose-l)}
+    .tp-sg.placed{opacity:.5;cursor:pointer;border-style:dashed}
     .tp-sg.dragging-guest{opacity:.5;background:var(--rose-l)}
-    .tp-table-label{position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:600;color:var(--t2);white-space:nowrap}
-    @media(max-width:700px){.tp-wrap{flex-direction:column-reverse;height:auto}.tp-canvas{min-height:350px}.tp-sidebar{width:100%;max-height:200px}}
+    @media(max-width:700px){.tp-wrap{flex-direction:column-reverse;min-height:auto}.tp-canvas{min-height:400px}.tp-sidebar{width:100%;max-height:220px}}
     .st-mini{font-size:11px;color:var(--rose);font-weight:600;margin-left:4px}
 
     /* ── VIEW TOGGLE ── */
@@ -2652,24 +2655,73 @@ function renderTischplan(a){
     h+='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:14px;text-align:center;padding:20px">Füge Tische hinzu, um den Tischplan zu erstellen</div>';
   }
   tables.forEach(function(t){
-    var w=t.shape==='round'?120:200;
-    var ht2=t.shape==='round'?120:80;
-    var isSelected=_tpSelectedTable===t.id;
-    h+='<div class="tp-table '+(t.shape||'round')+(isSelected?' selected':'')+'" data-tid="'+t.id+'" style="left:'+t.x+'px;top:'+t.y+'px;width:'+w+'px;height:'+ht2+'px;background:var(--sur2);border:2px solid var(--br)">';
-    h+='<div style="font-size:12px;font-weight:600;color:var(--t2);text-align:center;pointer-events:none">'+t.name+'<br><span style="font-size:10px;font-weight:400;color:var(--t3)">'+(t.guests?t.guests.filter(function(gid){return gid;}).length:0)+'/'+t.seats+'</span></div>';
-    // Seats around the table
     var seatCount=t.seats||8;
+    // Dynamic sizing based on seat count
+    var tw,th2;
+    if(t.shape==='rect'){
+      var seatsPerSide=Math.ceil(seatCount/2);
+      tw=Math.max(240, seatsPerSide*50);
+      th2=90;
+    } else {
+      // Round: scale with seats, min 140
+      var circumference=seatCount*46;
+      var radius=Math.max(70, circumference/(2*Math.PI));
+      tw=radius*2;
+      th2=radius*2;
+    }
+
+    // Compute the outer wrapper size (table + seats outside)
+    var pad=40; // space for seats around the table
+    var wrapW=tw+pad*2;
+    var wrapH=th2+pad*2;
+
+    h+='<div class="tp-tbl-wrap" data-tid="'+t.id+'" style="left:'+(t.x||0)+'px;top:'+(t.y||0)+'px;width:'+wrapW+'px;height:'+wrapH+'px">';
+
+    // Edit button (shown on hover via CSS)
+    h+='<button class="tp-tbl-edit" data-edit-tid="'+t.id+'">✎</button>';
+
+    // Inner table shape
+    h+='<div class="tp-tbl-inner '+(t.shape||'round')+'" style="position:absolute;left:'+pad+'px;top:'+pad+'px;width:'+tw+'px;height:'+th2+'px">';
+    h+='<div style="font-size:12px;font-weight:700;color:var(--t);text-align:center;pointer-events:none;line-height:1.3">'+t.name+'<br><span style="font-size:10px;font-weight:400;color:var(--t3)">'+(t.guests?t.guests.filter(function(gid){return gid;}).length:0)+'/'+seatCount+'</span></div>';
+    h+='</div>';
+
+    // Seats positioned relative to wrapper center
+    var cx=wrapW/2;
+    var cy=wrapH/2;
     for(var si=0;si<seatCount;si++){
-      var angle=(2*Math.PI/seatCount)*si - Math.PI/2;
-      var rx=(w/2)+18;var ry=(ht2/2)+18;
-      var sx=w/2+rx*Math.cos(angle)-14;
-      var sy=ht2/2+ry*Math.sin(angle)-14;
       var gid=t.guests&&t.guests[si]?t.guests[si]:null;
       var guest=gid?guests.find(function(g){return g.id===gid;}):null;
       var sColor=guest?(guest.status==='Zusage'?'#34c759':guest.status==='Absage'?'#ef4444':'#ff9500'):'transparent';
+      var sx,sy;
+
+      if(t.shape==='rect'){
+        // Place seats along the long sides of the rectangle
+        var seatsPerSide=Math.ceil(seatCount/2);
+        var seatSpacing=tw/(seatsPerSide);
+        if(si<seatsPerSide){
+          // Top row
+          sx=pad + seatSpacing*si + seatSpacing/2 - 17;
+          sy=-1;
+        } else {
+          // Bottom row
+          var bi=si-seatsPerSide;
+          var bottomSeats=seatCount-seatsPerSide;
+          var bSpacing=tw/bottomSeats;
+          sx=pad + bSpacing*bi + bSpacing/2 - 17;
+          sy=wrapH-33;
+        }
+      } else {
+        // Round: distribute evenly in a circle
+        var angle=(2*Math.PI/seatCount)*si - Math.PI/2;
+        var rx=wrapW/2 - 17;
+        var ry=wrapH/2 - 17;
+        sx=cx + rx*Math.cos(angle) - 17;
+        sy=cy + ry*Math.sin(angle) - 17;
+      }
+
       if(guest){
         h+='<div class="tp-seat filled" data-tid="'+t.id+'" data-si="'+si+'" style="left:'+sx+'px;top:'+sy+'px;background:'+sColor+'" title="'+guest.name+'">'+guest.name.substring(0,3)+'</div>';
-      }else{
+      } else {
         h+='<div class="tp-seat empty" data-tid="'+t.id+'" data-si="'+si+'" style="left:'+sx+'px;top:'+sy+'px" title="Freier Platz">+</div>';
       }
     }
@@ -2720,52 +2772,71 @@ function renderTischplan(a){
     save();renderGaeste();
   });
 
-  // Table click to select/edit
-  a.querySelectorAll('.tp-table').forEach(function(el){
-    el.addEventListener('dblclick',function(e){
+  // Edit button click (visible on hover)
+  a.querySelectorAll('.tp-tbl-edit').forEach(function(btn){
+    btn.addEventListener('click',function(e){
       e.stopPropagation();
-      var tid=+el.dataset.tid;
+      var tid=+btn.dataset.editTid;
+      var t=tables.find(function(x){return x.id===tid;});
+      if(t)openTableEdit(t);
+    });
+    // Also make it work on touch (tap)
+    btn.addEventListener('touchend',function(e){
+      e.stopPropagation();e.preventDefault();
+      var tid=+btn.dataset.editTid;
       var t=tables.find(function(x){return x.id===tid;});
       if(t)openTableEdit(t);
     });
   });
 
-  // Table drag (move position)
-  a.querySelectorAll('.tp-table').forEach(function(el){
+  // Table drag (move position) - attach to .tp-tbl-wrap
+  a.querySelectorAll('.tp-tbl-wrap').forEach(function(el){
     var tid=+el.dataset.tid;
-    var startX,startY,origX,origY,isDragging=false;
+    var startX,startY,origX,origY,isDragging=false,moved=false;
 
     function onStart(cx,cy){
       var t=tables.find(function(x){return x.id===tid;});if(!t)return;
-      startX=cx;startY=cy;origX=t.x;origY=t.y;isDragging=true;
+      startX=cx;startY=cy;origX=t.x||0;origY=t.y||0;isDragging=true;moved=false;
       _tpSelectedTable=tid;
     }
     function onMove(cx,cy){
       if(!isDragging)return;
+      var dx=cx-startX;var dy=cy-startY;
+      if(Math.abs(dx)>3||Math.abs(dy)>3)moved=true;
       var t=tables.find(function(x){return x.id===tid;});if(!t)return;
-      t.x=Math.max(0,origX+(cx-startX));
-      t.y=Math.max(0,origY+(cy-startY));
+      t.x=Math.max(0,origX+dx);
+      t.y=Math.max(0,origY+dy);
       el.style.left=t.x+'px';el.style.top=t.y+'px';
     }
     function onEnd(){
-      if(!isDragging)return;isDragging=false;save();
+      if(!isDragging)return;isDragging=false;
+      if(moved)save();
+      // If not moved, treat as tap → open edit on mobile
+      if(!moved){
+        var t=tables.find(function(x){return x.id===tid;});
+        if(t)openTableEdit(t);
+      }
     }
 
     el.addEventListener('mousedown',function(e){
-      if(e.target.classList.contains('tp-seat'))return;
+      if(e.target.classList.contains('tp-seat')||e.target.classList.contains('tp-tbl-edit'))return;
       e.preventDefault();onStart(e.clientX,e.clientY);
       function mm(ev){onMove(ev.clientX,ev.clientY);}
       function mu(){onEnd();document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu);}
       document.addEventListener('mousemove',mm);document.addEventListener('mouseup',mu);
     });
     el.addEventListener('touchstart',function(e){
-      if(e.target.classList.contains('tp-seat'))return;
+      if(e.target.classList.contains('tp-seat')||e.target.classList.contains('tp-tbl-edit'))return;
       e.preventDefault();var tc=e.touches[0];onStart(tc.clientX,tc.clientY);
     },{passive:false});
     el.addEventListener('touchmove',function(e){
+      if(!isDragging)return;
       e.preventDefault();var tc=e.touches[0];onMove(tc.clientX,tc.clientY);
     },{passive:false});
-    el.addEventListener('touchend',function(){onEnd();});
+    el.addEventListener('touchend',function(e){
+      if(e.target.classList.contains('tp-seat')||e.target.classList.contains('tp-tbl-edit'))return;
+      onEnd();
+    });
   });
 
   // Guest drag from sidebar to seat
@@ -2784,18 +2855,14 @@ function renderTischplan(a){
   a.querySelectorAll('.tp-seat').forEach(function(seat){
     var tid=+seat.dataset.tid;var si=+seat.dataset.si;
 
-    // Click on empty seat: assign first unplaced guest or show picker
     seat.addEventListener('click',function(e){
       e.stopPropagation();
       var t=tables.find(function(x){return x.id===tid;});if(!t)return;
       if(!t.guests)t.guests=[];
       if(t.guests[si]){
-        // Remove guest from seat
         t.guests[si]=null;
         save();renderGaeste();
       } else if(_tpDragGuestId){
-        // Place dragged guest
-        // Remove from any other seat first
         tables.forEach(function(tb){if(tb.guests)tb.guests=tb.guests.map(function(gid2){return gid2===_tpDragGuestId?null:gid2;});});
         t.guests[si]=_tpDragGuestId;
         _tpDragGuestId=null;
@@ -2803,7 +2870,6 @@ function renderTischplan(a){
       }
     });
 
-    // Touch/mouse drop on seat
     seat.addEventListener('touchend',function(e){
       if(!_tpDragGuestId)return;
       e.preventDefault();
@@ -2839,7 +2905,6 @@ function renderTischplan(a){
     });
     document.addEventListener('touchend',function(){
       if(_tpDragGuestId){
-        // Drop on a highlighted seat
         var dropSeat=document.querySelector('.tp-seat.drop-target');
         if(dropSeat){
           var tid2=+dropSeat.dataset.tid;var si2=+dropSeat.dataset.si;
@@ -5124,7 +5189,7 @@ setTimeout(function(){
       });
     }).catch(function(){});
     // Alten Cache sofort löschen (aktueller Cache wird vom Service Worker verwaltet)
-    if(window.caches)caches.keys().then(function(ks){ks.forEach(function(k){if(k!=='hochzeitsplaner-v18')caches.delete(k);});});
+    if(window.caches)caches.keys().then(function(ks){ks.forEach(function(k){if(k!=='hochzeitsplaner-v19')caches.delete(k);});});
   }
 },1000);
 </script>
