@@ -2573,6 +2573,7 @@ function _reorderGuest(fromId,toId,before){
   // Update sortOrder on all
   active.forEach(function(g,i){g.sortOrder=i+1;});
   save();renderGaeste();
+}
 
 function renderGuestTrash(a,trashed){
   let h=`<div style="padding:0 0 120px 0">`;
