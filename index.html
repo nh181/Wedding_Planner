@@ -559,6 +559,11 @@
     .subtask-add{display:flex;gap:8px;margin-top:8px}
     .subtask-add input{flex:1;padding:8px 12px;border-radius:10px;border:none;background:rgba(120,120,128,.12);font-family:inherit;font-size:14px;color:var(--t);outline:none}
     .subtask-add button{padding:8px 14px;border-radius:10px;border:none;background:var(--rose);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0}
+    .g-drag-handle{width:28px;display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:16px;cursor:grab;flex-shrink:0;touch-action:none;user-select:none;-webkit-user-select:none}
+    .g-drag-handle:active{cursor:grabbing}
+    .guest-card.dragging{opacity:.4;background:var(--rose-l)!important}
+    .guest-card.drag-over-top{box-shadow:0 -3px 0 0 var(--rose)}
+    .guest-card.drag-over-bottom{box-shadow:0 3px 0 0 var(--rose)}
     .st-mini{font-size:11px;color:var(--rose);font-weight:600;margin-left:4px}
 
     /* ── VIEW TOGGLE ── */
@@ -854,8 +859,29 @@ let tasks=[],vendors=[],wDate='',tmpls=[],nid=1,vnid=1,user=null,role='gast',fir
 let allUsers=[],totalBudget=0,catBudget={};
 let taskSort='none',taskView='liste',budgetHistory=[];
 let taskSearch='',vendorSearch='',guestSearch='';
-let guests=[];let guestFilter={von:'Alle',beziehung:'Alle',status:'Alle'};let gnid=1;
+let guests=[];let guestFilter={von:'Alle',beziehung:'Alle',status:'Alle'};let gnid=1;let guestSort='manual';
 let packages=[];let pkgId=1;
+let currentTheme='rose';
+const THEMES={
+  rose:{name:'Rose',primary:'#e91e8c',primaryLight:'#fce4ec',primaryDark:'#880e4f',bg:'#f2f2f7',sur:'#ffffff',sur2:'#f9f9f9',t:'#000000',t2:'#3c3c43',t3:'#8e8e93',br:'rgba(0,0,0,0.10)',preview:['#e91e8c','#fce4ec','#880e4f']},
+  sage:{name:'Sage',primary:'#5a8a6a',primaryLight:'#e8f0eb',primaryDark:'#2d5a3a',bg:'#f4f6f4',sur:'#ffffff',sur2:'#f6f9f7',t:'#1a2e1a',t2:'#3c4a3c',t3:'#7a8a7a',br:'rgba(0,0,0,0.08)',preview:['#5a8a6a','#e8f0eb','#2d5a3a']},
+  navy:{name:'Navy & Gold',primary:'#1e3a5f',primaryLight:'#e8eef5',primaryDark:'#0d1f3c',bg:'#f0f2f5',sur:'#ffffff',sur2:'#f5f7fa',t:'#0d1f3c',t2:'#3c4a5f',t3:'#7a8a9e',br:'rgba(0,0,0,0.08)',preview:['#1e3a5f','#e8eef5','#c9a84c']},
+  lavender:{name:'Lavendel',primary:'#8b5cf6',primaryLight:'#ede9fe',primaryDark:'#5b21b6',bg:'#f5f3ff',sur:'#ffffff',sur2:'#faf8ff',t:'#1e1b2e',t2:'#44415a',t3:'#8b88a0',br:'rgba(0,0,0,0.08)',preview:['#8b5cf6','#ede9fe','#5b21b6']},
+  sunset:{name:'Sunset',primary:'#c2662d',primaryLight:'#fdf0e8',primaryDark:'#7c3a10',bg:'#faf5f0',sur:'#ffffff',sur2:'#fdf8f4',t:'#2e1a0d',t2:'#5a4a3c',t3:'#9e8a7a',br:'rgba(0,0,0,0.08)',preview:['#c2662d','#fdf0e8','#7c3a10']},
+  berry:{name:'Berry',primary:'#9d174d',primaryLight:'#fce7f3',primaryDark:'#5b0f30',bg:'#fdf2f8',sur:'#ffffff',sur2:'#fdf5f9',t:'#1a0a10',t2:'#4a3040',t3:'#9a7088',br:'rgba(0,0,0,0.08)',preview:['#9d174d','#fce7f3','#5b0f30']},
+  dark:{name:'Dunkel',primary:'#e91e8c',primaryLight:'rgba(233,30,140,.15)',primaryDark:'#ff6eb4',bg:'#000000',sur:'#1c1c1e',sur2:'#2c2c2e',t:'#ffffff',t2:'#ebebf5',t3:'#8e8e93',br:'rgba(255,255,255,0.12)',preview:['#e91e8c','#1c1c1e','#000000']}
+};
+function applyTheme(id){
+  var th=THEMES[id];if(!th)th=THEMES.rose;
+  currentTheme=id;
+  var r=document.documentElement.style;
+  r.setProperty('--rose',th.primary);r.setProperty('--rose-l',th.primaryLight);r.setProperty('--rose-d',th.primaryDark);
+  r.setProperty('--bg',th.bg);r.setProperty('--sur',th.sur);r.setProperty('--sur2',th.sur2);
+  r.setProperty('--t',th.t);r.setProperty('--t2',th.t2);r.setProperty('--t3',th.t3);
+  r.setProperty('--br',th.br);r.setProperty('--brm',th.br.replace('0.10','0.16').replace('0.08','0.14').replace('0.12','0.20'));
+  document.querySelector('meta[name="theme-color"]').content=th.bg;
+  document.body.style.background=th.bg;
+}
 window._setTaskSearch=function(v){taskSearch=v;render();};
 window._setVendorSearch=function(v){vendorSearch=v;renderAnbieter();};
 window._setGuestSearch=function(v){guestSearch=v;renderGaeste();};
@@ -1625,6 +1651,7 @@ function renderHome(){
 async function loadInfo(){
   try{const s=await getDoc(ID);if(s.exists()){const d=s.data();
     ['g-loc','g-time','g-dress'].forEach((id,i)=>{const e=document.getElementById(id);if(e)e.textContent=[d.location,d.time,d.dresscode][i]||'Wird bekannt gegeben';});
+    if(d.theme&&THEMES[d.theme])applyTheme(d.theme);
   }}catch(e){}
 }
 
@@ -2357,18 +2384,31 @@ function renderGaeste(){
     <button id="btn-import-guests" style="padding:10px 16px;border-radius:12px;border:1px solid var(--br);background:var(--c);color:var(--t);font-size:13px;cursor:pointer;font-family:inherit">CSV Import</button>
   </div>`;
 
-  // Count
-  h+=`<div style="font-size:12px;color:var(--t3);margin-bottom:10px">${list.length} von ${total} Gästen</div>`;
+  // Sort toggle + Count
+  h+=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">`;
+  h+=`<div style="font-size:12px;color:var(--t3)">${list.length} von ${total} Gästen</div>`;
+  h+=`<div style="display:flex;gap:4px">`;
+  h+=`<button data-gsort="manual" style="font-size:11px;padding:4px 10px;border-radius:8px;border:none;cursor:pointer;font-family:inherit;background:${guestSort==='manual'?'var(--rose)':'rgba(120,120,128,.1)'};color:${guestSort==='manual'?'#fff':'var(--t2)'}">Manuell</button>`;
+  h+=`<button data-gsort="alpha" style="font-size:11px;padding:4px 10px;border-radius:8px;border:none;cursor:pointer;font-family:inherit;background:${guestSort==='alpha'?'var(--rose)':'rgba(120,120,128,.1)'};color:${guestSort==='alpha'?'#fff':'var(--t2)'}">A–Z</button>`;
+  h+=`<button data-gsort="status" style="font-size:11px;padding:4px 10px;border-radius:8px;border:none;cursor:pointer;font-family:inherit;background:${guestSort==='status'?'var(--rose)':'rgba(120,120,128,.1)'};color:${guestSort==='status'?'#fff':'var(--t2)'}">Status</button>`;
+  h+=`</div></div>`;
+
+  // Apply sorting
+  if(guestSort==='alpha'){list.sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});}
+  else if(guestSort==='status'){var so={Zusage:0,'':1,Absage:2};list.sort(function(a,b){return (so[a.status]||1)-(so[b.status]||1)||(a.name||'').localeCompare(b.name||'');});}
+  else{list.sort(function(a,b){return (a.sortOrder||0)-(b.sortOrder||0);});}
 
   // Guest list
   if(!list.length){
     h+=`<div class="empty"><div class="ei">💒</div>Keine Gäste gefunden.</div>`;
   }else{
+    h+=`<div id="guest-list-sortable">`;
     list.forEach(g=>{
       const statusColor=g.status==='Zusage'?'#34c759':g.status==='Absage'?'#ef4444':'#ff9500';
       const statusBg=g.status==='Zusage'?'rgba(52,199,89,.1)':g.status==='Absage'?'rgba(239,68,68,.1)':'rgba(255,149,0,.1)';
-      h+=`<div class="guest-card" data-gid="${g.id}" style="background:var(--c);border-radius:14px;padding:14px;margin-bottom:8px;cursor:pointer">
-        <div style="display:flex;align-items:center;gap:12px">
+      h+=`<div class="guest-card" data-gid="${g.id}" style="background:var(--sur);border-radius:14px;padding:14px;margin-bottom:8px;cursor:pointer;transition:box-shadow .15s,opacity .15s">
+        <div style="display:flex;align-items:center;gap:8px">
+          ${guestSort==='manual'?'<div class="g-drag-handle" data-gid="'+g.id+'">⠿</div>':''}
           <div style="width:38px;height:38px;border-radius:50%;background:${statusBg};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:${statusColor};flex-shrink:0">${g.name?g.name[0].toUpperCase():'?'}</div>
           <div style="flex:1;min-width:0">
             <div style="font-size:15px;font-weight:600;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${g.name}</div>
@@ -2385,6 +2425,7 @@ function renderGaeste(){
         </div>
       </div>`;
     });
+    h+=`</div>`;
   }
 
   h+=`</div>`;
@@ -2425,7 +2466,113 @@ function renderGaeste(){
       if(g)openGuestPopup(g);
     });
   });
+
+  // Sort toggle buttons
+  a.querySelectorAll('[data-gsort]').forEach(btn=>{
+    btn.addEventListener('click',()=>{guestSort=btn.dataset.gsort;renderGaeste();});
+  });
+
+  // Drag & drop for manual sorting
+  if(guestSort==='manual'){
+    var dragId=null;
+    var container=document.getElementById('guest-list-sortable');
+    if(container){
+      // Touch drag & drop
+      a.querySelectorAll('.g-drag-handle').forEach(function(handle){
+        handle.addEventListener('touchstart',function(e){
+          e.preventDefault();e.stopPropagation();
+          dragId=+handle.dataset.gid;
+          var card=handle.closest('.guest-card');if(card)card.classList.add('dragging');
+        },{passive:false});
+      });
+      container.addEventListener('touchmove',function(e){
+        if(!dragId)return;e.preventDefault();
+        var touch=e.touches[0];
+        var cards=container.querySelectorAll('.guest-card');
+        cards.forEach(function(c){c.classList.remove('drag-over-top','drag-over-bottom');});
+        cards.forEach(function(c){
+          if(+c.dataset.gid===dragId)return;
+          var rect=c.getBoundingClientRect();
+          if(touch.clientY>=rect.top&&touch.clientY<=rect.bottom){
+            if(touch.clientY<rect.top+rect.height/2)c.classList.add('drag-over-top');
+            else c.classList.add('drag-over-bottom');
+          }
+        });
+      },{passive:false});
+      container.addEventListener('touchend',function(e){
+        if(!dragId)return;
+        var cards=container.querySelectorAll('.guest-card');
+        var targetId=null,insertBefore=true;
+        cards.forEach(function(c){
+          if(c.classList.contains('drag-over-top')){targetId=+c.dataset.gid;insertBefore=true;}
+          if(c.classList.contains('drag-over-bottom')){targetId=+c.dataset.gid;insertBefore=false;}
+        });
+        cards.forEach(function(c){c.classList.remove('dragging','drag-over-top','drag-over-bottom');});
+        if(targetId&&targetId!==dragId){
+          _reorderGuest(dragId,targetId,insertBefore);
+        }
+        dragId=null;
+      });
+
+      // Mouse drag & drop
+      a.querySelectorAll('.g-drag-handle').forEach(function(handle){
+        handle.addEventListener('mousedown',function(e){
+          e.preventDefault();e.stopPropagation();
+          dragId=+handle.dataset.gid;
+          var card=handle.closest('.guest-card');if(card)card.classList.add('dragging');
+          function onMove(ev){
+            if(!dragId)return;
+            var cards=container.querySelectorAll('.guest-card');
+            cards.forEach(function(c){c.classList.remove('drag-over-top','drag-over-bottom');});
+            cards.forEach(function(c){
+              if(+c.dataset.gid===dragId)return;
+              var rect=c.getBoundingClientRect();
+              if(ev.clientY>=rect.top&&ev.clientY<=rect.bottom){
+                if(ev.clientY<rect.top+rect.height/2)c.classList.add('drag-over-top');
+                else c.classList.add('drag-over-bottom');
+              }
+            });
+          }
+          function onUp(){
+            if(!dragId){document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);return;}
+            var cards=container.querySelectorAll('.guest-card');
+            var targetId2=null,insertBefore2=true;
+            cards.forEach(function(c){
+              if(c.classList.contains('drag-over-top')){targetId2=+c.dataset.gid;insertBefore2=true;}
+              if(c.classList.contains('drag-over-bottom')){targetId2=+c.dataset.gid;insertBefore2=false;}
+            });
+            cards.forEach(function(c){c.classList.remove('dragging','drag-over-top','drag-over-bottom');});
+            if(targetId2&&targetId2!==dragId){
+              _reorderGuest(dragId,targetId2,insertBefore2);
+            }
+            dragId=null;
+            document.removeEventListener('mousemove',onMove);
+            document.removeEventListener('mouseup',onUp);
+          }
+          document.addEventListener('mousemove',onMove);
+          document.addEventListener('mouseup',onUp);
+        });
+      });
+    }
+  }
 }
+
+function _reorderGuest(fromId,toId,before){
+  // Get current visible order
+  var active=guests.filter(function(g){return !g.trashed;});
+  active.sort(function(a,b){return (a.sortOrder||0)-(b.sortOrder||0);});
+  // Remove dragged item
+  var fromIdx=active.findIndex(function(g){return g.id===fromId;});
+  if(fromIdx<0)return;
+  var item=active.splice(fromIdx,1)[0];
+  // Find target position
+  var toIdx=active.findIndex(function(g){return g.id===toId;});
+  if(toIdx<0)return;
+  if(!before)toIdx++;
+  active.splice(toIdx,0,item);
+  // Update sortOrder on all
+  active.forEach(function(g,i){g.sortOrder=i+1;});
+  save();renderGaeste();
 
 function renderGuestTrash(a,trashed){
   let h=`<div style="padding:0 0 120px 0">`;
@@ -3334,6 +3481,19 @@ async function renderInfo(){
   h+=`<div class="srow"><div><div class="slbl">Uhrzeit</div></div><input type="text" class="sinp" id="si-time" placeholder="z.B. 14:00 Uhr" onchange="saveInfo()"/></div>`;
   h+=`<div class="srow"><div><div class="slbl">Dresscode</div></div><input type="text" class="sinp" id="si-dress" placeholder="z.B. Festlich" onchange="saveInfo()"/></div>`;
   h+=`<div class="srow"><div><div class="slbl">Angemeldet als</div><div class="ssub">${user?.email||''}</div></div><div style="font-size:13px;color:var(--rose);font-weight:600">${role==='admin'?'Admin':'Mithelfer'}</div></div>`;
+  /* ── Farbkonzept ── */
+  h+=`<div class="sh" style="margin-top:24px">Farbkonzept</div>`;
+  h+=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:20px">`;
+  Object.keys(THEMES).forEach(function(tid){
+    var th=THEMES[tid];var isActive=currentTheme===tid;
+    h+=`<button onclick="setTheme('${tid}')" style="padding:14px 12px;border-radius:14px;border:2px solid ${isActive?th.primary:'transparent'};background:${th.sur};cursor:pointer;text-align:left;box-shadow:${isActive?'0 0 0 1px '+th.primary:'0 1px 3px rgba(0,0,0,.06)'}">
+      <div style="display:flex;gap:4px;margin-bottom:8px">${th.preview.map(function(c){return '<div style="width:20px;height:20px;border-radius:50%;background:'+c+'"></div>';}).join('')}</div>
+      <div style="font-size:13px;font-weight:600;color:${th.t}">${th.name}</div>
+      ${isActive?'<div style="font-size:11px;color:'+th.primary+';margin-top:2px">Aktiv</div>':''}
+    </button>`;
+  });
+  h+=`</div>`;
+
   /* ── Backup-Bereich ── */
   h+=`<div class="sh" style="margin-top:24px">Backup</div>`;
   h+=`<div style="background:var(--sur);border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
@@ -3359,7 +3519,14 @@ async function renderInfo(){
 window.setWDate=async function(v){wDate=v;await save();render();};
 window.saveInfo=async function(){
   const g=id=>document.getElementById(id)?.value||'';
-  await setDoc(ID,{location:g('si-loc'),time:g('si-time'),dresscode:g('si-dress')});
+  const s=await getDoc(ID);const prev=s.exists()?s.data():{};
+  await setDoc(ID,Object.assign({},prev,{location:g('si-loc'),time:g('si-time'),dresscode:g('si-dress')}));
+};
+window.setTheme=async function(id){
+  applyTheme(id);
+  const s=await getDoc(ID);const prev=s.exists()?s.data():{};
+  await setDoc(ID,Object.assign({},prev,{theme:id}));
+  render();
 };
 
 /* ── BACKUP: JSON Export ── */
@@ -4593,7 +4760,7 @@ setTimeout(function(){
       });
     }).catch(function(){});
     // Alten Cache sofort löschen (aktueller Cache wird vom Service Worker verwaltet)
-    if(window.caches)caches.keys().then(function(ks){ks.forEach(function(k){if(k!=='hochzeitsplaner-v16')caches.delete(k);});});
+    if(window.caches)caches.keys().then(function(ks){ks.forEach(function(k){if(k!=='hochzeitsplaner-v17')caches.delete(k);});});
   }
 },1000);
 </script>
