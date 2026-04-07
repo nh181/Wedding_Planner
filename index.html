@@ -575,7 +575,7 @@
     .tp-tbl-edit{position:absolute;top:-10px;right:-10px;width:30px;height:30px;border-radius:50%;background:var(--rose);color:#fff;border:none;cursor:pointer;font-size:14px;display:none;align-items:center;justify-content:center;z-index:3;box-shadow:0 2px 8px rgba(0,0,0,.25)}
     .tp-tbl-wrap:hover .tp-tbl-edit{display:flex}
     @media(hover:none){.tp-tbl-edit{display:flex!important}}
-    .tp-seat{position:absolute;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;cursor:pointer;transition:transform .15s,box-shadow .15s;line-height:1.1;text-align:center;z-index:1}
+    .tp-seat{position:absolute;width:34px;height:34px;min-width:34px;min-height:34px;max-width:34px;max-height:34px;box-sizing:border-box;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;cursor:pointer;transition:transform .15s,box-shadow .15s;line-height:1.1;text-align:center;z-index:1;flex-shrink:0;aspect-ratio:1/1}
     .tp-seat.empty{background:var(--bg);border:2px dashed rgba(120,120,128,.25);color:var(--t3);font-size:14px}
     .tp-seat.filled{color:#fff;font-size:8px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.15)}
     .tp-seat.drop-target{transform:scale(1.25);box-shadow:0 0 0 3px var(--rose)}
@@ -2656,38 +2656,63 @@ function renderTischplan(a){
   }
   tables.forEach(function(t){
     var seatCount=t.seats||8;
-    // Dynamic sizing based on seat count
+    var seatSize=34;
+    var halfSeat=seatSize/2;
+    var gap=6; // gap between table edge and seat edge
+
+    // Table inner dimensions
     var tw,th2;
     if(t.shape==='rect'){
       var seatsPerSide=Math.ceil(seatCount/2);
-      tw=Math.max(240, seatsPerSide*50);
-      th2=90;
+      tw=Math.max(200, seatsPerSide*48);
+      th2=80;
     } else {
-      // Round: scale with seats, min 140
-      var circumference=seatCount*46;
-      var radius=Math.max(70, circumference/(2*Math.PI));
-      tw=radius*2;
-      th2=radius*2;
+      // Round: ensure enough space so seats don't overlap each other
+      // Minimum arc distance between seat centers must be > seatSize+4
+      var minOrbit=(seatCount*(seatSize+6))/(2*Math.PI);
+      var tableRadius=Math.max(56, minOrbit - halfSeat - gap);
+      tw=tableRadius*2;
+      th2=tableRadius*2;
     }
 
-    // Compute the outer wrapper size (table + seats outside)
-    var pad=40; // space for seats around the table
-    var wrapW=tw+pad*2;
-    var wrapH=th2+pad*2;
+    // Orbit radius = distance from center to seat CENTER
+    var orbitR;
+    if(t.shape==='rect'){
+      orbitR=0; // not used for rect
+    } else {
+      orbitR=tw/2 + gap + halfSeat;
+    }
 
-    h+='<div class="tp-tbl-wrap" data-tid="'+t.id+'" style="left:'+(t.x||0)+'px;top:'+(t.y||0)+'px;width:'+wrapW+'px;height:'+wrapH+'px">';
+    // Wrapper must contain table + all seats
+    var pad=halfSeat+gap+2;
+    var wrapW,wrapH;
+    if(t.shape==='rect'){
+      wrapW=tw+pad*2;
+      wrapH=th2+seatSize+gap*2+4;
+    } else {
+      wrapW=orbitR*2+seatSize+4;
+      wrapH=orbitR*2+seatSize+4;
+    }
 
-    // Edit button (shown on hover via CSS)
+    // Center of wrapper
+    var wcx=wrapW/2;
+    var wcy=wrapH/2;
+
+    // Inner table position (centered in wrapper)
+    var tLeft=wcx-tw/2;
+    var tTop=wcy-th2/2;
+
+    h+='<div class="tp-tbl-wrap" data-tid="'+t.id+'" style="left:'+(t.x||0)+'px;top:'+(t.y||0)+'px;width:'+Math.round(wrapW)+'px;height:'+Math.round(wrapH)+'px">';
+
+    // Edit button (shown on hover via CSS, always on touch)
     h+='<button class="tp-tbl-edit" data-edit-tid="'+t.id+'">✎</button>';
 
     // Inner table shape
-    h+='<div class="tp-tbl-inner '+(t.shape||'round')+'" style="position:absolute;left:'+pad+'px;top:'+pad+'px;width:'+tw+'px;height:'+th2+'px">';
+    h+='<div class="tp-tbl-inner '+(t.shape||'round')+'" style="position:absolute;left:'+Math.round(tLeft)+'px;top:'+Math.round(tTop)+'px;width:'+Math.round(tw)+'px;height:'+Math.round(th2)+'px">';
     h+='<div style="font-size:12px;font-weight:700;color:var(--t);text-align:center;pointer-events:none;line-height:1.3">'+t.name+'<br><span style="font-size:10px;font-weight:400;color:var(--t3)">'+(t.guests?t.guests.filter(function(gid){return gid;}).length:0)+'/'+seatCount+'</span></div>';
     h+='</div>';
 
-    // Seats positioned relative to wrapper center
-    var cx=wrapW/2;
-    var cy=wrapH/2;
+    // Seats
     for(var si=0;si<seatCount;si++){
       var gid=t.guests&&t.guests[si]?t.guests[si]:null;
       var guest=gid?guests.find(function(g){return g.id===gid;}):null;
@@ -2695,34 +2720,32 @@ function renderTischplan(a){
       var sx,sy;
 
       if(t.shape==='rect'){
-        // Place seats along the long sides of the rectangle
-        var seatsPerSide=Math.ceil(seatCount/2);
-        var seatSpacing=tw/(seatsPerSide);
-        if(si<seatsPerSide){
-          // Top row
-          sx=pad + seatSpacing*si + seatSpacing/2 - 17;
-          sy=-1;
+        // Seats along top and bottom of the rectangle
+        var seatsTop=Math.ceil(seatCount/2);
+        var seatsBot=seatCount-seatsTop;
+        if(si<seatsTop){
+          // Top row: evenly distributed
+          var spacing=tw/(seatsTop);
+          sx=tLeft + spacing*si + spacing/2 - halfSeat;
+          sy=tTop - gap - seatSize;
         } else {
           // Bottom row
-          var bi=si-seatsPerSide;
-          var bottomSeats=seatCount-seatsPerSide;
-          var bSpacing=tw/bottomSeats;
-          sx=pad + bSpacing*bi + bSpacing/2 - 17;
-          sy=wrapH-33;
+          var bi=si-seatsTop;
+          var bSpacing=tw/(seatsBot);
+          sx=tLeft + bSpacing*bi + bSpacing/2 - halfSeat;
+          sy=tTop + th2 + gap;
         }
       } else {
-        // Round: distribute evenly in a circle
+        // Round: all seats on a perfect circle (same radius for x and y!)
         var angle=(2*Math.PI/seatCount)*si - Math.PI/2;
-        var rx=wrapW/2 - 17;
-        var ry=wrapH/2 - 17;
-        sx=cx + rx*Math.cos(angle) - 17;
-        sy=cy + ry*Math.sin(angle) - 17;
+        sx=wcx + orbitR*Math.cos(angle) - halfSeat;
+        sy=wcy + orbitR*Math.sin(angle) - halfSeat;
       }
 
       if(guest){
-        h+='<div class="tp-seat filled" data-tid="'+t.id+'" data-si="'+si+'" style="left:'+sx+'px;top:'+sy+'px;background:'+sColor+'" title="'+guest.name+'">'+guest.name.substring(0,3)+'</div>';
+        h+='<div class="tp-seat filled" data-tid="'+t.id+'" data-si="'+si+'" style="left:'+Math.round(sx)+'px;top:'+Math.round(sy)+'px;background:'+sColor+'" title="'+guest.name+'">'+guest.name.substring(0,3)+'</div>';
       } else {
-        h+='<div class="tp-seat empty" data-tid="'+t.id+'" data-si="'+si+'" style="left:'+sx+'px;top:'+sy+'px" title="Freier Platz">+</div>';
+        h+='<div class="tp-seat empty" data-tid="'+t.id+'" data-si="'+si+'" style="left:'+Math.round(sx)+'px;top:'+Math.round(sy)+'px" title="Freier Platz">+</div>';
       }
     }
     h+='</div>';
@@ -5189,7 +5212,7 @@ setTimeout(function(){
       });
     }).catch(function(){});
     // Alten Cache sofort löschen (aktueller Cache wird vom Service Worker verwaltet)
-    if(window.caches)caches.keys().then(function(ks){ks.forEach(function(k){if(k!=='hochzeitsplaner-v19')caches.delete(k);});});
+    if(window.caches)caches.keys().then(function(ks){ks.forEach(function(k){if(k!=='hochzeitsplaner-v20')caches.delete(k);});});
   }
 },1000);
 </script>
