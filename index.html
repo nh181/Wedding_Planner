@@ -575,9 +575,9 @@
     .tp-tbl-edit{position:absolute;top:-10px;right:-10px;width:30px;height:30px;border-radius:50%;background:var(--rose);color:#fff;border:none;cursor:pointer;font-size:14px;display:none;align-items:center;justify-content:center;z-index:3;box-shadow:0 2px 8px rgba(0,0,0,.25)}
     .tp-tbl-wrap:hover .tp-tbl-edit{display:flex}
     @media(hover:none){.tp-tbl-edit{display:flex!important}}
-    .tp-seat{position:absolute;width:34px;height:34px;min-width:34px;min-height:34px;max-width:34px;max-height:34px;box-sizing:border-box;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;cursor:pointer;transition:transform .15s,box-shadow .15s;line-height:1.1;text-align:center;z-index:1;flex-shrink:0;aspect-ratio:1/1}
-    .tp-seat.empty{background:var(--bg);border:2px dashed rgba(120,120,128,.25);color:var(--t3);font-size:14px}
-    .tp-seat.filled{color:#fff;font-size:8px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+    .tp-seat{position:absolute;width:36px!important;height:36px!important;box-sizing:border-box;border-radius:50%;font-weight:600;cursor:pointer;transition:transform .15s,box-shadow .15s;text-align:center;z-index:1;overflow:hidden;line-height:32px;padding:0;margin:0}
+    .tp-seat.empty{background:var(--bg);border:2px dashed rgba(120,120,128,.25);color:var(--t3);font-size:15px;line-height:32px}
+    .tp-seat.filled{color:#fff;font-size:8px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.15);line-height:32px}
     .tp-seat.drop-target{transform:scale(1.25);box-shadow:0 0 0 3px var(--rose)}
     .tp-sg{padding:8px 10px;border-radius:10px;background:var(--sur);margin-bottom:4px;font-size:13px;cursor:grab;display:flex;align-items:center;gap:8px;border:1px solid var(--br);touch-action:none;user-select:none;-webkit-user-select:none}
     .tp-sg:hover{border-color:var(--rose);background:var(--rose-l)}
@@ -2656,9 +2656,9 @@ function renderTischplan(a){
   }
   tables.forEach(function(t){
     var seatCount=t.seats||8;
-    var seatSize=34;
+    var seatSize=36;
     var halfSeat=seatSize/2;
-    var gap=6; // gap between table edge and seat edge
+    var gap=8; // gap between table edge and seat edge
 
     // Table inner dimensions
     var tw,th2;
@@ -2742,10 +2742,11 @@ function renderTischplan(a){
         sy=wcy + orbitR*Math.sin(angle) - halfSeat;
       }
 
+      var seatStyle='position:absolute;display:block;left:'+Math.round(sx)+'px;top:'+Math.round(sy)+'px;width:36px;height:36px;border-radius:50%;text-align:center;overflow:hidden;box-sizing:border-box;padding:0;margin:0';
       if(guest){
-        h+='<div class="tp-seat filled" data-tid="'+t.id+'" data-si="'+si+'" style="left:'+Math.round(sx)+'px;top:'+Math.round(sy)+'px;background:'+sColor+'" title="'+guest.name+'">'+guest.name.substring(0,3)+'</div>';
+        h+='<div class="tp-seat filled" data-tid="'+t.id+'" data-si="'+si+'" style="'+seatStyle+';background:'+sColor+';color:#fff;font-size:8px;font-weight:600;line-height:32px;border:2px solid #fff" title="'+guest.name+'">'+guest.name.substring(0,3)+'</div>';
       } else {
-        h+='<div class="tp-seat empty" data-tid="'+t.id+'" data-si="'+si+'" style="left:'+Math.round(sx)+'px;top:'+Math.round(sy)+'px" title="Freier Platz">+</div>';
+        h+='<div class="tp-seat empty" data-tid="'+t.id+'" data-si="'+si+'" style="'+seatStyle+';background:var(--bg);color:var(--t3);font-size:15px;line-height:32px;border:2px dashed rgba(120,120,128,.25)" title="Freier Platz">+</div>';
       }
     }
     h+='</div>';
@@ -5212,7 +5213,7 @@ setTimeout(function(){
       });
     }).catch(function(){});
     // Alten Cache sofort löschen (aktueller Cache wird vom Service Worker verwaltet)
-    if(window.caches)caches.keys().then(function(ks){ks.forEach(function(k){if(k!=='hochzeitsplaner-v20')caches.delete(k);});});
+    if(window.caches)caches.keys().then(function(ks){ks.forEach(function(k){if(k!=='hochzeitsplaner-v21')caches.delete(k);});});
   }
 },1000);
 </script>
